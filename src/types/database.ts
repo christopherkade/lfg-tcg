@@ -28,6 +28,7 @@ export interface Beacon {
   power_tiers: number[] | null;
   type: MatchType;
   location_name: string | null;
+  scheduled_at: string | null;
   max_players: number;
   notes: string | null;
   status: BeaconStatus;

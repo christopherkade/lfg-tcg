@@ -16,21 +16,28 @@ export interface StartSearchInput {
   brackets: number[];
   matchType: MatchType;
   locationName: string;
+  scheduledDate: string;
+  scheduledTime: string;
   maxPlayers: number;
   notes: string;
 }
 
-/**
- * Starts a new LFG search using the settings chosen in the LFG tab's
- * "Search" dialog. These are also persisted onto the user's profile
- * (preferred_*) so the dialog pre-fills with the last search next time,
- * and so the Match Feed keeps filtering meaningfully off `profiles`.
- */
-export async function createBeacon(
-  input: StartSearchInput,
-): Promise<BeaconActionResult> {
-  const { supabase, user } = await requireProfile();
+interface NormalizedBeaconInput {
+  brackets: number[] | null;
+  locationName: string | null;
+  scheduledAt: string | null;
+  notes: string | null;
+}
 
+/**
+ * Shared validation/normalization for both createBeacon and updateBeacon —
+ * the same StartSearchInput shape (and rules) is used by the "Search"
+ * dialog whether it's starting a brand new beacon or editing an existing
+ * (still ACTIVE) one.
+ */
+function validateStartSearchInput(
+  input: StartSearchInput,
+): { error: string } | { data: NormalizedBeaconInput } {
   const game = GAMES_CONFIG[input.gameKey];
   if (!game) {
     return { error: "Please select a valid game." };
@@ -50,6 +57,17 @@ export async function createBeacon(
   if (input.matchType === "IRL" && !input.locationName.trim()) {
     return { error: "Please provide a location name for in-person matches." };
   }
+  let scheduledAt: string | null = null;
+  if (input.matchType === "IRL") {
+    if (!input.scheduledDate || !input.scheduledTime) {
+      return { error: "Please provide a date and time for in-person matches." };
+    }
+    const parsed = new Date(`${input.scheduledDate}T${input.scheduledTime}`);
+    if (Number.isNaN(parsed.getTime())) {
+      return { error: "Please provide a valid date and time." };
+    }
+    scheduledAt = parsed.toISOString();
+  }
   if (input.maxPlayers < 2 || input.maxPlayers > 6) {
     return { error: "Players needed must be between 2 and 6." };
   }
@@ -57,10 +75,53 @@ export async function createBeacon(
     return { error: "Notes must be 300 characters or fewer." };
   }
 
-  const brackets = game.hasPowerTiers ? input.brackets : null;
-  const locationName =
-    input.matchType === "IRL" ? input.locationName.trim() : null;
-  const notes = input.notes.trim() || null;
+  return {
+    data: {
+      brackets: game.hasPowerTiers ? input.brackets : null,
+      locationName:
+        input.matchType === "IRL" ? input.locationName.trim() : null,
+      scheduledAt,
+      notes: input.notes.trim() || null,
+    },
+  };
+}
+
+/**
+ * Starts a new LFG search using the settings chosen in the LFG tab's
+ * "Search" dialog. These are also persisted onto the user's profile
+ * (preferred_*) so the dialog pre-fills with the last search next time,
+ * and so the Match Feed keeps filtering meaningfully off `profiles`.
+ */
+export async function createBeacon(
+  input: StartSearchInput,
+): Promise<BeaconActionResult> {
+  const { supabase, user } = await requireProfile();
+
+  const validated = validateStartSearchInput(input);
+  if ("error" in validated) {
+    return { error: validated.error };
+  }
+  const { brackets, locationName, scheduledAt, notes } = validated.data;
+
+  // Block starting a new search while the user already has a PENDING
+  // request on (or has been ACCEPTED into) someone else's still-ACTIVE
+  // beacon — mirrors the client-side check in LfgButton, which shows
+  // CantStartSearchDialog instead of even opening the search dialog.
+  const { data: activeJoin } = await supabase
+    .from("beacon_joins")
+    .select("id, beacons!inner(status)")
+    .eq("user_id", user.id)
+    .in("status", ["PENDING", "ACCEPTED"])
+    .eq("beacons.status", "ACTIVE")
+    .limit(1)
+    .maybeSingle();
+
+  if (activeJoin) {
+    return {
+      error:
+        "You can't start a new search while you have a pending request on (or have joined) another beacon. Leave it first.",
+    };
+  }
 
   // Persist as the new "last used" search settings, keeping the dialog's
   // pre-fill and the Match Feed's filtering in sync with this search.
@@ -104,6 +165,7 @@ export async function createBeacon(
     power_tiers: brackets,
     type: input.matchType,
     location_name: locationName,
+    scheduled_at: scheduledAt,
     max_players: input.maxPlayers,
     notes,
   });
@@ -113,6 +175,54 @@ export async function createBeacon(
     return {
       error: `Something went wrong starting your search: ${error.message}`,
     };
+  }
+
+  revalidatePath("/");
+  revalidatePath("/beacons");
+  return {};
+}
+
+/**
+ * Lets the host edit the settings of their own still-ACTIVE beacon in
+ * place (rather than cancelling and starting a new search). Unlike
+ * createBeacon, this does NOT touch the user's `preferred_*` profile
+ * columns — those track the last *new search* settings, not one-off edits
+ * to an already-live beacon. Realtime subscribers (MatchFeed, OwnBeaconPanel,
+ * BeaconDetailDialog) already refetch on any `beacons` row change, so the
+ * update is reflected live everywhere without further wiring.
+ */
+export async function updateBeacon(
+  beaconId: string,
+  input: StartSearchInput,
+): Promise<BeaconActionResult> {
+  const { supabase, user } = await requireProfile();
+
+  const validated = validateStartSearchInput(input);
+  if ("error" in validated) {
+    return { error: validated.error };
+  }
+  const { brackets, locationName, scheduledAt, notes } = validated.data;
+
+  const { error } = await supabase
+    .from("beacons")
+    .update({
+      game_key: input.gameKey,
+      format_key: input.formatKey,
+      playstyle_key: input.playstyleKey,
+      power_tiers: brackets,
+      type: input.matchType,
+      location_name: locationName,
+      scheduled_at: scheduledAt,
+      max_players: input.maxPlayers,
+      notes,
+    })
+    .eq("id", beaconId)
+    .eq("user_id", user.id)
+    .eq("status", "ACTIVE");
+
+  if (error) {
+    console.error("updateBeacon failed:", error);
+    return { error: `Could not update your beacon: ${error.message}` };
   }
 
   revalidatePath("/");

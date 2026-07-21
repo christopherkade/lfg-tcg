@@ -1,6 +1,8 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
+import { format, isToday } from "date-fns";
+import { Alert, Button, Chip } from "@mui/material";
 import { GAMES_CONFIG } from "@/constants/gamesConfig";
 import type { BeaconWithRelations } from "@/types/database";
 
@@ -9,6 +11,7 @@ interface BeaconDetailDialogProps {
   currentUserId: string;
   onClose: () => void;
   onRequestJoin: (beaconId: string) => void;
+  onLeave: (beaconId: string) => void;
   pending: boolean;
   error: string | null;
 }
@@ -18,6 +21,7 @@ export function BeaconDetailDialog({
   currentUserId,
   onClose,
   onRequestJoin,
+  onLeave,
   pending,
   error,
 }: BeaconDetailDialogProps) {
@@ -30,6 +34,14 @@ export function BeaconDetailDialog({
   const isFull =
     beacon != null && (acceptedMembers?.length ?? 0) + 1 >= beacon.max_players;
   const game = beacon ? GAMES_CONFIG[beacon.game_key] : undefined;
+  const scheduledDate = beacon
+    ? new Date(beacon.scheduled_at ?? beacon.created_at)
+    : null;
+  const scheduledLabel = scheduledDate
+    ? isToday(scheduledDate)
+      ? `Today, ${format(scheduledDate, "p")}`
+      : format(scheduledDate, "MMM d, p")
+    : null;
 
   return (
     <AnimatePresence>
@@ -81,6 +93,12 @@ export function BeaconDetailDialog({
                 <span className="text-zinc-500">Match Type</span>
                 <span>{beacon.type}</span>
               </div>
+              {scheduledLabel && (
+                <div className="flex justify-between">
+                  <span className="text-zinc-500">When</span>
+                  <span>{scheduledLabel}</span>
+                </div>
+              )}
               {beacon.location_name && (
                 <div className="flex justify-between">
                   <span className="text-zinc-500">Location</span>
@@ -123,39 +141,72 @@ export function BeaconDetailDialog({
               </div>
             )}
 
-            {error && (
-              <p className="text-sm text-red-400" role="alert">
-                {error}
-              </p>
-            )}
+            {error && <Alert severity="error">{error}</Alert>}
 
             <div className="mt-2 flex gap-3">
-              <button
+              <Button
                 type="button"
                 onClick={onClose}
-                className="flex-1 rounded-full border border-zinc-800 px-6 py-3 font-medium text-zinc-400 transition-colors hover:border-zinc-700"
+                variant="outlined"
+                fullWidth
+                sx={{ py: 1.5, borderColor: "#27272a", color: "#a1a1aa" }}
               >
                 Close
-              </button>
+              </Button>
               {ownJoin ? (
-                <span className="flex flex-1 items-center justify-center rounded-full bg-zinc-800 px-6 py-3 text-sm font-medium text-zinc-400">
-                  {ownJoin.status === "PENDING" && "Request Pending"}
-                  {ownJoin.status === "ACCEPTED" && "Joined"}
-                  {ownJoin.status === "REJECTED" && "Request Rejected"}
-                </span>
+                ownJoin.status === "REJECTED" ? (
+                  <Chip
+                    label="Request Rejected"
+                    sx={{
+                      flex: 1,
+                      height: "auto",
+                      py: 1.5,
+                      borderRadius: 9999,
+                      bgcolor: "#27272a",
+                      color: "#a1a1aa",
+                      fontSize: "0.875rem",
+                      fontWeight: 500,
+                    }}
+                  />
+                ) : (
+                  <Button
+                    type="button"
+                    disabled={pending}
+                    onClick={() => onLeave(beacon.id)}
+                    variant="outlined"
+                    fullWidth
+                    sx={{
+                      py: 1.5,
+                      borderColor: "rgba(239, 68, 68, 0.4)",
+                      color: "#f87171",
+                      "&:hover": {
+                        borderColor: "#ef4444",
+                        bgcolor: "rgba(239, 68, 68, 0.1)",
+                      },
+                    }}
+                  >
+                    {pending
+                      ? "Leaving..."
+                      : ownJoin.status === "PENDING"
+                        ? "Cancel Request"
+                        : "Leave"}
+                  </Button>
+                )
               ) : (
-                <button
+                <Button
                   type="button"
                   disabled={pending || isFull}
                   onClick={() => onRequestJoin(beacon.id)}
-                  className="flex-1 rounded-full bg-zinc-50 px-6 py-3 font-medium text-zinc-950 transition-opacity disabled:opacity-40"
+                  variant="contained"
+                  fullWidth
+                  sx={{ py: 1.5 }}
                 >
                   {isFull
                     ? "Full"
                     : pending
                       ? "Requesting..."
                       : "Request to Join"}
-                </button>
+                </Button>
               )}
             </div>
           </motion.div>

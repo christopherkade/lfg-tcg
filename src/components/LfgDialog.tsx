@@ -2,18 +2,41 @@
 
 import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
+import { format } from "date-fns";
+import {
+  Alert,
+  Button,
+  TextField,
+  ToggleButton,
+  ToggleButtonGroup,
+} from "@mui/material";
+import { DatePicker } from "@mui/x-date-pickers/DatePicker";
+import { TimePicker } from "@mui/x-date-pickers/TimePicker";
 import { GAMES_CONFIG } from "@/constants/gamesConfig";
 import { GameSelector } from "@/components/GameSelector";
 import { PlaystyleToggle } from "@/components/PlaystyleToggle";
 import { PowerBracketPicker } from "@/components/PowerBracketPicker";
-import { createBeacon } from "@/app/actions/beacons";
-import type { Profile, PlaystyleKey, MatchType } from "@/types/database";
+import { createBeacon, updateBeacon } from "@/app/actions/beacons";
+import type {
+  Beacon,
+  Profile,
+  PlaystyleKey,
+  MatchType,
+} from "@/types/database";
 
 interface LfgDialogProps {
   open: boolean;
   onClose: () => void;
-  onSearchStarted: () => void;
+  onSuccess: () => void;
   profile: Profile;
+  /**
+   * When provided, the dialog edits this existing (still ACTIVE) beacon in
+   * place via updateBeacon instead of starting a brand new search via
+   * createBeacon — used by MyBeaconPanel's "Edit" action. All fields reset
+   * from the beacon's own values (not the profile's `preferred_*`) each
+   * time the dialog opens.
+   */
+  editBeacon?: Beacon | null;
 }
 
 const MATCH_TYPES: MatchType[] = ["IRL", "ONLINE"];
@@ -22,8 +45,9 @@ const PLAYER_COUNTS = [2, 3, 4, 5, 6];
 export function LfgDialog({
   open,
   onClose,
-  onSearchStarted,
+  onSuccess,
   profile,
+  editBeacon,
 }: LfgDialogProps) {
   const [selectedGame, setSelectedGame] = useState<string>(
     profile.preferred_game,
@@ -34,15 +58,15 @@ export function LfgDialog({
   const [selectedPlaystyle, setSelectedPlaystyle] = useState<PlaystyleKey>(
     profile.preferred_playstyle,
   );
-  const [selectedBrackets, setSelectedBrackets] = useState<number[]>(
-    profile.preferred_brackets ?? [],
-  );
+  const [selectedBrackets, setSelectedBrackets] = useState<number[]>([]);
   const [selectedMatchType, setSelectedMatchType] = useState<MatchType>(
     profile.preferred_match_type,
   );
   const [locationName, setLocationName] = useState(
     profile.preferred_location_name ?? "",
   );
+  const [scheduledDate, setScheduledDate] = useState<Date | null>(null);
+  const [scheduledTime, setScheduledTime] = useState<Date | null>(null);
   const [maxPlayers, setMaxPlayers] = useState(profile.preferred_max_players);
   const [notes, setNotes] = useState("");
   const [pending, setPending] = useState(false);
@@ -55,14 +79,32 @@ export function LfgDialog({
   if (open !== wasOpen) {
     setWasOpen(open);
     if (open) {
-      setSelectedGame(profile.preferred_game);
-      setSelectedFormat(profile.preferred_format);
-      setSelectedPlaystyle(profile.preferred_playstyle);
-      setSelectedBrackets(profile.preferred_brackets ?? []);
-      setSelectedMatchType(profile.preferred_match_type);
-      setLocationName(profile.preferred_location_name ?? "");
-      setMaxPlayers(profile.preferred_max_players);
-      setNotes("");
+      if (editBeacon) {
+        const scheduled = editBeacon.scheduled_at
+          ? new Date(editBeacon.scheduled_at)
+          : null;
+        setSelectedGame(editBeacon.game_key);
+        setSelectedFormat(editBeacon.format_key);
+        setSelectedPlaystyle(editBeacon.playstyle_key);
+        setSelectedBrackets(editBeacon.power_tiers ?? []);
+        setSelectedMatchType(editBeacon.type);
+        setLocationName(editBeacon.location_name ?? "");
+        setScheduledDate(scheduled);
+        setScheduledTime(scheduled);
+        setMaxPlayers(editBeacon.max_players);
+        setNotes(editBeacon.notes ?? "");
+      } else {
+        setSelectedGame(profile.preferred_game);
+        setSelectedFormat(profile.preferred_format);
+        setSelectedPlaystyle(profile.preferred_playstyle);
+        setSelectedBrackets([]);
+        setSelectedMatchType(profile.preferred_match_type);
+        setLocationName(profile.preferred_location_name ?? "");
+        setScheduledDate(null);
+        setScheduledTime(null);
+        setMaxPlayers(profile.preferred_max_players);
+        setNotes("");
+      }
       setError(null);
     }
   }
@@ -80,22 +122,31 @@ export function LfgDialog({
 
   const canSubmit =
     (!hasPowerTiers || selectedBrackets.length > 0) &&
-    (selectedMatchType !== "IRL" || locationName.trim().length > 0);
+    (selectedMatchType !== "IRL" ||
+      (locationName.trim().length > 0 &&
+        scheduledDate !== null &&
+        scheduledTime !== null));
 
   async function handleSearch() {
     setPending(true);
     setError(null);
 
-    const result = await createBeacon({
+    const input = {
       gameKey: selectedGame,
       formatKey: selectedFormat,
       playstyleKey: selectedPlaystyle,
       brackets: selectedBrackets,
       matchType: selectedMatchType,
       locationName,
+      scheduledDate: scheduledDate ? format(scheduledDate, "yyyy-MM-dd") : "",
+      scheduledTime: scheduledTime ? format(scheduledTime, "HH:mm") : "",
       maxPlayers,
       notes,
-    });
+    };
+
+    const result = editBeacon
+      ? await updateBeacon(editBeacon.id, input)
+      : await createBeacon(input);
 
     if (result.error) {
       setError(result.error);
@@ -104,7 +155,7 @@ export function LfgDialog({
     }
 
     setPending(false);
-    onSearchStarted();
+    onSuccess();
   }
 
   return (
@@ -123,10 +174,10 @@ export function LfgDialog({
             exit={{ y: 40, opacity: 0 }}
             transition={{ duration: 0.2, ease: "easeOut" }}
             onClick={(event) => event.stopPropagation()}
-            className="flex h-full w-full flex-col gap-6 overflow-y-auto rounded-2xl border border-zinc-800 bg-zinc-950 p-6 sm:h-auto sm:max-w-2xl sm:overflow-visible sm:p-8"
+            className="flex h-full w-full flex-col gap-6 overflow-y-auto rounded-2xl border border-zinc-800 bg-zinc-950 p-6 sm:max-w-2xl sm:p-8"
           >
             <h2 className="text-lg font-semibold text-zinc-50">
-              Search Settings
+              {editBeacon ? "Edit Beacon" : "Search Settings"}
             </h2>
 
             <div className="flex flex-col gap-6 sm:grid sm:grid-cols-2 sm:gap-x-8 sm:gap-y-6">
@@ -143,22 +194,31 @@ export function LfgDialog({
                   <span className="text-sm font-medium text-zinc-400">
                     Format
                   </span>
-                  <div className="flex flex-wrap gap-2">
-                    {game.formats.map((format) => (
-                      <button
-                        key={format.key}
-                        type="button"
-                        onClick={() => setSelectedFormat(format.key)}
-                        className={`rounded-full border px-4 py-1.5 text-sm font-medium transition-colors ${
-                          selectedFormat === format.key
-                            ? "border-zinc-50 bg-zinc-50 text-zinc-950"
-                            : "border-zinc-800 text-zinc-400 hover:border-zinc-700"
-                        }`}
+                  <ToggleButtonGroup
+                    value={selectedFormat}
+                    exclusive
+                    onChange={(_event, next) => {
+                      if (next !== null) {
+                        setSelectedFormat(next);
+                      }
+                    }}
+                    sx={{
+                      flexWrap: "wrap",
+                      bgcolor: "transparent",
+                      border: 0,
+                      p: 0,
+                      gap: 1,
+                    }}
+                  >
+                    {game.formats.map((formatOption) => (
+                      <ToggleButton
+                        key={formatOption.key}
+                        value={formatOption.key}
                       >
-                        {format.label}
-                      </button>
+                        {formatOption.label}
+                      </ToggleButton>
                     ))}
-                  </div>
+                  </ToggleButtonGroup>
                 </div>
               )}
 
@@ -170,38 +230,61 @@ export function LfgDialog({
                 <span className="text-sm font-medium text-zinc-400">
                   Match Type
                 </span>
-                <div className="flex rounded-full border border-zinc-800 bg-zinc-900 p-1">
+                <ToggleButtonGroup
+                  value={selectedMatchType}
+                  exclusive
+                  fullWidth
+                  onChange={(_event, next: MatchType | null) => {
+                    if (next !== null) {
+                      setSelectedMatchType(next);
+                    }
+                  }}
+                >
                   {MATCH_TYPES.map((matchType) => (
-                    <button
-                      key={matchType}
-                      type="button"
-                      onClick={() => setSelectedMatchType(matchType)}
-                      className={`flex-1 rounded-full px-4 py-2 text-sm font-medium transition-colors ${
-                        selectedMatchType === matchType
-                          ? "bg-zinc-50 text-zinc-950"
-                          : "text-zinc-400 hover:text-zinc-200"
-                      }`}
-                    >
+                    <ToggleButton key={matchType} value={matchType}>
                       {matchType}
-                    </button>
+                    </ToggleButton>
                   ))}
-                </div>
+                </ToggleButtonGroup>
               </div>
 
               {selectedMatchType === "IRL" && (
                 <div className="flex flex-col gap-2 sm:col-span-2">
-                  <label
-                    htmlFor="dialog_location_name"
-                    className="text-sm font-medium text-zinc-400"
-                  >
-                    Location
-                  </label>
-                  <input
+                  <TextField
                     id="dialog_location_name"
+                    label="Location"
                     value={locationName}
                     onChange={(event) => setLocationName(event.target.value)}
-                    placeholder="Local Game Store name"
-                    className="rounded-lg border border-zinc-800 bg-zinc-900 px-4 py-2 text-zinc-50 outline-none focus:border-zinc-600"
+                    placeholder="Where will you be playing?"
+                    fullWidth
+                    size="small"
+                  />
+                </div>
+              )}
+
+              {selectedMatchType === "IRL" && (
+                <div className="flex flex-col gap-2">
+                  <DatePicker
+                    label="Date"
+                    value={scheduledDate}
+                    onChange={(next) => setScheduledDate(next)}
+                    slotProps={{
+                      textField: { fullWidth: true, size: "small" },
+                    }}
+                  />
+                </div>
+              )}
+
+              {selectedMatchType === "IRL" && (
+                <div className="flex flex-col gap-2">
+                  <TimePicker
+                    label="Time"
+                    value={scheduledTime}
+                    onChange={(next) => setScheduledTime(next)}
+                    ampm={false}
+                    slotProps={{
+                      textField: { fullWidth: true, size: "small" },
+                    }}
                   />
                 </div>
               )}
@@ -220,22 +303,33 @@ export function LfgDialog({
                 <span className="text-sm font-medium text-zinc-400">
                   Players Needed
                 </span>
-                <div className="flex gap-2">
+                <ToggleButtonGroup
+                  value={maxPlayers}
+                  exclusive
+                  onChange={(_event, next: number | null) => {
+                    if (next !== null) {
+                      setMaxPlayers(next);
+                    }
+                  }}
+                  sx={{ bgcolor: "transparent", border: 0, p: 0, gap: 1 }}
+                >
                   {PLAYER_COUNTS.map((count) => (
-                    <button
+                    <ToggleButton
                       key={count}
-                      type="button"
-                      onClick={() => setMaxPlayers(count)}
-                      className={`flex h-10 w-10 items-center justify-center rounded-full border text-sm font-semibold transition-colors ${
-                        maxPlayers === count
-                          ? "border-zinc-50 bg-zinc-50 text-zinc-950"
-                          : "border-zinc-800 bg-zinc-900 text-zinc-400 hover:border-zinc-700"
-                      }`}
+                      value={count}
+                      sx={{
+                        height: 40,
+                        width: 40,
+                        borderRadius: "9999px !important",
+                        border: "1px solid #27272a !important",
+                        marginLeft: "0px !important",
+                        bgcolor: "#18181b",
+                      }}
                     >
                       {count}
-                    </button>
+                    </ToggleButton>
                   ))}
-                </div>
+                </ToggleButtonGroup>
               </div>
 
               <div className="sm:col-span-2">
@@ -249,50 +343,49 @@ export function LfgDialog({
               </div>
 
               <div className="flex flex-col gap-2 sm:col-span-2">
-                <label
-                  htmlFor="dialog_notes"
-                  className="text-sm font-medium text-zinc-400"
-                >
-                  Notes{" "}
-                  <span className="font-normal text-zinc-600">(optional)</span>
-                </label>
-                <textarea
+                <TextField
                   id="dialog_notes"
+                  label="Notes (optional)"
                   value={notes}
                   onChange={(event) => setNotes(event.target.value)}
                   placeholder="Anything else players should know? e.g. deck theme, house rules..."
-                  maxLength={300}
+                  slotProps={{ htmlInput: { maxLength: 300 } }}
+                  multiline
                   rows={3}
-                  className="resize-none rounded-lg border border-zinc-800 bg-zinc-900 px-4 py-2 text-zinc-50 outline-none focus:border-zinc-600"
+                  fullWidth
+                  helperText={`${notes.length}/300`}
                 />
-                <span className="self-end text-xs text-zinc-600">
-                  {notes.length}/300
-                </span>
               </div>
             </div>
 
-            {error && (
-              <p className="text-sm text-red-400" role="alert">
-                {error}
-              </p>
-            )}
+            {error && <Alert severity="error">{error}</Alert>}
 
             <div className="mt-auto flex gap-3">
-              <button
+              <Button
                 type="button"
                 onClick={onClose}
-                className="flex-1 rounded-full border border-zinc-800 px-6 py-3 font-medium text-zinc-400 transition-colors hover:border-zinc-700"
+                variant="outlined"
+                fullWidth
+                sx={{ py: 1.5, borderColor: "#27272a", color: "#a1a1aa" }}
               >
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
                 onClick={handleSearch}
                 disabled={!canSubmit || pending}
-                className="flex-1 rounded-full bg-zinc-50 px-6 py-3 font-medium text-zinc-950 transition-opacity disabled:opacity-40"
+                variant="contained"
+                fullWidth
+                sx={{ py: 1.5 }}
               >
-                {pending ? "Starting..." : "Search"}
-              </button>
+                {editBeacon
+                  ? pending
+                    ? "Saving..."
+                    : "Save Changes"
+                  : pending
+                    ? "Starting..."
+                    : "Search"}
+              </Button>
             </div>
           </motion.div>
         </motion.div>

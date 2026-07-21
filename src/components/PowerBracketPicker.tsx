@@ -1,6 +1,12 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
+import {
+  Box,
+  ToggleButton,
+  ToggleButtonGroup,
+  Typography,
+} from "@mui/material";
 
 interface PowerBracketPickerProps {
   visible: boolean;
@@ -19,14 +25,6 @@ export function PowerBracketPicker({
 }: PowerBracketPickerProps) {
   const tiers = Array.from({ length: maxTier }, (_, i) => i + 1);
 
-  function toggleTier(tier: number) {
-    if (value.includes(tier)) {
-      onChange(value.filter((t) => t !== tier));
-    } else {
-      onChange([...value, tier].sort((a, b) => a - b));
-    }
-  }
-
   return (
     <AnimatePresence initial={false}>
       {visible && (
@@ -37,34 +35,51 @@ export function PowerBracketPicker({
           transition={{ duration: 0.25, ease: "easeInOut" }}
           className="overflow-hidden"
         >
-          <div className="flex flex-col gap-2 pt-4">
-            <span className="text-sm font-medium text-zinc-400">
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 1, pt: 2 }}>
+            <Typography
+              variant="body2"
+              sx={{ color: "#a1a1aa", fontWeight: 500 }}
+            >
               {label}{" "}
-              <span className="text-zinc-600">
+              <Box component="span" sx={{ color: "#52525b" }}>
                 (select all you&apos;ll play)
-              </span>
-            </span>
-            <div className="flex gap-2">
-              {tiers.map((tier) => {
-                const isActive = value.includes(tier);
-                return (
-                  <button
-                    key={tier}
-                    type="button"
-                    onClick={() => toggleTier(tier)}
-                    aria-pressed={isActive}
-                    className={`flex h-10 w-10 items-center justify-center rounded-full border text-sm font-semibold transition-colors ${
-                      isActive
-                        ? "border-amber-500 bg-amber-500/10 text-amber-500"
-                        : "border-zinc-800 bg-zinc-900 text-zinc-400 hover:border-zinc-700"
-                    }`}
-                  >
-                    {tier}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
+              </Box>
+            </Typography>
+            <ToggleButtonGroup
+              value={value}
+              onChange={(_event, next: number[]) =>
+                onChange([...next].sort((a, b) => a - b))
+              }
+              sx={{ bgcolor: "transparent", border: 0, p: 0, gap: 1 }}
+            >
+              {tiers.map((tier) => (
+                <ToggleButton
+                  key={tier}
+                  value={tier}
+                  sx={{
+                    height: 40,
+                    width: 40,
+                    borderRadius: "9999px !important",
+                    border: "1px solid #27272a !important",
+                    marginLeft: "0px !important",
+                    bgcolor: "#18181b",
+                    color: "#a1a1aa",
+                    fontWeight: 600,
+                    "&.Mui-selected": {
+                      borderColor: "rgba(245, 158, 11, 0.5) !important",
+                      bgcolor: "rgba(245, 158, 11, 0.1)",
+                      color: "#f59e0b",
+                    },
+                    "&.Mui-selected:hover": {
+                      bgcolor: "rgba(245, 158, 11, 0.16)",
+                    },
+                  }}
+                >
+                  {tier}
+                </ToggleButton>
+              ))}
+            </ToggleButtonGroup>
+          </Box>
         </motion.div>
       )}
     </AnimatePresence>

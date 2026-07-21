@@ -46,6 +46,34 @@ export async function requestJoin(
   return {};
 }
 
+/**
+ * Lets a user leave a beacon they've joined — whether their request is
+ * still PENDING (cancels the request) or already ACCEPTED (leaves the
+ * group). Simply deletes their own beacon_joins row; the unique
+ * (beacon_id, user_id) constraint means they're free to request to join
+ * again afterwards if they change their mind.
+ */
+export async function leaveBeacon(
+  beaconId: string,
+): Promise<BeaconActionResult> {
+  const { supabase, user } = await requireUser();
+
+  const { error } = await supabase
+    .from("beacon_joins")
+    .delete()
+    .eq("beacon_id", beaconId)
+    .eq("user_id", user.id);
+
+  if (error) {
+    console.error("leaveBeacon failed:", error);
+    return { error: `Could not leave this beacon: ${error.message}` };
+  }
+
+  revalidatePath("/");
+  revalidatePath("/beacons");
+  return {};
+}
+
 export async function respondToJoin(
   joinId: string,
   decision: "ACCEPTED" | "REJECTED",

@@ -1,8 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { format, isToday } from "date-fns";
+import { Alert } from "@mui/material";
 import { createClient } from "@/lib/supabase/client";
-import { requestJoin } from "@/app/actions/joins";
+import { requestJoin, leaveBeacon } from "@/app/actions/joins";
 import { BeaconDetailDialog } from "@/components/BeaconDetailDialog";
 import type { BeaconWithRelations, Profile } from "@/types/database";
 
@@ -94,6 +96,16 @@ export function MatchFeed({ profile, currentUserId }: MatchFeedProps) {
     setPendingBeaconId(null);
   }
 
+  async function handleLeave(beaconId: string) {
+    setPendingBeaconId(beaconId);
+    setError(null);
+    const result = await leaveBeacon(beaconId);
+    if (result.error) {
+      setError(result.error);
+    }
+    setPendingBeaconId(null);
+  }
+
   if (beacons === null) {
     return <p className="text-sm text-zinc-500">Loading match feed...</p>;
   }
@@ -111,15 +123,20 @@ export function MatchFeed({ profile, currentUserId }: MatchFeedProps) {
   const selectedBeacon =
     beacons.find((beacon) => beacon.id === selectedBeaconId) ?? null;
 
+  function formatScheduledAt(beacon: BeaconWithRelations) {
+    const date = beacon.scheduled_at
+      ? new Date(beacon.scheduled_at)
+      : new Date(beacon.created_at);
+    return isToday(date)
+      ? `Today, ${format(date, "p")}`
+      : format(date, "MMM d, p");
+  }
+
   return (
     <>
       <div className="flex w-full max-w-md flex-col gap-3">
         <h2 className="text-lg font-semibold text-zinc-50">Match Feed</h2>
-        {error && (
-          <p className="text-sm text-red-400" role="alert">
-            {error}
-          </p>
-        )}
+        {error && <Alert severity="error">{error}</Alert>}
         {beacons.map((beacon) => {
           const acceptedMembers = beacon.beacon_joins.filter(
             (j) => j.status === "ACCEPTED",
@@ -158,6 +175,8 @@ export function MatchFeed({ profile, currentUserId }: MatchFeedProps) {
                     <span>{beacon.location_name}</span>
                   </>
                 )}
+                <span>&middot;</span>
+                <span>{formatScheduledAt(beacon)}</span>
               </div>
 
               {acceptedMembers.length > 0 && (
@@ -174,13 +193,28 @@ export function MatchFeed({ profile, currentUserId }: MatchFeedProps) {
                 </div>
               )}
 
-              {ownJoin && (
-                <span className="self-start rounded-full bg-zinc-800 px-3 py-1 text-xs font-medium text-zinc-400">
-                  {ownJoin.status === "PENDING" && "Request Pending"}
-                  {ownJoin.status === "ACCEPTED" && "Joined"}
-                  {ownJoin.status === "REJECTED" && "Request Rejected"}
-                </span>
-              )}
+              {ownJoin &&
+                (ownJoin.status === "REJECTED" ? (
+                  <span className="self-start rounded-full bg-zinc-800 px-3 py-1 text-xs font-medium text-zinc-400">
+                    Request Rejected
+                  </span>
+                ) : (
+                  <button
+                    type="button"
+                    disabled={pendingBeaconId === beacon.id}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      handleLeave(beacon.id);
+                    }}
+                    className="self-start rounded-full bg-zinc-800 px-3 py-1 text-xs font-medium text-zinc-400 transition-colors hover:bg-red-500/10 hover:text-red-400 disabled:opacity-50"
+                  >
+                    {pendingBeaconId === beacon.id
+                      ? "..."
+                      : ownJoin.status === "PENDING"
+                        ? "Cancel Request"
+                        : "Joined \u00b7 Leave"}
+                  </button>
+                ))}
             </div>
           );
         })}
@@ -191,6 +225,7 @@ export function MatchFeed({ profile, currentUserId }: MatchFeedProps) {
         currentUserId={currentUserId}
         onClose={() => setSelectedBeaconId(null)}
         onRequestJoin={handleRequestJoin}
+        onLeave={handleLeave}
         pending={
           selectedBeacon != null && pendingBeaconId === selectedBeacon.id
         }

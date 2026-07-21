@@ -1,6 +1,7 @@
 "use client";
 
 import { MessageCircle } from "lucide-react";
+import { Button } from "@mui/material";
 import { createClient } from "@/lib/supabase/client";
 
 export default function LoginPage() {
@@ -22,13 +23,20 @@ export default function LoginPage() {
           Find your next game. Sign in to start matching.
         </p>
       </div>
-      <button
+      <Button
         onClick={handleDiscordLogin}
-        className="flex items-center gap-3 rounded-full bg-[#5865F2] px-6 py-3 font-medium text-white transition-colors hover:bg-[#4752C4]"
+        variant="contained"
+        startIcon={<MessageCircle className="h-5 w-5" />}
+        sx={{
+          px: 3,
+          py: 1.5,
+          bgcolor: "#5865F2",
+          color: "#fff",
+          "&:hover": { bgcolor: "#4752C4" },
+        }}
       >
-        <MessageCircle className="h-5 w-5" />
         Continue with Discord
-      </button>
+      </Button>
     </div>
   );
 }

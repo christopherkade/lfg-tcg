@@ -1,23 +1,26 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { PartyPopper } from "lucide-react";
+import { Ban } from "lucide-react";
 import { Button } from "@mui/material";
 
-interface MatchedDialogProps {
+interface CantStartSearchDialogProps {
   open: boolean;
   onClose: () => void;
 }
 
 /**
- * Shown to an accepted member (not the host — they already know, they're
- * the one who clicked Mark as Matched) when a beacon they joined
- * transitions to MATCHED. Since MATCHED beacons drop out of every match
- * feed query (which filters on status = 'ACTIVE'), this is the only cue a
- * joiner gets that the card they were watching is gone for good — so it's
- * a blocking dialog rather than a dismissable snackbar.
+ * Shown instead of opening LfgDialog when the user clicks the LFG button
+ * while they already have a PENDING request on (or have been ACCEPTED
+ * into) someone else's still-ACTIVE beacon. Mirrors createBeacon's
+ * server-side check of the same rule — this is just the friendlier
+ * client-side heads up so the user isn't left guessing why "Search"
+ * failed after filling out the whole dialog.
  */
-export function MatchedDialog({ open, onClose }: MatchedDialogProps) {
+export function CantStartSearchDialog({
+  open,
+  onClose,
+}: CantStartSearchDialogProps) {
   return (
     <AnimatePresence>
       {open && (
@@ -25,7 +28,7 @@ export function MatchedDialog({ open, onClose }: MatchedDialogProps) {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 z-40 flex items-center justify-center bg-black/60 p-4 sm:p-8"
+          className="fixed inset-0 z-20 flex items-center justify-center bg-black/60 p-4 sm:p-8"
           onClick={onClose}
         >
           <motion.div
@@ -37,18 +40,18 @@ export function MatchedDialog({ open, onClose }: MatchedDialogProps) {
             className="flex w-full max-w-md flex-col gap-4 rounded-2xl border border-zinc-800 bg-zinc-950 p-6"
           >
             <div className="flex items-start gap-3">
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-emerald-500/10">
-                <PartyPopper className="h-5 w-5 text-emerald-400" />
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-red-500/10">
+                <Ban className="h-5 w-5 text-red-400" />
               </div>
               <div className="flex flex-col gap-1">
                 <h2 className="text-lg font-semibold text-zinc-50">
-                  You&apos;re Matched!
+                  You&apos;re already in a group
                 </h2>
                 <p className="text-sm text-zinc-500">
-                  The host marked this beacon as matched. Head to Discord to say
-                  hi to your group, and don&apos;t be surprised when its card
-                  disappears from the match feed — it&apos;s been removed now
-                  that the group is set.
+                  You can&apos;t start a new search while you have a pending
+                  request on (or have joined) someone else&apos;s beacon. Leave
+                  that beacon first — from its card in the match feed — if you
+                  want to search for a different group.
                 </p>
               </div>
             </div>

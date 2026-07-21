@@ -2,6 +2,7 @@
 
 import { AnimatePresence, motion } from "framer-motion";
 import { AlertTriangle } from "lucide-react";
+import { Alert, Button } from "@mui/material";
 
 interface ConfirmMarkMatchedDialogProps {
   open: boolean;
@@ -59,28 +60,28 @@ export function ConfirmMarkMatchedDialog({
               </div>
             </div>
 
-            {error && (
-              <p className="text-sm text-red-400" role="alert">
-                {error}
-              </p>
-            )}
+            {error && <Alert severity="error">{error}</Alert>}
 
             <div className="mt-2 flex gap-3">
-              <button
+              <Button
                 type="button"
                 onClick={onClose}
-                className="flex-1 rounded-full border border-zinc-800 px-6 py-3 font-medium text-zinc-400 transition-colors hover:border-zinc-700"
+                variant="outlined"
+                fullWidth
+                sx={{ py: 1.5, borderColor: "#27272a", color: "#a1a1aa" }}
               >
                 Not Yet
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
                 onClick={onConfirm}
                 disabled={pending}
-                className="flex-1 rounded-full bg-zinc-50 px-6 py-3 font-medium text-zinc-950 transition-opacity disabled:opacity-40"
+                variant="contained"
+                fullWidth
+                sx={{ py: 1.5 }}
               >
                 {pending ? "Matching..." : "Mark as Matched"}
-              </button>
+              </Button>
             </div>
           </motion.div>
         </motion.div>

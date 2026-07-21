@@ -121,6 +121,7 @@ RLS must be enabled on all three tables with the following policies:
 | `beacon_joins` | SELECT          | Where `status = 'ACCEPTED'` (accepted members are public on active beacons) OR `user_id = auth.uid()` (own requests) OR the beacon is owned by `auth.uid()` (host reviewing requests)                                                                                                        |
 | `beacon_joins` | INSERT          | Only where `user_id = auth.uid()` AND the target beacon is not owned by `auth.uid()` (cannot join your own beacon)                                                                                                                                                                           |
 | `beacon_joins` | UPDATE          | Only where the target beacon is owned by `auth.uid()` (only the host can Accept/Reject)                                                                                                                                                                                                      |
+| `beacon_joins` | DELETE          | Only where `user_id = auth.uid()` (a joiner can cancel a PENDING request or leave after being ACCEPTED)                                                                                                                                                                                      |
 
 ### Realtime
 

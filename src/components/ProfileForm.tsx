@@ -2,6 +2,7 @@
 
 import { useActionState } from "react";
 import { LogOut } from "lucide-react";
+import { Alert, Button, TextField } from "@mui/material";
 import {
   upsertProfile,
   signOut,
@@ -28,63 +29,58 @@ export function ProfileForm({
   return (
     <div className="flex w-full max-w-md flex-col gap-8">
       <form action={formAction} className="flex flex-col gap-6">
-        <div className="flex flex-col gap-2">
-          <label
-            htmlFor="username"
-            className="text-sm font-medium text-zinc-400"
-          >
-            Username
-          </label>
-          <input
-            id="username"
-            name="username"
-            defaultValue={initialProfile?.username ?? ""}
-            required
-            className="rounded-lg border border-zinc-800 bg-zinc-900 px-4 py-2 text-zinc-50 outline-none focus:border-zinc-600"
-          />
-        </div>
+        <TextField
+          id="username"
+          name="username"
+          label="Username"
+          defaultValue={initialProfile?.username ?? ""}
+          required
+          fullWidth
+          size="small"
+        />
 
-        <div className="flex flex-col gap-2">
-          <label
-            htmlFor="discord_handle"
-            className="text-sm font-medium text-zinc-400"
-          >
-            Discord Handle
-          </label>
-          <input
-            id="discord_handle"
-            name="discord_handle"
-            defaultValue={
-              initialProfile?.discord_handle ?? defaultDiscordHandle
-            }
-            required
-            className="rounded-lg border border-zinc-800 bg-zinc-900 px-4 py-2 text-zinc-50 outline-none focus:border-zinc-600"
-          />
-        </div>
+        <TextField
+          id="discord_handle"
+          name="discord_handle"
+          label="Discord Handle"
+          defaultValue={initialProfile?.discord_handle ?? defaultDiscordHandle}
+          required
+          fullWidth
+          size="small"
+        />
 
-        {state?.error && (
-          <p className="text-sm text-red-400" role="alert">
-            {state.error}
-          </p>
-        )}
+        {state?.error && <Alert severity="error">{state.error}</Alert>}
 
-        <button
+        <Button
           type="submit"
           disabled={pending}
-          className="rounded-full bg-zinc-50 px-6 py-3 font-medium text-zinc-950 transition-opacity disabled:opacity-40"
+          variant="contained"
+          fullWidth
+          sx={{ py: 1.5 }}
         >
           {pending ? "Saving..." : "Save Profile"}
-        </button>
+        </Button>
       </form>
 
       <form action={signOut}>
-        <button
+        <Button
           type="submit"
-          className="flex w-full items-center justify-center gap-2 rounded-full border border-red-500/30 bg-red-500/10 px-6 py-3 font-medium text-red-400 transition-colors hover:bg-red-500/20"
+          variant="outlined"
+          color="error"
+          fullWidth
+          startIcon={<LogOut className="h-4 w-4" />}
+          sx={{
+            py: 1.5,
+            borderColor: "rgba(239, 68, 68, 0.3)",
+            bgcolor: "rgba(239, 68, 68, 0.1)",
+            "&:hover": {
+              bgcolor: "rgba(239, 68, 68, 0.2)",
+              borderColor: "rgba(239, 68, 68, 0.3)",
+            },
+          }}
         >
-          <LogOut className="h-4 w-4" />
           Sign Out
-        </button>
+        </Button>
       </form>
     </div>
   );

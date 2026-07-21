@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Bell, X } from "lucide-react";
+import { ButtonBase, IconButton } from "@mui/material";
 import { createClient } from "@/lib/supabase/client";
 import { MatchedDialog } from "@/components/MatchedDialog";
 
@@ -217,30 +218,41 @@ export function JoinRequestNotifier({
     <>
       {toast && (
         <div className="fixed right-4 top-4 z-40 w-[calc(100%-2rem)] max-w-sm sm:top-auto sm:bottom-6 sm:right-6 sm:w-full">
-          <button
-            type="button"
+          <ButtonBase
             onClick={() => {
               setToast(null);
               router.push("/beacons");
             }}
-            className="flex w-full items-center gap-3 rounded-2xl border border-zinc-800 bg-zinc-900 px-4 py-3 text-left shadow-lg shadow-black/40"
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              gap: 1.5,
+              width: "100%",
+              borderRadius: 4,
+              border: "1px solid #27272a",
+              bgcolor: "#18181b",
+              px: 2,
+              py: 1.5,
+              textAlign: "left",
+              boxShadow: "0 10px 15px -3px rgba(0,0,0,0.4)",
+            }}
           >
             <Bell className="h-5 w-5 shrink-0 text-amber-400" />
             <span className="flex-1 text-sm text-zinc-100">
               {toast.message}
             </span>
-            <span
-              role="button"
-              tabIndex={0}
+            <IconButton
+              component="span"
+              size="small"
               onClick={(event) => {
                 event.stopPropagation();
                 setToast(null);
               }}
-              className="shrink-0 rounded-full p-1 text-zinc-500 hover:text-zinc-300"
+              sx={{ color: "#71717a", "&:hover": { color: "#d4d4d8" } }}
             >
               <X className="h-4 w-4" />
-            </span>
-          </button>
+            </IconButton>
+          </ButtonBase>
         </div>
       )}
 
