@@ -4,11 +4,16 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Users, Zap, UserCircle, type LucideIcon } from "lucide-react";
 import { Box, Button, Typography } from "@mui/material";
+import { NotificationBell } from "@/components/NotificationBell";
 
 interface Tab {
   href: string;
   label: string;
   icon: LucideIcon;
+}
+
+interface TabBarProps {
+  currentUserId: string;
 }
 
 const TABS: Tab[] = [
@@ -17,11 +22,24 @@ const TABS: Tab[] = [
   { href: "/profile", label: "Profile", icon: UserCircle },
 ];
 
-export function TabBar() {
+export function TabBar({ currentUserId }: TabBarProps) {
   const pathname = usePathname();
 
   return (
     <>
+      {/* Mobile top bar: app title + notification bell (the bottom tab bar
+          below handles navigation, so this bar exists solely to give the
+          bell a home on small screens, mirroring "to the right of the
+          header" on desktop). */}
+      <header className="flex items-center justify-between border-b border-zinc-800 bg-zinc-950 px-4 py-3 sm:hidden">
+        <Typography
+          sx={{ fontSize: "1rem", fontWeight: 700, color: "#fafafa" }}
+        >
+          ManaMatch
+        </Typography>
+        <NotificationBell currentUserId={currentUserId} />
+      </header>
+
       {/* Desktop top navbar */}
       <nav className="hidden border-b border-zinc-800 bg-zinc-950 sm:block">
         <div className="mx-auto flex max-w-3xl items-center justify-between px-6 py-4">
@@ -30,31 +48,34 @@ export function TabBar() {
           >
             ManaMatch
           </Typography>
-          <Box sx={{ display: "flex", gap: 1 }}>
-            {TABS.map((tab) => {
-              const isActive = pathname === tab.href;
-              const Icon = tab.icon;
-              return (
-                <Button
-                  key={tab.href}
-                  component={Link}
-                  href={tab.href}
-                  startIcon={<Icon className="h-4 w-4" />}
-                  sx={{
-                    px: 2,
-                    py: 1,
-                    bgcolor: isActive ? "#fafafa" : "transparent",
-                    color: isActive ? "#09090b" : "#a1a1aa",
-                    "&:hover": {
-                      bgcolor: isActive ? "#e4e4e7" : "#18181b",
-                      color: isActive ? "#09090b" : "#e4e4e7",
-                    },
-                  }}
-                >
-                  {tab.label}
-                </Button>
-              );
-            })}
+          <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+            <Box sx={{ display: "flex", gap: 1 }}>
+              {TABS.map((tab) => {
+                const isActive = pathname === tab.href;
+                const Icon = tab.icon;
+                return (
+                  <Button
+                    key={tab.href}
+                    component={Link}
+                    href={tab.href}
+                    startIcon={<Icon className="h-4 w-4" />}
+                    sx={{
+                      px: 2,
+                      py: 1,
+                      bgcolor: isActive ? "#fafafa" : "transparent",
+                      color: isActive ? "#09090b" : "#a1a1aa",
+                      "&:hover": {
+                        bgcolor: isActive ? "#e4e4e7" : "#18181b",
+                        color: isActive ? "#09090b" : "#e4e4e7",
+                      },
+                    }}
+                  >
+                    {tab.label}
+                  </Button>
+                );
+              })}
+            </Box>
+            <NotificationBell currentUserId={currentUserId} />
           </Box>
         </div>
       </nav>

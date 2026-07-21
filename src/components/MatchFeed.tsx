@@ -61,6 +61,26 @@ export function MatchFeed({ profile, currentUserId }: MatchFeedProps) {
     fetchActiveBeaconsRef.current = fetchActiveBeacons;
   }, [fetchActiveBeacons]);
 
+  // Resilience fallback: Supabase Realtime's postgres_changes delivery has
+  // been observed to be unreliable in this project (channel stays
+  // SUBSCRIBED, but specific events occasionally never arrive — see repo
+  // memory). Resync whenever the tab regains focus/visibility so a missed
+  // event (e.g. "Request to Join" not flipping to "Pending" live) self-heals
+  // without the user needing to manually reload.
+  useEffect(() => {
+    function handleFocusOrVisible() {
+      if (document.visibilityState === "visible") {
+        fetchActiveBeaconsRef.current();
+      }
+    }
+    document.addEventListener("visibilitychange", handleFocusOrVisible);
+    window.addEventListener("focus", handleFocusOrVisible);
+    return () => {
+      document.removeEventListener("visibilitychange", handleFocusOrVisible);
+      window.removeEventListener("focus", handleFocusOrVisible);
+    };
+  }, []);
+
   useEffect(() => {
     const supabase = createClient();
     const channel = supabase

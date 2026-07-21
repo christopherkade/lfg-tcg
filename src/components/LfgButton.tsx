@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { Radio, X } from "lucide-react";
 import { Fab, Alert } from "@mui/material";
@@ -31,6 +31,61 @@ export function LfgButton({
   const [dialogOpen, setDialogOpen] = useState(false);
   const [blockedDialogOpen, setBlockedDialogOpen] = useState(false);
 
+  const fetchOwnBeacon = useCallback(async () => {
+    const supabase = createClient();
+    const { data } = await supabase
+      .from("beacons")
+      .select("*")
+      .eq("user_id", profile.id)
+      .eq("status", "ACTIVE")
+      .maybeSingle();
+    setOwnBeacon((data as Beacon) ?? null);
+  }, [profile.id]);
+
+  const fetchHasActiveJoin = useCallback(async () => {
+    const supabase = createClient();
+    const { data } = await supabase
+      .from("beacon_joins")
+      .select("id, beacons!inner(status)")
+      .eq("user_id", profile.id)
+      .in("status", ["PENDING", "ACCEPTED"])
+      .eq("beacons.status", "ACTIVE")
+      .maybeSingle();
+    setHasActiveJoin(data != null);
+  }, [profile.id]);
+
+  // Routed through refs rather than listed as effect dependencies — see
+  // repo memory on realtime channel churn / ref-indirection pattern.
+  const fetchOwnBeaconRef = useRef(fetchOwnBeacon);
+  useEffect(() => {
+    fetchOwnBeaconRef.current = fetchOwnBeacon;
+  }, [fetchOwnBeacon]);
+
+  const fetchHasActiveJoinRef = useRef(fetchHasActiveJoin);
+  useEffect(() => {
+    fetchHasActiveJoinRef.current = fetchHasActiveJoin;
+  }, [fetchHasActiveJoin]);
+
+  // Resilience fallback: Supabase Realtime's postgres_changes delivery has
+  // been observed to be unreliable in this project (channel stays
+  // SUBSCRIBED, but specific events occasionally never arrive — see repo
+  // memory). Resync whenever the tab regains focus/visibility so a missed
+  // event self-heals without the user needing to manually reload.
+  useEffect(() => {
+    function handleFocusOrVisible() {
+      if (document.visibilityState === "visible") {
+        fetchOwnBeaconRef.current();
+        fetchHasActiveJoinRef.current();
+      }
+    }
+    document.addEventListener("visibilitychange", handleFocusOrVisible);
+    window.addEventListener("focus", handleFocusOrVisible);
+    return () => {
+      document.removeEventListener("visibilitychange", handleFocusOrVisible);
+      window.removeEventListener("focus", handleFocusOrVisible);
+    };
+  }, []);
+
   // Keep ownBeacon and hasActiveJoin in sync with realtime changes (e.g.
   // cancelled/matched/started from another tab or device, or a join
   // request accepted/rejected/left elsewhere) instead of only reflecting
@@ -38,41 +93,20 @@ export function LfgButton({
   useEffect(() => {
     const supabase = createClient();
 
-    async function fetchOwnBeacon() {
-      const { data } = await supabase
-        .from("beacons")
-        .select("*")
-        .eq("user_id", profile.id)
-        .eq("status", "ACTIVE")
-        .maybeSingle();
-      setOwnBeacon((data as Beacon) ?? null);
-    }
-
-    async function fetchHasActiveJoin() {
-      const { data } = await supabase
-        .from("beacon_joins")
-        .select("id, beacons!inner(status)")
-        .eq("user_id", profile.id)
-        .in("status", ["PENDING", "ACCEPTED"])
-        .eq("beacons.status", "ACTIVE")
-        .maybeSingle();
-      setHasActiveJoin(data != null);
-    }
-
     const channel = supabase
       .channel(`lfg-own-beacon-${profile.id}`)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "beacons" },
         () => {
-          fetchOwnBeacon();
-          fetchHasActiveJoin();
+          fetchOwnBeaconRef.current();
+          fetchHasActiveJoinRef.current();
         },
       )
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "beacon_joins" },
-        () => fetchHasActiveJoin(),
+        () => fetchHasActiveJoinRef.current(),
       )
       .subscribe();
 

@@ -117,7 +117,10 @@ export async function respondToJoin(
     .eq("id", joinId);
 
   if (error) {
-    return { error: "Could not update the join request. Please try again." };
+    console.error("respondToJoin failed:", error);
+    return {
+      error: `Could not update the join request: ${error.message}`,
+    };
   }
 
   revalidatePath("/");

@@ -3,6 +3,12 @@ export type PlaystyleKey = "casual" | "competitive";
 export type MatchType = "IRL" | "ONLINE";
 export type BeaconStatus = "ACTIVE" | "MATCHED" | "EXPIRED";
 export type JoinStatus = "PENDING" | "ACCEPTED" | "REJECTED";
+export type NotificationType =
+  | "JOIN_REQUEST"
+  | "JOIN_ACCEPTED"
+  | "JOIN_REJECTED"
+  | "MEMBER_LEFT"
+  | "BEACON_UPDATED";
 
 export interface Profile {
   id: string;
@@ -51,4 +57,19 @@ export interface BeaconJoinWithProfile extends BeaconJoin {
 export interface BeaconWithRelations extends Beacon {
   profiles: Profile;
   beacon_joins: BeaconJoinWithProfile[];
+}
+
+export interface Notification {
+  id: string;
+  recipient_id: string;
+  actor_id: string | null;
+  type: NotificationType;
+  beacon_id: string | null;
+  read_at: string | null;
+  created_at: string;
+}
+
+export interface NotificationWithRelations extends Notification {
+  actor: Pick<Profile, "id" | "username" | "avatar_url"> | null;
+  beacon: Pick<Beacon, "id" | "game_key" | "format_key"> | null;
 }

@@ -1,5 +1,5 @@
 import { TabBar } from "@/components/TabBar";
-import { JoinRequestNotifier } from "@/components/JoinRequestNotifier";
+import { MatchedBeaconWatcher } from "@/components/MatchedBeaconWatcher";
 import { requireUser } from "@/lib/session";
 
 export default async function AppLayout({
@@ -11,9 +11,9 @@ export default async function AppLayout({
 
   return (
     <div className="flex flex-1 flex-col">
-      <TabBar />
+      <TabBar currentUserId={user.id} />
       <div className="flex flex-1 flex-col pb-16 sm:pb-0">{children}</div>
-      <JoinRequestNotifier currentUserId={user.id} />
+      <MatchedBeaconWatcher currentUserId={user.id} />
     </div>
   );
 }
