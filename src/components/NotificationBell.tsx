@@ -23,7 +23,11 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-import { markAllNotificationsRead } from "@/app/actions/notifications";
+import {
+  deleteAllNotifications,
+  deleteNotification,
+  markAllNotificationsRead,
+} from "@/app/actions/notifications";
 import type {
   NotificationType,
   NotificationWithRelations,
@@ -51,6 +55,7 @@ const TYPE_ICON: Record<NotificationType, LucideIcon> = {
   JOIN_ACCEPTED: UserCheck,
   JOIN_REJECTED: UserX,
   MEMBER_LEFT: UserMinus,
+  REMOVED_FROM_BEACON: UserX,
   BEACON_UPDATED: PencilLine,
 };
 
@@ -66,6 +71,8 @@ function describeNotification(notification: NotificationWithRelations): string {
       return `${actorName} declined your request to join their beacon`;
     case "MEMBER_LEFT":
       return `${actorName} left your beacon`;
+    case "REMOVED_FROM_BEACON":
+      return `${actorName} removed you from their beacon`;
     case "BEACON_UPDATED":
       return `${actorName} updated the details of a beacon you joined`;
   }
@@ -287,6 +294,28 @@ export function NotificationBell({ currentUserId }: NotificationBellProps) {
     router.push("/beacons");
   };
 
+  const handleDelete = (
+    event: React.MouseEvent<HTMLElement>,
+    notification: NotificationWithRelations,
+  ) => {
+    event.stopPropagation();
+    setNotifications(
+      (current) =>
+        current?.filter((item) => item.id !== notification.id) ?? current,
+    );
+    if (!notification.read_at) {
+      setUnreadCount((count) => Math.max(0, count - 1));
+    }
+    deleteNotification(notification.id);
+  };
+
+  const handleClearAll = (event: React.MouseEvent<HTMLElement>) => {
+    event.stopPropagation();
+    setNotifications([]);
+    setUnreadCount(0);
+    deleteAllNotifications();
+  };
+
   return (
     <>
       <IconButton onClick={handleOpen} sx={{ color: "#a1a1aa" }}>
@@ -312,35 +341,58 @@ export function NotificationBell({ currentUserId }: NotificationBellProps) {
               mt: 1,
             },
           },
+          // MenuList adds its own 8px top/bottom padding by default, which
+          // sits *outside* the empty/loading states' own centering box below
+          // — since that padding only follows the last child, it made the
+          // placeholder text look off-center (extra space under it, not over
+          // it). Zeroing it here means the header/divider/items' own
+          // paddings are the only spacing left in play.
+          list: { sx: { py: 0 } },
         }}
       >
-        <Typography
-          sx={{
-            px: 2,
-            py: 1.5,
-            fontSize: "0.875rem",
-            fontWeight: 700,
-            color: "#fafafa",
-          }}
-        >
-          Notifications
-        </Typography>
+        <div className="flex items-center justify-between px-2 py-1.5">
+          <Typography
+            sx={{
+              fontSize: "0.875rem",
+              fontWeight: 700,
+              color: "#fafafa",
+            }}
+          >
+            Notifications
+          </Typography>
+          {notifications !== null && notifications.length > 0 && (
+            <ButtonBase
+              onClick={handleClearAll}
+              sx={{
+                px: 1,
+                py: 0.5,
+                borderRadius: 1,
+                fontSize: "0.75rem",
+                fontWeight: 600,
+                color: "#a1a1aa",
+                "&:hover": { color: "#e4e4e7" },
+              }}
+            >
+              Clear all
+            </ButtonBase>
+          )}
+        </div>
         <Divider sx={{ borderColor: "#27272a" }} />
 
         {notifications === null && (
-          <MenuItem disabled sx={{ opacity: "1 !important" }}>
+          <div className="flex min-h-40 items-center justify-center px-4 py-6">
             <Typography sx={{ fontSize: "0.875rem", color: "#71717a" }}>
               Loading…
             </Typography>
-          </MenuItem>
+          </div>
         )}
 
         {notifications !== null && notifications.length === 0 && (
-          <MenuItem disabled sx={{ opacity: "1 !important" }}>
+          <div className="flex min-h-40 items-center justify-center px-4 py-6">
             <Typography sx={{ fontSize: "0.875rem", color: "#71717a" }}>
               No notifications yet.
             </Typography>
-          </MenuItem>
+          </div>
         )}
 
         {notifications?.map((notification) => {
@@ -360,7 +412,7 @@ export function NotificationBell({ currentUserId }: NotificationBellProps) {
               }}
             >
               <Icon className="mt-0.5 h-4 w-4 shrink-0 text-amber-400" />
-              <div className="flex flex-col gap-0.5">
+              <div className="flex flex-1 flex-col gap-0.5">
                 <Typography sx={{ fontSize: "0.8125rem", color: "#e4e4e7" }}>
                   {describeNotification(notification)}
                 </Typography>
@@ -371,6 +423,19 @@ export function NotificationBell({ currentUserId }: NotificationBellProps) {
                   )}
                 </Typography>
               </div>
+              <IconButton
+                component="span"
+                size="small"
+                aria-label="Delete notification"
+                onClick={(event) => handleDelete(event, notification)}
+                sx={{
+                  mt: -0.5,
+                  color: "#71717a",
+                  "&:hover": { color: "#d4d4d8" },
+                }}
+              >
+                <X className="h-3.5 w-3.5" />
+              </IconButton>
             </MenuItem>
           );
         })}

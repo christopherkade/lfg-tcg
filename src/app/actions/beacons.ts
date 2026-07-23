@@ -95,7 +95,7 @@ function validateStartSearchInput(
 export async function createBeacon(
   input: StartSearchInput,
 ): Promise<BeaconActionResult> {
-  const { supabase, user } = await requireProfile();
+  const { supabase, user, profile } = await requireProfile();
 
   const validated = validateStartSearchInput(input);
   if ("error" in validated) {
@@ -165,6 +165,10 @@ export async function createBeacon(
     power_tiers: brackets,
     type: input.matchType,
     location_name: locationName,
+    // Snapshot of profiles.city at creation time — lets the Match Feed
+    // (Section 6) scope IRL beacons to the viewer's city via a plain
+    // column filter, without joining back to profiles.
+    city: profile.city,
     scheduled_at: scheduledAt,
     max_players: input.maxPlayers,
     notes,
@@ -195,13 +199,40 @@ export async function updateBeacon(
   beaconId: string,
   input: StartSearchInput,
 ): Promise<BeaconActionResult> {
-  const { supabase, user } = await requireProfile();
+  const { supabase, user, profile } = await requireProfile();
 
   const validated = validateStartSearchInput(input);
   if ("error" in validated) {
     return { error: validated.error };
   }
   const { brackets, locationName, scheduledAt, notes } = validated.data;
+
+  // Guard against shrinking max_players below the group's current accepted
+  // size — without this, a host could edit an already-filling beacon down
+  // to fewer slots than it already has accepted members, silently pushing
+  // it over its own cap.
+  const { count: acceptedCount, error: countError } = await supabase
+    .from("beacon_joins")
+    .select("id", { count: "exact", head: true })
+    .eq("beacon_id", beaconId)
+    .eq("status", "ACCEPTED");
+
+  if (countError) {
+    console.error(
+      "updateBeacon: failed to check accepted member count:",
+      countError,
+    );
+    return {
+      error: "Could not verify your current group size. Please try again.",
+    };
+  }
+
+  const currentGroupSize = (acceptedCount ?? 0) + 1; // + host
+  if (input.maxPlayers < currentGroupSize) {
+    return {
+      error: `Players needed can't be lower than your current group size (${currentGroupSize}).`,
+    };
+  }
 
   const { error } = await supabase
     .from("beacons")
@@ -212,6 +243,9 @@ export async function updateBeacon(
       power_tiers: brackets,
       type: input.matchType,
       location_name: locationName,
+      // Re-snapshot in case the host updated their profile's city since
+      // this beacon was first created.
+      city: profile.city,
       scheduled_at: scheduledAt,
       max_players: input.maxPlayers,
       notes,

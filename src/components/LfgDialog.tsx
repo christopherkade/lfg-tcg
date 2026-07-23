@@ -42,6 +42,50 @@ interface LfgDialogProps {
 const MATCH_TYPES: MatchType[] = ["IRL", "ONLINE"];
 const PLAYER_COUNTS = [2, 3, 4, 5, 6];
 
+/**
+ * Search-settings inputs persist across dialog opens (and page reloads) via
+ * localStorage, keyed per-profile, so a fresh "Search" dialog starts from
+ * whatever the player last used instead of always resetting to the
+ * `preferred_*` profile defaults. Only used for brand new searches — the
+ * `editBeacon` flow still seeds fields from the beacon being edited.
+ */
+interface StoredSearchInput {
+  gameKey: string;
+  formatKey: string;
+  playstyleKey: PlaystyleKey;
+  brackets: number[];
+  matchType: MatchType;
+  locationName: string;
+  scheduledDate: string | null;
+  scheduledTime: string | null;
+  maxPlayers: number;
+  notes: string;
+}
+
+function storageKey(profileId: string) {
+  return `lfg-tcg:last-search:${profileId}`;
+}
+
+function loadStoredSearchInput(profileId: string): StoredSearchInput | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.localStorage.getItem(storageKey(profileId));
+    return raw ? (JSON.parse(raw) as StoredSearchInput) : null;
+  } catch {
+    return null;
+  }
+}
+
+function saveStoredSearchInput(profileId: string, input: StoredSearchInput) {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(storageKey(profileId), JSON.stringify(input));
+  } catch {
+    // Ignore quota/serialization errors — persistence is a convenience,
+    // not a requirement.
+  }
+}
+
 export function LfgDialog({
   open,
   onClose,
@@ -94,16 +138,25 @@ export function LfgDialog({
         setMaxPlayers(editBeacon.max_players);
         setNotes(editBeacon.notes ?? "");
       } else {
-        setSelectedGame(profile.preferred_game);
-        setSelectedFormat(profile.preferred_format);
-        setSelectedPlaystyle(profile.preferred_playstyle);
-        setSelectedBrackets([]);
-        setSelectedMatchType(profile.preferred_match_type);
-        setLocationName(profile.preferred_location_name ?? "");
-        setScheduledDate(null);
-        setScheduledTime(null);
-        setMaxPlayers(profile.preferred_max_players);
-        setNotes("");
+        const stored = loadStoredSearchInput(profile.id);
+        setSelectedGame(stored?.gameKey ?? profile.preferred_game);
+        setSelectedFormat(stored?.formatKey ?? profile.preferred_format);
+        setSelectedPlaystyle(
+          stored?.playstyleKey ?? profile.preferred_playstyle,
+        );
+        setSelectedBrackets(stored?.brackets ?? []);
+        setSelectedMatchType(stored?.matchType ?? profile.preferred_match_type);
+        setLocationName(
+          stored?.locationName ?? profile.preferred_location_name ?? "",
+        );
+        setScheduledDate(
+          stored?.scheduledDate ? new Date(stored.scheduledDate) : null,
+        );
+        setScheduledTime(
+          stored?.scheduledTime ? new Date(stored.scheduledTime) : null,
+        );
+        setMaxPlayers(stored?.maxPlayers ?? profile.preferred_max_players);
+        setNotes(stored?.notes ?? "");
       }
       setError(null);
     }
@@ -152,6 +205,21 @@ export function LfgDialog({
       setError(result.error);
       setPending(false);
       return;
+    }
+
+    if (!editBeacon) {
+      saveStoredSearchInput(profile.id, {
+        gameKey: input.gameKey,
+        formatKey: input.formatKey,
+        playstyleKey: input.playstyleKey,
+        brackets: input.brackets,
+        matchType: input.matchType,
+        locationName: input.locationName,
+        scheduledDate: scheduledDate ? scheduledDate.toISOString() : null,
+        scheduledTime: scheduledTime ? scheduledTime.toISOString() : null,
+        maxPlayers: input.maxPlayers,
+        notes: input.notes,
+      });
     }
 
     setPending(false);
@@ -301,7 +369,7 @@ export function LfgDialog({
 
               <div className="flex flex-col gap-2">
                 <span className="text-sm font-medium text-zinc-400">
-                  Players Needed
+                  Total players Needed
                 </span>
                 <ToggleButtonGroup
                   value={maxPlayers}

@@ -43,6 +43,10 @@ Execute this SQL snippet in your Supabase SQL Editor. The canonical, up-to-date 
 >
 > **Profile stores the _last-used_ search settings, not a fixed preference.** Game, format, playstyle, acceptable power brackets, match type, location, and desired group size are edited exclusively via the "Search" dialog on the LFG tab (not the Profile screen). Every time `createBeacon` runs, it both (a) updates these `preferred_*` columns to match what was just searched for, and (b) snapshots them into the new `beacons` row. This keeps the dialog's next pre-fill, and the Match Feed's filtering, in sync with the user's most recent search.
 >
+> **`city` is the one profile column that's identity-like rather than a `preferred_*` search setting.** It's edited on the Profile screen (via `CitySelector`, alongside username/discord handle) rather than the LFG Search dialog, because it describes where the user generally is, not something they re-pick per search. `createBeacon`/`updateBeacon` still snapshot it onto each `beacons` row (same pattern as the `preferred_*` columns) so the Match Feed (Section 6) can scope IRL beacons by a plain column filter without joining back to `profiles`.
+>
+> **City is a config-driven slug, not free text — see `constants/citiesConfig.ts` (`CITIES_CONFIG`/`CITY_MAP`).** It mirrors `GAMES_CONFIG`'s extensibility pattern (Section 4): supporting a new city is a one-line addition to that array, no schema/migration needed. Using a stable slug (not the free-text `location_name` a searcher types per-beacon) is what lets the Match Feed (Section 6) scope IRL beacons to the viewer's city with a plain equality check instead of unreliable fuzzy text matching. `profiles.city` is optional — set once on the Profile screen (Section 5) like `username`/`discord_handle`, not part of the per-search "Search" dialog — and every `createBeacon`/`updateBeacon` call snapshots its current value onto the beacon's own `city` column, the same way the other `preferred_*` columns are snapshotted onto their beacon counterparts.
+>
 > **`beacons` SELECT RLS must include accepted members, not just `status = 'ACTIVE'` or the owner.** Supabase Realtime's `postgres_changes` re-checks a table's SELECT policy against the row being changed for every single subscriber, on every event — if that check fails for a given subscriber, they simply never receive the event (no error, it's silent). If the policy were only `status = 'ACTIVE' OR user_id = auth.uid()`, then the instant a host marks their beacon `MATCHED`, every accepted member's subscription would start failing that check (they're neither `ACTIVE` nor the owner), so they'd never find out: `MatchedBeaconWatcher`'s `MatchedDialog` wouldn't fire for them, and their own `MatchFeed` would keep showing the now-stale card forever (no event ever tells their client to refetch and drop it). The fix is allowing accepted members through the policy regardless of the beacon's current `status`.
 >
 > **That accepted-member check must go through the `public.is_accepted_beacon_member(uuid)` SECURITY DEFINER function, not an inline `exists (select 1 from beacon_joins ...)`.** `beacon_joins`'s own SELECT policy queries `beacons` back (to check host ownership), so an inline subquery on `beacons` creates a policy cycle — beacons policy → beacon_joins policy → beacons policy → ... — which Postgres rejects with `infinite recursion detected in policy for relation "beacons"`. The SECURITY DEFINER function runs as its (RLS-bypassing) owner, so its internal query against `beacon_joins` doesn't re-trigger `beacon_joins`'s RLS policy, breaking the cycle.
@@ -60,6 +64,7 @@ CREATE TABLE profiles (
     username TEXT UNIQUE NOT NULL,
     discord_handle TEXT NOT NULL,
     avatar_url TEXT,
+    city TEXT,                                            -- key into CITIES_CONFIG (constants/citiesConfig.ts), optional (NULL if unset, e.g. Online-only players)
     preferred_game TEXT NOT NULL DEFAULT 'MTG',          -- e.g., 'MTG', 'POKEMON', 'ONE_PIECE', 'LORCANA'
     preferred_format TEXT NOT NULL DEFAULT 'COMMANDER',  -- e.g., 'COMMANDER', 'STANDARD' (one of GAMES_CONFIG[game].formats)
     preferred_playstyle TEXT NOT NULL DEFAULT 'casual',  -- 'casual' or 'competitive'
@@ -87,6 +92,8 @@ CREATE TABLE beacons (
     power_tiers INT[] CHECK (power_tiers IS NULL OR power_tiers <@ ARRAY[1,2,3,4,5]), -- snapshot of profiles.preferred_brackets if MTG, NULL otherwise
     type match_type NOT NULL,        -- 'IRL' or 'ONLINE'
     location_name TEXT,              -- E.g., 'Local Game Store Name' (Null if ONLINE)
+    city TEXT,                       -- snapshot of profiles.city at creation/edit time; drives Match Feed IRL scoping (Section 6)
+    scheduled_at TIMESTAMP WITH TIME ZONE, -- app-level required date/time for IRL matches (see validateStartSearchInput, not a DB CHECK); NULL for ONLINE, which falls back to created_at for display and the Match Feed's Date filter (Section 6)
     max_players INT NOT NULL DEFAULT 2 CHECK (max_players BETWEEN 2 AND 6), -- Total group size including the host; snapshot of preferred_max_players
     notes TEXT CHECK (notes IS NULL OR length(notes) <= 300), -- Optional free-text note set in the Search dialog, one-off (not persisted onto profiles)
     status TEXT DEFAULT 'ACTIVE',    -- 'ACTIVE', 'MATCHED', 'EXPIRED'
@@ -109,7 +116,7 @@ CREATE TABLE beacon_joins (
 
 -- 4. Notifications (persisted notification center backing the header bell)
 CREATE TYPE notification_type AS ENUM (
-    'JOIN_REQUEST', 'JOIN_ACCEPTED', 'JOIN_REJECTED', 'MEMBER_LEFT', 'BEACON_UPDATED'
+    'JOIN_REQUEST', 'JOIN_ACCEPTED', 'JOIN_REJECTED', 'MEMBER_LEFT', 'REMOVED_FROM_BEACON', 'BEACON_UPDATED'
 );
 CREATE TABLE notifications (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
@@ -124,7 +131,7 @@ CREATE TABLE notifications (
 
 > **Notifications have no `message` column.** Display copy is composed client-side (`NotificationBell`'s `describeNotification()`) from `type` plus the embedded `actor`/`beacon` rows — this keeps copy easy to change/localize later without needing to backfill historical rows.
 >
-> **Rows are inserted exclusively by SECURITY DEFINER database triggers, never by application code.** `notify_on_beacon_join_insert/update/delete` (on `beacon_joins`) and `notify_on_beacon_update` (on `beacons`) — all defined alongside the RLS policies in `supabase/schema.sql` — cover, respectively: a new join request (host notified), a request accepted/rejected (joiner notified), an accepted member leaving (host notified), and the host editing an already-live beacon's details (every accepted member notified). Driving this from triggers rather than the server actions in `src/app/actions/` means every current and future mutation path gets consistent notification coverage automatically, and lets `notifications` ship with **no client-facing INSERT policy at all** — a user can never fabricate a notification for someone else. A `MATCHED` status transition is deliberately **not** one of these five types; it already has its own dedicated blocking `MatchedDialog` UX (via `MatchedBeaconWatcher`, see Section 5's Join Request Flow step 5), not a notification-center entry.
+> **Rows are inserted exclusively by SECURITY DEFINER database triggers, never by application code.** `notify_on_beacon_join_insert/update/delete` (on `beacon_joins`) and `notify_on_beacon_update` (on `beacons`) — all defined alongside the RLS policies in `supabase/schema.sql` — cover, respectively: a new join request (host notified), a request accepted/rejected (joiner notified), an accepted member leaving (host notified), and the host editing an already-live beacon's details (every accepted member notified). Driving this from triggers rather than the server actions in `src/app/actions/` means every current and future mutation path gets consistent notification coverage automatically, and lets `notifications` ship with **no client-facing INSERT policy at all** — a user can never fabricate a notification for someone else. A `MATCHED` status transition is deliberately **not** one of these five types; it already has its own dedicated blocking `MatchedDialog` UX (via `MatchedBeaconWatcher`, see Section 5's Join Request Flow step 6), not a notification-center entry.
 
 ### Row Level Security
 
@@ -140,10 +147,11 @@ RLS must be enabled on all three tables with the following policies:
 | `beacon_joins`  | SELECT          | Where `status = 'ACCEPTED'` (accepted members are public on active beacons) OR `user_id = auth.uid()` (own requests) OR the beacon is owned by `auth.uid()` (host reviewing requests)                                                                                                        |
 | `beacon_joins`  | INSERT          | Only where `user_id = auth.uid()` AND the target beacon is not owned by `auth.uid()` (cannot join your own beacon)                                                                                                                                                                           |
 | `beacon_joins`  | UPDATE          | Only where the target beacon is owned by `auth.uid()` (only the host can Accept/Reject)                                                                                                                                                                                                      |
-| `beacon_joins`  | DELETE          | Only where `user_id = auth.uid()` (a joiner can cancel a PENDING request or leave after being ACCEPTED)                                                                                                                                                                                      |
+| `beacon_joins`  | DELETE          | Where `user_id = auth.uid()` (a joiner can cancel a PENDING request or leave after being ACCEPTED) OR the target beacon is owned by `auth.uid()` (the host removing an already-ACCEPTED member, `removeMember`) — the same inline `beacons` ownership subquery already used by the UPDATE policy above, not a recursion risk since it only reads `beacons`' SELECT policy (itself routed through the SECURITY DEFINER `is_accepted_beacon_member`, not back into `beacon_joins`)                    |
 | `notifications` | SELECT          | Only where `recipient_id = auth.uid()`                                                                                                                                                                                                                                                       |
 | `notifications` | UPDATE          | Only where `recipient_id = auth.uid()` (marking read/all-read)                                                                                                                                                                                                                               |
-| `notifications` | INSERT/DELETE   | No policy for `authenticated` at all — every row is created by the SECURITY DEFINER trigger functions described above, which bypass RLS                                                                                                                                                      |
+| `notifications` | DELETE          | Only where `recipient_id = auth.uid()` (dismissing one notification or "Clear all")                                                                                                                                                                                                          |
+| `notifications` | INSERT          | No policy for `authenticated` at all — every row is created by the SECURITY DEFINER trigger functions described above, which bypass RLS                                                                                                                                                      |
 
 ### Realtime
 
@@ -212,6 +220,36 @@ export const PLAYSTYLE_OPTIONS = [
 ];
 ```
 
+### City Scoping (`/constants/citiesConfig.ts`)
+
+A second, independent extensibility list following the exact same pattern, driving the Profile screen's City field and the Match Feed's IRL scoping (Section 6):
+
+```typescript
+export interface CitySetting {
+  key: string;
+  label: string;
+}
+
+// Adding a new city is a one-line addition here — no schema/migration
+// needed. `key` is the stable slug persisted on profiles.city/beacons.city.
+export const CITIES_CONFIG: CitySetting[] = [
+  { key: "new_york", label: "New York City" },
+  { key: "los_angeles", label: "Los Angeles" },
+  { key: "chicago", label: "Chicago" },
+  { key: "toronto", label: "Toronto" },
+  { key: "montreal", label: "Montreal" },
+  { key: "vancouver", label: "Vancouver" },
+  { key: "london", label: "London" },
+  { key: "paris", label: "Paris" },
+  { key: "berlin", label: "Berlin" },
+  { key: "sydney", label: "Sydney" },
+];
+
+export const CITY_MAP: Record<string, CitySetting> = Object.fromEntries(
+  CITIES_CONFIG.map((city) => [city.key, city]),
+);
+```
+
 ---
 
 ## 5. UI/UX Interface Layout & Screen Flows
@@ -226,7 +264,8 @@ Three tabs, in this left-to-right order: **Active Beacons**, **LFG**, **Profile*
 ### Screen 1: Profile (`/profile/page.tsx`) — identity only
 
 - **Standard Fields:** Text inputs for `username` and `discord_handle` (the latter prefilled from Discord OAuth identity metadata, see Section 2, and editable).
-- Saving submits `username`/`discord_handle` in one upsert to `profiles` (see Section 3); the `preferred_*` search-setting columns are left untouched by this form (they're edited via the LFG Search dialog instead, see Screen 2).
+- **City Field (`CitySelector`):** A config-driven autocomplete (options from `CITIES_CONFIG`, see Section 4) selecting `profiles.city`. Optional — a user who only ever plays Online can leave it unset. This is what lets the Match Feed (Section 5's Screen 3, Section 6) automatically scope IRL beacons to the viewer's own city while still always showing every Online beacon.
+- Saving submits `username`/`discord_handle`/`city` in one upsert to `profiles` (see Section 3); the `preferred_*` search-setting columns are left untouched by this form (they're edited via the LFG Search dialog instead, see Screen 2).
 - **Sign Out:** A destructive-styled (red) button below the profile form that calls `supabase.auth.signOut()` and redirects to `/login`.
 
 ### Screen 2: LFG (`/page.tsx`) — action button + Search dialog
@@ -252,9 +291,10 @@ The LFG tab's base state renders **only the pulsing action button** (plus a smal
    - **Format Selector:** Button list of `GAMES_CONFIG[game].formats` (hidden when the game only has one format).
    - **Match Type Switch:** Segmented toggle between **IRL** and **ONLINE**.
    - **Location Field (conditional):** Required text input, shown only when Match Type is **IRL**.
+   - **Scheduled Date & Time (conditional):** A `DatePicker` + `TimePicker` pair, required only when Match Type is **IRL** (combined into `beacons.scheduled_at`). Left unset for **ONLINE** beacons, which fall back to `created_at` wherever a beacon's date/time is displayed or filtered (Match Feed cards, `BeaconDetailDialog`'s "When" row, and the Date filter in Section 6).
    - **Playstyle Toggle:** Segmented toggle between **Casual** and **Competitive**.
    - **Conditional Power Bracket Interface (Framer Motion Enhanced, multi-select):** Shown only when `selectedGame === 'MTG'`. Each of the 5 nodes toggles independently — any combination can be selected. Submission is blocked until at least one bracket is selected while the game is MTG; switching away from MTG clears the selection.
-   - **Players Needed Stepper:** Numeric stepper (2–6, default 2) — total group size including the host.
+   - **Players Needed Stepper:** Numeric stepper (2–6, default 2) — total group size including the host. When editing an already-live beacon (`updateBeacon`), this can't be lowered below the beacon's current accepted group size (accepted `beacon_joins` + the host) — `updateBeacon` re-checks that count server-side and rejects the edit with an error rather than silently shrinking the cap below who's already in.
    - **Notes Field (optional):** A free-text textarea (300 char max, with a live character counter) for anything else players should know (deck theme, house rules, etc.). Reset to empty each time the dialog opens — unlike the other fields, it is a one-off message for this search, not a persisted preference.
    - A **Search** button at the bottom of the dialog submits these fields (see `createBeacon` below); a **Cancel** button (or clicking the backdrop) closes the dialog without starting a search.
 2. **Search Initialization:** Clicking **Search** calls `createBeacon` with the dialog's field values. This both (a) updates the user's `profiles.preferred_*` columns to match (so the dialog pre-fills with this search next time, and the Match Feed keeps filtering off it), and (b) snapshots those same values into a new `beacons` row (game, format, playstyle, brackets → `power_tiers`, match type, location, `max_players`, notes). The `notes` value is stored only on the `beacons` row, not persisted onto `profiles`. Blocked if the user already has an ACTIVE beacon (enforced by the `beacons_one_active_per_user` index). On success the dialog closes and the button starts its infinite pulsing glow animation, mapped to the current game's `glowColor`.
@@ -262,16 +302,17 @@ The LFG tab's base state renders **only the pulsing action button** (plus a smal
 
 ### Screen 3: Active Beacons (`/beacons/page.tsx`) — browse + host management
 
-The left tab. Combines the Match Feed (browsing others' beacons) with the host's own Beacon Panel (if they have an ACTIVE beacon), so all beacon-related activity lives in one place separate from the LFG action button. When the Match Feed has no results, its "No active beacons match your filters yet." message is centered in the remaining screen space (not top-aligned).
+The left tab. Combines the Match Feed (browsing others' beacons) with the host's own Beacon Panel (if they have an ACTIVE beacon), so all beacon-related activity lives in one place separate from the LFG action button. The Match Feed's filter bar (see below) is always shown above the feed, even with zero results, so its "No active beacons match your filters yet." message renders directly beneath the filters/heading rather than centered in the remaining screen space.
 
 **My Beacon Panel** (shown at the top of this screen only when the user has an ACTIVE beacon):
 
 - Lists pending join requests (`beacon_joins.status = 'PENDING'`) as requester profile cards (avatar, username, discord_handle) with **Accept** / **Reject** actions.
 - Lists already-accepted members (`status = 'ACCEPTED'`) so the host can track pod fill progress against `max_players`. Discord's public API does not allow third-party apps to auto-create a group DM for arbitrary users (the `gdm.join` OAuth scope needed is restricted/deprecated for new apps), and a profile-by-ID deep link (`discord.com/users/<id>`) isn't a viable substitute either — Discord only resolves that for users you already share a server with or are friends with, so for two strangers matched by this app it just bounces to `/channels/@me` regardless of how correct the id is. The only mechanism that reliably works for strangers is Discord's own "Add Friend" search-by-username flow, so each Group Member row has its own **Copy Handle** button, plus a **Copy All Handles** button below the list, so the host can paste handles straight into that search.
+- Each Group Member row also has a **Remove** button (host-only) for dropping an already-ACCEPTED member from the group — e.g. a no-show or a bad fit before the beacon is marked matched. It opens `ConfirmRemoveMemberDialog` (same lightweight warning-dialog pattern as `ConfirmMarkMatchedDialog`) before calling `removeMember`, which simply deletes that `beacon_joins` row (same effect on group size/re-request eligibility as the member leaving voluntarily via `leaveBeacon`). Unlike a voluntary leave, this notifies the *removed member* rather than the host — see the `REMOVED_FROM_BEACON` type below.
 - Accept/Reject actions are disabled once accepted joiners plus the host reach `max_players`.
 - **Mark as Matched button:** host-only. Rather than immediately flipping the beacon's `status`, it first opens a lightweight **warning dialog** (`ConfirmMarkMatchedDialog`) reminding the host to add everyone on Discord (via the Copy Handle buttons above) before continuing, since marking as matched removes the beacon from the match feed for good. Only once the host clicks **Mark as Matched** inside that dialog does the beacon's `status` actually become `MATCHED` (manual action — no automatic transition based on fill count).
 
-**Match Feed** (below My Beacon Panel, always shown): browsing UI for other users' active beacons, filtered automatically using the viewer's own `profiles` settings (game, playstyle, and — for MTG — an overlap check against `preferred_brackets`). See Section 6. Each card is a summary only (host, format/type/location/brackets, accepted members, and the viewer's own join status badge if they've already requested) — it has no action button. Clicking anywhere on the card opens a **Beacon Detail dialog** (`BeaconDetailDialog`) showing the full beacon information — host identity, game/format/playstyle/match type/location, power brackets, `notes`, and the accepted-members list — plus the **Request to Join** action/status, which only ever appears in this dialog.
+**Match Feed** (below My Beacon Panel, always shown): browsing UI for other users' active beacons. It always filters by the viewer's own `playstyle_key` (from `profiles.preferred_playstyle`) **and by city scoping** (not user-adjustable, same as `playstyle_key` — see Section 6): Online beacons always show regardless of city, while IRL beacons are always restricted to ones whose snapshotted `city` matches the viewer's own `profiles.city`; a viewer with no city on file sees zero IRL beacons (an inline hint on the screen points them to the Profile tab) but still sees every Online beacon. On top of that sits an adjustable **`BeaconFilters`** bar (`/components/BeaconFilters.tsx`) rendered above the "Match Feed" heading, so it's the first browsing control on the whole screen. It renders as a single row of pill-shaped chips that **wraps onto additional lines rather than horizontally scrolling** once it runs out of width (no overflow scrollbar) — one chip per filter, each labeled with its current value or a neutral placeholder (e.g. "Date", "Format") when unset, and styled distinctly (filled) once active. Clicking a chip opens a small `Popover` anchored to it containing that filter's actual control; only one popover is open at a time. The filters are: **Game** (segmented buttons, defaulting to the viewer's `preferred_game`, with an "All Games" option — changing it resets Format and Power Bracket, mirroring `LfgDialog`'s `handleGameChange`), **Match Type** (All / IRL / Online), **Format** (chip only rendered once a specific game with more than one format is selected), **Date** (a clearable date picker matched against each beacon's effective date — `scheduled_at`, falling back to `created_at` for beacons with none), and **Power Bracket** (chip only rendered for games with `hasPowerTiers`; unlike Game, this does **not** default from `profiles.preferred_brackets` — it always starts unset/unrestricted, since that column reflects the viewer's last one-off LFG *search*, not a standing browse preference, and silently applying it here previously hid beacons outside whatever bracket the viewer happened to search for last with no visible cause). A **Clear all** text link (shown only once at least one filter differs from the neutral "show everything" state) resets every filter, including Game, back to "All" (this never touches city scoping, which isn't part of `BeaconFiltersValue`). See Section 6. Each card is a summary only (host, format/type/location/city/brackets, accepted members, and the viewer's own join status badge if they've already requested) — it has no action button. Clicking anywhere on the card opens a **Beacon Detail dialog** (`BeaconDetailDialog`) showing the full beacon information — host identity, game/format/playstyle/match type/location/city, power brackets, `notes`, and the accepted-members list — plus the **Request to Join** action/status, which only ever appears in this dialog.
 
 ### Join Request Flow (Match Feed → Host Approval → Mutual Reveal)
 
@@ -279,36 +320,83 @@ The left tab. Combines the Match Feed (browsing others' beacons) with the host's
 2. Clicking **Request to Join** (from the detail dialog — the card itself has no join button) inserts a `beacon_joins` row with `status = 'PENDING'`. The dialog then shows a "Pending" state to the searcher, also reflected as a status badge back on the card.
 3. The host sees the new pending request appear in real time on their own Beacon Panel (Active Beacons tab), including the requester's profile. A `notifications` row is also inserted for the host (`JOIN_REQUEST`, via a database trigger — see Section 3), which the header `NotificationBell` surfaces as an unread badge plus, if the site is currently open, a native OS notification (via the browser `Notification` API, if permission was granted) and an in-app toast. Clicking the notification, toast, or its entry in the bell dropdown navigates the host to `/beacons` — the Beacon Panel there is where they act.
 4. The host clicks **Accept** or **Reject**. On accept, `status` becomes `'ACCEPTED'` and the requester is added to the visible members list on both the host's panel and the Match Feed card; the requester now also sees the full accepted-members list (including discord handles) for that beacon. On reject, `status` becomes `'REJECTED'` and the request is terminal (no re-request in this scope). Either way, a trigger inserts a `JOIN_ACCEPTED`/`JOIN_REJECTED` notification for the requester, surfaced the same way via `NotificationBell`.
-5. When the host marks the beacon as matched (see My Beacon Panel above), every ACCEPTED member (not the host, who already knows) is shown a blocking **`MatchedDialog`** — telling them to head to Discord and warning that the beacon's card is about to disappear from the match feed (since `MATCHED` beacons no longer satisfy the `status = 'ACTIVE'` filter every match feed query uses). This is a dialog rather than a dismissable snackbar/notification specifically because it's the only cue those members get that the card will vanish, and deliberately isn't part of the `notifications` bell (see Section 3). Delivered via `MatchedBeaconWatcher`'s realtime subscription (a `beacons` UPDATE handler checking `status = 'MATCHED'` plus an own-`beacon_joins` lookup), subject to the same foreground-only caveat as the rest of that component (see Section 7).
-6. Two further trigger-backed notification types round out the notification center (not tied to the join flow above): **`MEMBER_LEFT`** — the host is notified when an already-accepted member leaves their beacon (cancelling a still-PENDING request notifies no one); and **`BEACON_UPDATED`** — every accepted member is notified when the host edits their live beacon's details via `updateBeacon` (Section 5's My Beacon Panel "Edit Beacon" button).
+5. At any point before the beacon is matched, the searcher can back out from the **Beacon Detail dialog** itself: if their request is still `PENDING` the button reads **Cancel Request**; once `ACCEPTED` it reads **Leave**. Both call the same `leaveBeacon` action, which simply deletes their own `beacon_joins` row (the unique `(beacon_id, user_id)` constraint means they're free to request to join again afterwards, unlike a terminal `REJECTED` row). Leaving after being `ACCEPTED` triggers the host-facing `MEMBER_LEFT` notification described below; cancelling a still-`PENDING` request notifies no one.
+6. When the host marks the beacon as matched (see My Beacon Panel above), every ACCEPTED member (not the host, who already knows) is shown a blocking **`MatchedDialog`** — telling them to head to Discord and warning that the beacon's card is about to disappear from the match feed (since `MATCHED` beacons no longer satisfy the `status = 'ACTIVE'` filter every match feed query uses). This is a dialog rather than a dismissable snackbar/notification specifically because it's the only cue those members get that the card will vanish, and deliberately isn't part of the `notifications` bell (see Section 3). Delivered via `MatchedBeaconWatcher`'s realtime subscription (a `beacons` UPDATE handler checking `status = 'MATCHED'` plus an own-`beacon_joins` lookup), subject to the same foreground-only caveat as the rest of that component (see Section 7).
+7. A few further trigger-backed notification types round out the notification center (not tied to the join flow above): **`MEMBER_LEFT`** — the host is notified when an already-accepted member leaves their beacon voluntarily via `leaveBeacon` (cancelling a still-PENDING request notifies no one); **`REMOVED_FROM_BEACON`** — the removed member (not the host) is notified when the host removes them via `removeMember` (Section 5's My Beacon Panel "Remove" button) — the same `beacon_joins` DELETE trigger that fires `MEMBER_LEFT` distinguishes the two cases by comparing `auth.uid()` against the deleted row's `user_id` (member left) versus the beacon's `user_id` (host removed them); and **`BEACON_UPDATED`** — every accepted member is notified when the host edits their live beacon's details via `updateBeacon` (Section 5's My Beacon Panel "Edit Beacon" button).
 
 ---
 
 ## 6. Match Feed Query Layout (`/components/MatchFeed.tsx`)
 
-A component updating dynamically via real-time channel infrastructure. It takes the viewer's `profile` (not a separate filter-override state) and their user id as props. The query excludes the viewer's own beacon and expired rows, joins each beacon's `beacon_joins` so accepted members can be rendered on the card, and for MTG uses an array **overlap** check (`&&`) between the beacon's `power_tiers` and the viewer's `preferred_brackets` — any shared bracket counts as a match:
+A component updating dynamically via real-time channel infrastructure. It takes the viewer's `profile` and their user id as props, plus owns its own **`BeaconFiltersValue`** state (`/components/BeaconFilters.tsx`, rendered as the wrapping chip-and-popover bar described in Section 5) driving the filter bar described in Section 5. That state's *initial* value only seeds `gameKey` from the viewer's profile (`profile.preferred_game`) so first load still browses meaningfully instead of showing every game at once — every other field, including `powerBrackets`, starts unset/unrestricted (see Section 5's Power Bracket note on why it deliberately does **not** seed from `profiles.preferred_brackets`); from there the user can broaden or narrow any field (including Game, down to "All Games") independently of `profiles`.
+
+**Any beacon the viewer has a live `beacon_joins` row on (`PENDING` or `ACCEPTED`) is always included in the results, unconditionally** — fetched via a separate, unfiltered query (against `beacon_joins` with `beacons!inner(...)` embedded) run every time alongside the filtered query below, then merged in (de-duplicated by id) ahead of the filtered rows. This exists so a beacon the viewer is actively part of can never disappear from their own feed just because they later change a browsing filter, or because it fails the always-on `playstyle_key`/city scoping described next — they still need to see it to track status, coordinate, or leave. That still-live join is itself scoped to `beacons.status = 'ACTIVE'` and not yet expired (a `MATCHED` beacon is deliberately excluded here too, same as everywhere else — it has its own dedicated `MatchedDialog` flow instead, see Section 5's Join Request Flow step 6).
+
+The separate filtered query always excludes the viewer's own beacon and expired rows, always filters by `playstyle_key` **and by city scoping** (city isn't part of `BeaconFiltersValue` — it's an always-on constraint like `playstyle_key`, not a user-adjustable filter): Online beacons (`type = 'ONLINE'`) always pass regardless of city; IRL beacons only pass if their snapshotted `city` equals the viewer's own `profiles.city`. If the viewer has no city on file, IRL beacons are excluded from this filtered query outright (it's skipped entirely when `filters.matchType === "IRL"`, since there's nothing to compare against) while Online beacons still show — the always-included joined beacons above are unaffected by this and still show regardless. The query joins each beacon's `beacon_joins` so accepted members can be rendered on the card, and conditionally applies each remaining filter field (game/format as plain equality checks once set to something other than "All", power brackets as an array **overlap** check `&&` once at least one is selected). The **Date** filter isn't a plain column filter — since ONLINE beacons have no `scheduled_at` — so it's applied client-side after the fetch, comparing each row's effective date (`scheduled_at ?? created_at`) against the selected day:
 
 ```typescript
-// Filters directly off the viewer's own profile settings — there is no
-// separate dashboard override state to read from.
-const fetchActiveBeacons = async (profile: Profile, currentUserId: string) => {
-  let query = supabase
-    .from("beacons")
-    .select("*, profiles(*), beacon_joins(*, profiles(*))")
-    .eq("game_key", profile.preferred_game)
-    .eq("playstyle_key", profile.preferred_playstyle)
-    .eq("status", "ACTIVE")
-    .gt("expires_at", new Date().toISOString())
-    .neq("user_id", currentUserId);
+// filters is BeaconFiltersValue — local component state seeded from the
+// viewer's profile, not a fixed reflection of it.
+const fetchActiveBeacons = async (
+  profile: Profile,
+  currentUserId: string,
+  filters: BeaconFiltersValue,
+) => {
+  // Always-included, unfiltered: beacons the viewer has a live join on.
+  const { data: joinedData } = await supabase
+    .from("beacon_joins")
+    .select("beacons!inner(*, profiles(*), beacon_joins(*, profiles(*)))")
+    .eq("user_id", currentUserId)
+    .in("status", ["PENDING", "ACCEPTED"])
+    .eq("beacons.status", "ACTIVE")
+    .gt("beacons.expires_at", new Date().toISOString());
+  const joinedBeacons = (joinedData ?? []).map((row) => row.beacons);
 
-  // Overlap match: any shared bracket between the viewer's acceptable
-  // brackets and the beacon's snapshotted power_tiers counts as a match.
-  if (profile.preferred_game === "MTG" && profile.preferred_brackets?.length) {
-    query = query.overlaps("power_tiers", profile.preferred_brackets);
+  // City scoping short-circuit: an IRL-only view is impossible to satisfy
+  // for a viewer with no city on file — joinedBeacons above are unaffected.
+  let filteredRows = [];
+  if (!(filters.matchType === "IRL" && !profile.city)) {
+    let query = supabase
+      .from("beacons")
+      .select("*, profiles(*), beacon_joins(*, profiles(*))")
+      .eq("playstyle_key", profile.preferred_playstyle)
+      .eq("status", "ACTIVE")
+      .gt("expires_at", new Date().toISOString())
+      .neq("user_id", currentUserId);
+
+    // City scoping: Online beacons always show; IRL beacons are always
+    // restricted to the viewer's own city, regardless of the Match Type
+    // filter below.
+    if (filters.matchType === "ONLINE") {
+      query = query.eq("type", "ONLINE");
+    } else if (filters.matchType === "IRL") {
+      query = query.eq("type", "IRL").eq("city", profile.city);
+    } else if (profile.city) {
+      query = query.or(`type.eq.ONLINE,and(type.eq.IRL,city.eq.${profile.city})`);
+    } else {
+      query = query.eq("type", "ONLINE");
+    }
+
+    if (filters.gameKey !== "ALL") query = query.eq("game_key", filters.gameKey);
+    if (filters.formatKey !== "ALL") query = query.eq("format_key", filters.formatKey);
+    // Overlap match: any shared bracket between the selected brackets and
+    // the beacon's snapshotted power_tiers counts as a match.
+    if (filters.powerBrackets.length) {
+      query = query.overlaps("power_tiers", filters.powerBrackets);
+    }
+
+    const { data } = await query;
+    filteredRows = data ?? [];
+    if (filters.date) {
+      filteredRows = filteredRows.filter((beacon) =>
+        isSameDay(new Date(beacon.scheduled_at ?? beacon.created_at), filters.date),
+      );
+    }
   }
 
-  const { data } = await query;
-  setBeacons(data);
+  // Merge, joined beacons first, de-duplicated against the filtered rows.
+  const joinedIds = new Set(joinedBeacons.map((b) => b.id));
+  setBeacons([...joinedBeacons, ...filteredRows.filter((b) => !joinedIds.has(b.id))]);
 };
 ```
 
@@ -322,14 +410,14 @@ This implementation pass targets **installability**, plus foreground join-reques
 
 - `app/manifest.ts` (Next.js built-in manifest convention) with name, short_name, theme/background colors, and 192x192 / 512x512 icons in `public/`.
 - No service worker, no offline caching in this scope.
-- **Notification center (not push):** `NotificationBell` (rendered in `TabBar`'s desktop navbar and a dedicated mobile top bar, since the mobile layout previously had no top header) reads/subscribes to the persisted `notifications` table (Section 3) and shows an unread-count badge, a dropdown of recent notifications, plus a native OS `Notification` and in-app toast when a new one arrives while the tab is open. `MatchedBeaconWatcher` (mounted app-wide in the `(app)` layout, formerly `JoinRequestNotifier`) separately shows a blocking `MatchedDialog` to accepted members when their beacon is marked `MATCHED` (see Section 5's Join Request Flow, step 5). Both only fire while the PWA/tab process is actually running (foreground or backgrounded tab) — there is no service worker or server-triggered push involved, so nothing is delivered while the app is fully closed. The persisted `notifications` table means the bell's unread history survives reloads/relaunches even though live delivery is foreground-only.
+- **Notification center (not push):** `NotificationBell` (rendered in `TabBar`'s desktop navbar and a dedicated mobile top bar, since the mobile layout previously had no top header) reads/subscribes to the persisted `notifications` table (Section 3) and shows an unread-count badge, a dropdown of recent notifications, plus a native OS `Notification` and in-app toast when a new one arrives while the tab is open. Each notification row has its own dismiss (`X`) button (`deleteNotification`), and a **Clear all** link above the list (`deleteAllNotifications`) removes every notification for the user at once — both optimistically update local state before the server action resolves, and both are scoped to `recipient_id = auth.uid()` at the query level as well as by RLS (Section 3). `MatchedBeaconWatcher` (mounted app-wide in the `(app)` layout, formerly `JoinRequestNotifier`) separately shows a blocking `MatchedDialog` to accepted members when their beacon is marked `MATCHED` (see Section 5's Join Request Flow, step 6). Both only fire while the PWA/tab process is actually running (foreground or backgrounded tab) — there is no service worker or server-triggered push involved, so nothing is delivered while the app is fully closed. The persisted `notifications` table means the bell's unread history survives reloads/relaunches even though live delivery is foreground-only.
 
 ---
 
 ## 8. Explicit Scope Exclusions
 
 - No true push notifications (no service worker, no server-triggered delivery while the app is fully closed) and no offline/service-worker caching — see Section 7. The foreground `Notification`/snackbar join-request alert is not a substitute for push.
-- No geolocation/proximity matching for IRL beacons — `location_name` remains a free-text field.
+- No geolocation/proximity matching for IRL beacons — `location_name` remains a free-text venue name, and city-level scoping (`profiles.city`/`beacons.city`, Section 3) is a fixed list of exact-match slugs (`CITIES_CONFIG`, Section 4), not real geolocation or a distance/radius calculation.
 - No automated expiry sweep job (pg_cron / scheduled Edge Function); expiry is enforced only via query-time `expires_at` filtering. A follow-up scheduled job is recommended but out of scope for this pass.
 - No pagination/infinite scroll on the Match Feed (MVP scale assumption).
 - No re-request after a `REJECTED` join (terminal state for this pass).
@@ -355,8 +443,14 @@ This implementation pass targets **installability**, plus foreground join-reques
 12. Add `app/manifest.ts` and icons per Section 7.
 13. Add the optional `notes` field to the Search dialog and `beacons` table; add `BeaconDetailDialog` (opened by clicking a Match Feed card) per Section 5; add join-request alerting (native `Notification` + in-app snackbar on new join requests, mounted in the `(app)` layout) per Sections 5 and 7.
 14. Add per-member **Copy Handle** / **Copy All Handles** buttons to the Group Members list, and a **Mark as Matched** button that opens `ConfirmMarkMatchedDialog` (a warning reminding the host to add everyone on Discord first) before `markBeaconMatched` actually runs, per Section 5 and Section 8's Discord API constraint.
-15. Extend the join-request alerting with a `MatchedDialog`, shown to each accepted member (not the host) when their beacon transitions to `MATCHED`, per Section 5's Join Request Flow step 5.
+15. Extend the join-request alerting with a `MatchedDialog`, shown to each accepted member (not the host) when their beacon transitions to `MATCHED`, per Section 5's Join Request Flow step 6.
 16. Add the persisted `notifications` table + `notification_type` enum + SECURITY DEFINER triggers (`notify_on_beacon_join_insert/update/delete`, `notify_on_beacon_update`) per Section 3, covering join request / accepted / rejected / member-left / beacon-updated. Build `NotificationBell` (unread badge, dropdown, toast + native notification on new inserts, realtime-subscribed with no server-side `filter` — RLS's `recipient_id = auth.uid()` check alone scopes each subscriber to their own rows, matching every other realtime subscription in this codebase) and mount it in `TabBar`'s desktop navbar plus a new mobile top bar. Narrow the former `JoinRequestNotifier` down to just the `MatchedDialog` watcher and rename it `MatchedBeaconWatcher`, since `NotificationBell` now owns the join-request/accepted/rejected alerts via the persisted table instead of listening to `beacon_joins`/`beacons` directly.
+17. Add `profiles.city` (Section 3) plus the config-driven `constants/citiesConfig.ts` (`CITIES_CONFIG`/`CITY_MAP`, Section 4) and its `CitySelector` autocomplete on the Profile screen (Section 5). Add `beacons.city`, snapshotted from `profiles.city` by `createBeacon`/`updateBeacon` the same way every other `preferred_*` field is snapshotted. Wire the always-on city scoping into `MatchFeed`'s query (Section 6): Online beacons always show, IRL beacons are restricted to the viewer's own city.
+18. Add `beacons.scheduled_at` (Section 3) and the Search dialog's Date/Time picker fields, required for IRL and validated in `validateStartSearchInput` (Section 5's Screen 2); display it (falling back to `created_at` for ONLINE beacons) on Match Feed cards and in `BeaconDetailDialog`'s "When" row.
+19. Add the adjustable `BeaconFilters` bar (`/components/BeaconFilters.tsx`) above the Match Feed — Game, Match Type, Format, Date, and Power Bracket, per Section 5's Screen 3 and Section 6 — seeded from the viewer's profile but independently adjustable, with a "Clear all" reset to the neutral `NEUTRAL_BEACON_FILTERS` state.
+20. Add a **Cancel Request**/**Leave** action to `BeaconDetailDialog` for the searcher's own join (`leaveBeacon`, Section 5's Join Request Flow step 5), and per-notification delete plus a "Clear all" action to `NotificationBell` (`deleteNotification`/`deleteAllNotifications`, Section 7), backed by the `notifications` DELETE RLS policy (Section 3).
+21. Add a host-only **Remove** button per Group Member row in My Beacon Panel (Section 5), opening `ConfirmRemoveMemberDialog` before calling the new `removeMember` server action, which deletes that member's `beacon_joins` row. Update the `beacon_joins` DELETE RLS policy (Section 3) to also allow deletion where the target beacon is owned by `auth.uid()`, alongside the existing `user_id = auth.uid()` clause.
+22. Add the `REMOVED_FROM_BEACON` notification type (Section 3's `notification_type` enum) and update the `beacon_joins` DELETE trigger to branch on whether `auth.uid()` matches the deleted row's `user_id` (voluntary leave → `MEMBER_LEFT` to the host, unchanged) or the beacon's `user_id` (host removal → `REMOVED_FROM_BEACON` to the removed member instead). Wire the new type into `NotificationBell`'s icon map and `describeNotification()`, per Section 5's Join Request Flow step 7.
 ```
 
 If you have questions at any point, ask me directly.

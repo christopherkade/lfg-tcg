@@ -4,6 +4,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { format, isToday } from "date-fns";
 import { Alert, Button, Chip } from "@mui/material";
 import { GAMES_CONFIG } from "@/constants/gamesConfig";
+import { CITY_MAP } from "@/constants/citiesConfig";
 import type { BeaconWithRelations } from "@/types/database";
 
 interface BeaconDetailDialogProps {
@@ -102,7 +103,12 @@ export function BeaconDetailDialog({
               {beacon.location_name && (
                 <div className="flex justify-between">
                   <span className="text-zinc-500">Location</span>
-                  <span>{beacon.location_name}</span>
+                  <span>
+                    {beacon.location_name}
+                    {beacon.city && CITY_MAP[beacon.city]
+                      ? ` (${CITY_MAP[beacon.city].label})`
+                      : ""}
+                  </span>
                 </div>
               )}
               {beacon.power_tiers && beacon.power_tiers.length > 0 && (

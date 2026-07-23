@@ -89,5 +89,5 @@ export function OwnBeaconPanel({
     return null;
   }
 
-  return <MyBeaconPanel beacon={beacon} />;
+  return <MyBeaconPanel beacon={beacon} onChanged={fetchOwnBeacon} />;
 }

@@ -8,6 +8,7 @@ export type NotificationType =
   | "JOIN_ACCEPTED"
   | "JOIN_REJECTED"
   | "MEMBER_LEFT"
+  | "REMOVED_FROM_BEACON"
   | "BEACON_UPDATED";
 
 export interface Profile {
@@ -16,6 +17,7 @@ export interface Profile {
   username: string;
   discord_handle: string;
   avatar_url: string | null;
+  city: string | null; // key into CITIES_CONFIG (constants/citiesConfig.ts), or null if unset
   preferred_game: GameKey;
   preferred_format: string;
   preferred_playstyle: PlaystyleKey;
@@ -34,6 +36,7 @@ export interface Beacon {
   power_tiers: number[] | null;
   type: MatchType;
   location_name: string | null;
+  city: string | null; // snapshot of the host's profiles.city at creation/edit time
   scheduled_at: string | null;
   max_players: number;
   notes: string | null;

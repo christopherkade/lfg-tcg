@@ -73,7 +73,53 @@ export async function leaveBeacon(
   revalidatePath("/beacons");
   return {};
 }
+/**
+ * Lets the host remove an already-ACCEPTED member from their own beacon
+ * (e.g. a no-show or bad fit). Only affects ACCEPTED rows — pending
+ * requests are handled via `respondToJoin`'s Reject action instead.
+ * Simply deletes the beacon_joins row, same as `leaveBeacon`, so the
+ * removed user is free to request to join again afterwards if the host
+ * reconsiders.
+ */
+export async function removeMember(
+  joinId: string,
+): Promise<BeaconActionResult> {
+  const { supabase, user } = await requireUser();
 
+  const { data: join } = await supabase
+    .from("beacon_joins")
+    .select("id, status, beacons(user_id)")
+    .eq("id", joinId)
+    .maybeSingle();
+
+  if (!join || !join.beacons) {
+    return { error: "This member no longer exists." };
+  }
+
+  const hostBeacon = Array.isArray(join.beacons)
+    ? join.beacons[0]
+    : join.beacons;
+  if (!hostBeacon || hostBeacon.user_id !== user.id) {
+    return { error: "Only the host can remove a member." };
+  }
+  if (join.status !== "ACCEPTED") {
+    return { error: "Only accepted members can be removed." };
+  }
+
+  const { error } = await supabase
+    .from("beacon_joins")
+    .delete()
+    .eq("id", joinId);
+
+  if (error) {
+    console.error("removeMember failed:", error);
+    return { error: `Could not remove this member: ${error.message}` };
+  }
+
+  revalidatePath("/");
+  revalidatePath("/beacons");
+  return {};
+}
 export async function respondToJoin(
   joinId: string,
   decision: "ACCEPTED" | "REJECTED",

@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { LogOut } from "lucide-react";
 import { Alert, Button, TextField } from "@mui/material";
 import {
@@ -8,6 +8,7 @@ import {
   signOut,
   type ProfileFormState,
 } from "@/app/actions/profile";
+import { CitySelector } from "@/components/CitySelector";
 import type { Profile } from "@/types/database";
 
 interface ProfileFormProps {
@@ -25,6 +26,7 @@ export function ProfileForm({
     upsertProfile,
     initialState,
   );
+  const [city, setCity] = useState<string | null>(initialProfile?.city ?? null);
 
   return (
     <div className="flex w-full max-w-md flex-col gap-8">
@@ -48,6 +50,9 @@ export function ProfileForm({
           fullWidth
           size="small"
         />
+
+        <input type="hidden" name="city" value={city ?? ""} />
+        <CitySelector value={city} onChange={setCity} />
 
         {state?.error && <Alert severity="error">{state.error}</Alert>}
 
