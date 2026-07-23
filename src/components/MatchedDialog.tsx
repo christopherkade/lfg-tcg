@@ -11,11 +11,11 @@ interface MatchedDialogProps {
 
 /**
  * Shown to an accepted member (not the host — they already know, they're
- * the one who clicked Mark as Matched) when a beacon they joined
+ * the one who clicked Mark as Matched) when a pod they joined
  * transitions to MATCHED. Tells them to check their Discord DMs, since the
- * host reaches out to the group over Discord (see MyBeaconPanel's "Copy
+ * host reaches out to the group over Discord (see MyPodPanel's "Copy
  * Handle"/"Add Friend" flow — Discord's API doesn't allow this app to send
- * DMs itself). Since MATCHED beacons also drop out of every match feed
+ * DMs itself). Since MATCHED pods also drop out of every match feed
  * query (which filters on status = 'ACTIVE'), this is the only cue a
  * joiner gets that the card they were watching is gone for good — so it's
  * a blocking dialog rather than a dismissable snackbar.
@@ -48,11 +48,11 @@ export function MatchedDialog({ open, onClose }: MatchedDialogProps) {
                   You&apos;re Matched!
                 </h2>
                 <p className="text-sm text-zinc-500">
-                  The host marked this beacon as matched. Check your Discord DMs
-                  — the host should be reaching out (or sending a friend
-                  request) shortly. Also don&apos;t be surprised when its card
-                  disappears from the match feed — it&apos;s been removed now
-                  that the group is set.
+                  The host marked this pod as matched. Check your Discord DMs —
+                  the host should be reaching out (or sending a friend request)
+                  shortly. Also don&apos;t be surprised when its card disappears
+                  from the match feed — it&apos;s been removed now that the
+                  group is set.
                 </p>
               </div>
             </div>

@@ -46,7 +46,7 @@ interface Toast {
 // `profiles` (recipient_id, actor_id) — without it, PostgREST can't tell
 // which one to embed as `actor`.
 const NOTIFICATION_SELECT =
-  "*, actor:profiles!notifications_actor_id_fkey(id, username, avatar_url), beacon:beacons(id, game_key, format_key)";
+  "*, actor:profiles!notifications_actor_id_fkey(id, username, avatar_url), pod:pods(id, game_key, format_key)";
 
 const RECENT_LIMIT = 20;
 
@@ -55,8 +55,8 @@ const TYPE_ICON: Record<NotificationType, LucideIcon> = {
   JOIN_ACCEPTED: UserCheck,
   JOIN_REJECTED: UserX,
   MEMBER_LEFT: UserMinus,
-  REMOVED_FROM_BEACON: UserX,
-  BEACON_UPDATED: PencilLine,
+  REMOVED_FROM_POD: UserX,
+  POD_UPDATED: PencilLine,
 };
 
 function describeNotification(notification: NotificationWithRelations): string {
@@ -64,24 +64,24 @@ function describeNotification(notification: NotificationWithRelations): string {
 
   switch (notification.type) {
     case "JOIN_REQUEST":
-      return `${actorName} wants to join your beacon`;
+      return `${actorName} wants to join your pod`;
     case "JOIN_ACCEPTED":
-      return `You've been accepted into ${actorName}'s beacon!`;
+      return `You've been accepted into ${actorName}'s pod!`;
     case "JOIN_REJECTED":
-      return `${actorName} declined your request to join their beacon`;
+      return `${actorName} declined your request to join their pod`;
     case "MEMBER_LEFT":
-      return `${actorName} left your beacon`;
-    case "REMOVED_FROM_BEACON":
-      return `${actorName} removed you from their beacon`;
-    case "BEACON_UPDATED":
-      return `${actorName} updated the details of a beacon you joined`;
+      return `${actorName} left your pod`;
+    case "REMOVED_FROM_POD":
+      return `${actorName} removed you from their pod`;
+    case "POD_UPDATED":
+      return `${actorName} updated the details of a pod you joined`;
   }
 }
 
 /**
  * Header notification bell — a persisted notification center backed by the
  * `notifications` table (see supabase/schema.sql: rows are created
- * exclusively by SECURITY DEFINER triggers on beacon_joins/beacons, never
+ * exclusively by SECURITY DEFINER triggers on pod_joins/pods, never
  * inserted by the client). Fetches the most recent rows plus an unread
  * count, then subscribes to INSERT/UPDATE events on the table with no
  * server-side `filter` — Realtime re-checks the `notifications_select_own`
@@ -137,12 +137,12 @@ export function NotificationBell({ currentUserId }: NotificationBellProps) {
         "Notification" in window &&
         Notification.permission === "granted"
       ) {
-        const osNotification = new Notification("ManaMatch", {
+        const osNotification = new Notification("PodMaker", {
           body: message,
         });
         osNotification.onclick = () => {
           window.focus();
-          router.push("/beacons");
+          router.push("/pods");
           osNotification.close();
         };
       }
@@ -211,8 +211,8 @@ export function NotificationBell({ currentUserId }: NotificationBellProps) {
     const supabase = createClient();
 
     // No server-side `filter` param here — deliberately mirrors every other
-    // realtime subscription in this codebase (MatchFeed, OwnBeaconPanel,
-    // LfgButton, MatchedBeaconWatcher). Supabase Realtime re-checks the
+    // realtime subscription in this codebase (MatchFeed, OwnPodPanel,
+    // LfgButton, MatchedPodWatcher). Supabase Realtime re-checks the
     // table's SELECT RLS policy per subscriber on EVERY postgres_changes
     // event regardless of whether a `filter` is set, and
     // `notifications_select_own` already restricts rows to `recipient_id =
@@ -291,7 +291,7 @@ export function NotificationBell({ currentUserId }: NotificationBellProps) {
 
   const handleItemClick = () => {
     handleClose();
-    router.push("/beacons");
+    router.push("/pods");
   };
 
   const handleDelete = (
@@ -446,7 +446,7 @@ export function NotificationBell({ currentUserId }: NotificationBellProps) {
           <ButtonBase
             onClick={() => {
               setToast(null);
-              router.push("/beacons");
+              router.push("/pods");
             }}
             sx={{
               display: "flex",

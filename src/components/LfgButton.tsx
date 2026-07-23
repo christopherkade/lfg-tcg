@@ -5,61 +5,61 @@ import { motion } from "framer-motion";
 import { Radio, X } from "lucide-react";
 import { Fab, Alert } from "@mui/material";
 import { GAMES_CONFIG } from "@/constants/gamesConfig";
-import { cancelBeacon } from "@/app/actions/beacons";
+import { cancelPod } from "@/app/actions/pods";
 import { createClient } from "@/lib/supabase/client";
 import { LfgDialog } from "@/components/LfgDialog";
 import { CantStartSearchDialog } from "@/components/CantStartSearchDialog";
-import type { Beacon, Profile } from "@/types/database";
+import type { Pod, Profile } from "@/types/database";
 
 const MotionFab = motion.create(Fab);
 
 interface LfgButtonProps {
   profile: Profile;
-  ownBeacon: Beacon | null;
+  ownPod: Pod | null;
   hasActiveJoin: boolean;
 }
 
 export function LfgButton({
   profile,
-  ownBeacon: initialOwnBeacon,
+  ownPod: initialOwnPod,
   hasActiveJoin: initialHasActiveJoin,
 }: LfgButtonProps) {
-  const [ownBeacon, setOwnBeacon] = useState(initialOwnBeacon);
+  const [ownPod, setOwnPod] = useState(initialOwnPod);
   const [hasActiveJoin, setHasActiveJoin] = useState(initialHasActiveJoin);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [blockedDialogOpen, setBlockedDialogOpen] = useState(false);
 
-  const fetchOwnBeacon = useCallback(async () => {
+  const fetchOwnPod = useCallback(async () => {
     const supabase = createClient();
     const { data } = await supabase
-      .from("beacons")
+      .from("pods")
       .select("*")
       .eq("user_id", profile.id)
       .eq("status", "ACTIVE")
       .maybeSingle();
-    setOwnBeacon((data as Beacon) ?? null);
+    setOwnPod((data as Pod) ?? null);
   }, [profile.id]);
 
   const fetchHasActiveJoin = useCallback(async () => {
     const supabase = createClient();
     const { data } = await supabase
-      .from("beacon_joins")
-      .select("id, beacons!inner(status)")
+      .from("pod_joins")
+      .select("id, pods!inner(status)")
       .eq("user_id", profile.id)
       .in("status", ["PENDING", "ACCEPTED"])
-      .eq("beacons.status", "ACTIVE")
+      .eq("pods.status", "ACTIVE")
       .maybeSingle();
     setHasActiveJoin(data != null);
   }, [profile.id]);
 
   // Routed through refs rather than listed as effect dependencies — see
   // repo memory on realtime channel churn / ref-indirection pattern.
-  const fetchOwnBeaconRef = useRef(fetchOwnBeacon);
+  const fetchOwnPodRef = useRef(fetchOwnPod);
   useEffect(() => {
-    fetchOwnBeaconRef.current = fetchOwnBeacon;
-  }, [fetchOwnBeacon]);
+    fetchOwnPodRef.current = fetchOwnPod;
+  }, [fetchOwnPod]);
 
   const fetchHasActiveJoinRef = useRef(fetchHasActiveJoin);
   useEffect(() => {
@@ -74,7 +74,7 @@ export function LfgButton({
   useEffect(() => {
     function handleFocusOrVisible() {
       if (document.visibilityState === "visible") {
-        fetchOwnBeaconRef.current();
+        fetchOwnPodRef.current();
         fetchHasActiveJoinRef.current();
       }
     }
@@ -86,7 +86,7 @@ export function LfgButton({
     };
   }, []);
 
-  // Keep ownBeacon and hasActiveJoin in sync with realtime changes (e.g.
+  // Keep ownPod and hasActiveJoin in sync with realtime changes (e.g.
   // cancelled/matched/started from another tab or device, or a join
   // request accepted/rejected/left elsewhere) instead of only reflecting
   // what was fetched on the last page load.
@@ -94,18 +94,18 @@ export function LfgButton({
     const supabase = createClient();
 
     const channel = supabase
-      .channel(`lfg-own-beacon-${profile.id}`)
+      .channel(`lfg-own-pod-${profile.id}`)
       .on(
         "postgres_changes",
-        { event: "*", schema: "public", table: "beacons" },
+        { event: "*", schema: "public", table: "pods" },
         () => {
-          fetchOwnBeaconRef.current();
+          fetchOwnPodRef.current();
           fetchHasActiveJoinRef.current();
         },
       )
       .on(
         "postgres_changes",
-        { event: "*", schema: "public", table: "beacon_joins" },
+        { event: "*", schema: "public", table: "pod_joins" },
         () => fetchHasActiveJoinRef.current(),
       )
       .subscribe();
@@ -117,7 +117,7 @@ export function LfgButton({
 
   const game = GAMES_CONFIG[profile.preferred_game];
   const glowColor = game?.glowColor ?? "rgba(255,255,255,0.4)";
-  const isSearching = ownBeacon?.status === "ACTIVE";
+  const isSearching = ownPod?.status === "ACTIVE";
   const formatLabel = game?.formats.find(
     (format) => format.key === profile.preferred_format,
   )?.label;
@@ -134,7 +134,7 @@ export function LfgButton({
 
     setPending(true);
     setError(null);
-    const result = await cancelBeacon(ownBeacon!.id);
+    const result = await cancelPod(ownPod!.id);
     if (result.error) {
       setError(result.error);
     }

@@ -13,10 +13,10 @@ interface ConfirmMarkMatchedDialogProps {
 }
 
 /**
- * A lightweight warning shown before actually marking a beacon as MATCHED
+ * A lightweight warning shown before actually marking a pod as MATCHED
  * (which removes it from the match feed). It's just a reminder/confirm —
  * the actual Discord handles + copy actions live directly on the Group
- * Members list in MyBeaconPanel, not in this dialog.
+ * Members list in MyPodPanel, not in this dialog.
  */
 export function ConfirmMarkMatchedDialog({
   open,
@@ -52,7 +52,7 @@ export function ConfirmMarkMatchedDialog({
                   Got everyone on Discord?
                 </h2>
                 <p className="text-sm text-zinc-500">
-                  Marking as matched removes this beacon from the match feed for
+                  Marking as matched removes this pod from the match feed for
                   good. Make sure you&apos;ve added everyone via Discord&apos;s
                   Add Friend search (copy their handles from the Group Members
                   list) before you continue.

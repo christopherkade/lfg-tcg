@@ -1,5 +1,5 @@
 import { TabBar } from "@/components/TabBar";
-import { MatchedBeaconWatcher } from "@/components/MatchedBeaconWatcher";
+import { MatchedPodWatcher } from "@/components/MatchedPodWatcher";
 import { requireUser } from "@/lib/session";
 
 export default async function AppLayout({
@@ -13,7 +13,7 @@ export default async function AppLayout({
     <div className="flex flex-1 flex-col">
       <TabBar currentUserId={user.id} />
       <div className="flex flex-1 flex-col pb-16 sm:pb-0">{children}</div>
-      <MatchedBeaconWatcher currentUserId={user.id} />
+      <MatchedPodWatcher currentUserId={user.id} />
     </div>
   );
 }

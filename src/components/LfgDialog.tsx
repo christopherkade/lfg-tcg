@@ -16,13 +16,8 @@ import { GAMES_CONFIG } from "@/constants/gamesConfig";
 import { GameSelector } from "@/components/GameSelector";
 import { PlaystyleToggle } from "@/components/PlaystyleToggle";
 import { PowerBracketPicker } from "@/components/PowerBracketPicker";
-import { createBeacon, updateBeacon } from "@/app/actions/beacons";
-import type {
-  Beacon,
-  Profile,
-  PlaystyleKey,
-  MatchType,
-} from "@/types/database";
+import { createPod, updatePod } from "@/app/actions/pods";
+import type { Pod, Profile, PlaystyleKey, MatchType } from "@/types/database";
 
 interface LfgDialogProps {
   open: boolean;
@@ -30,13 +25,13 @@ interface LfgDialogProps {
   onSuccess: () => void;
   profile: Profile;
   /**
-   * When provided, the dialog edits this existing (still ACTIVE) beacon in
-   * place via updateBeacon instead of starting a brand new search via
-   * createBeacon — used by MyBeaconPanel's "Edit" action. All fields reset
-   * from the beacon's own values (not the profile's `preferred_*`) each
+   * When provided, the dialog edits this existing (still ACTIVE) pod in
+   * place via updatePod instead of starting a brand new search via
+   * createPod — used by MyPodPanel's "Edit" action. All fields reset
+   * from the pod's own values (not the profile's `preferred_*`) each
    * time the dialog opens.
    */
-  editBeacon?: Beacon | null;
+  editPod?: Pod | null;
 }
 
 const MATCH_TYPES: MatchType[] = ["IRL", "ONLINE"];
@@ -47,7 +42,7 @@ const PLAYER_COUNTS = [2, 3, 4, 5, 6];
  * localStorage, keyed per-profile, so a fresh "Search" dialog starts from
  * whatever the player last used instead of always resetting to the
  * `preferred_*` profile defaults. Only used for brand new searches — the
- * `editBeacon` flow still seeds fields from the beacon being edited.
+ * `editPod` flow still seeds fields from the pod being edited.
  */
 interface StoredSearchInput {
   gameKey: string;
@@ -91,7 +86,7 @@ export function LfgDialog({
   onClose,
   onSuccess,
   profile,
-  editBeacon,
+  editPod,
 }: LfgDialogProps) {
   const [selectedGame, setSelectedGame] = useState<string>(
     profile.preferred_game,
@@ -123,20 +118,20 @@ export function LfgDialog({
   if (open !== wasOpen) {
     setWasOpen(open);
     if (open) {
-      if (editBeacon) {
-        const scheduled = editBeacon.scheduled_at
-          ? new Date(editBeacon.scheduled_at)
+      if (editPod) {
+        const scheduled = editPod.scheduled_at
+          ? new Date(editPod.scheduled_at)
           : null;
-        setSelectedGame(editBeacon.game_key);
-        setSelectedFormat(editBeacon.format_key);
-        setSelectedPlaystyle(editBeacon.playstyle_key);
-        setSelectedBrackets(editBeacon.power_tiers ?? []);
-        setSelectedMatchType(editBeacon.type);
-        setLocationName(editBeacon.location_name ?? "");
+        setSelectedGame(editPod.game_key);
+        setSelectedFormat(editPod.format_key);
+        setSelectedPlaystyle(editPod.playstyle_key);
+        setSelectedBrackets(editPod.power_tiers ?? []);
+        setSelectedMatchType(editPod.type);
+        setLocationName(editPod.location_name ?? "");
         setScheduledDate(scheduled);
         setScheduledTime(scheduled);
-        setMaxPlayers(editBeacon.max_players);
-        setNotes(editBeacon.notes ?? "");
+        setMaxPlayers(editPod.max_players);
+        setNotes(editPod.notes ?? "");
       } else {
         const stored = loadStoredSearchInput(profile.id);
         setSelectedGame(stored?.gameKey ?? profile.preferred_game);
@@ -197,9 +192,9 @@ export function LfgDialog({
       notes,
     };
 
-    const result = editBeacon
-      ? await updateBeacon(editBeacon.id, input)
-      : await createBeacon(input);
+    const result = editPod
+      ? await updatePod(editPod.id, input)
+      : await createPod(input);
 
     if (result.error) {
       setError(result.error);
@@ -207,7 +202,7 @@ export function LfgDialog({
       return;
     }
 
-    if (!editBeacon) {
+    if (!editPod) {
       saveStoredSearchInput(profile.id, {
         gameKey: input.gameKey,
         formatKey: input.formatKey,
@@ -245,7 +240,7 @@ export function LfgDialog({
             className="flex h-full w-full flex-col gap-6 overflow-y-auto rounded-2xl border border-zinc-800 bg-zinc-950 p-6 sm:max-w-2xl sm:p-8"
           >
             <h2 className="text-lg font-semibold text-zinc-50">
-              {editBeacon ? "Edit Beacon" : "Search Settings"}
+              {editPod ? "Edit Pod" : "Search Settings"}
             </h2>
 
             <div className="flex flex-col gap-6 sm:grid sm:grid-cols-2 sm:gap-x-8 sm:gap-y-6">
@@ -446,7 +441,7 @@ export function LfgDialog({
                 fullWidth
                 sx={{ py: 1.5 }}
               >
-                {editBeacon
+                {editPod
                   ? pending
                     ? "Saving..."
                     : "Save Changes"

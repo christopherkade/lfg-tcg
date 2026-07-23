@@ -1,12 +1,12 @@
 import { createBrowserClient } from "@supabase/ssr";
 
 // Memoized as a singleton: every client component in this app calls
-// createClient() independently (MatchFeed, OwnBeaconPanel,
-// MatchedBeaconWatcher, NotificationBell, LfgButton, ...), each opening its
+// createClient() independently (MatchFeed, OwnPodPanel,
+// MatchedPodWatcher, NotificationBell, LfgButton, ...), each opening its
 // own Realtime channels. Without memoizing, each call previously spun up a
 // brand new supabase-js instance (and its own separate Realtime WebSocket
 // connection + auth-token sync), which made postgres_changes delivery
-// unreliable — e.g. new beacons not showing up in the Match Feed without
+// unreliable — e.g. new pods not showing up in the Match Feed without
 // a manual reload. Reusing one client means all channels multiplex over
 // a single, consistently-authenticated Realtime connection per tab.
 function createBrowserSupabaseClient() {

@@ -5,42 +5,40 @@ import { Check, ChevronDown, Copy, UserX, X } from "lucide-react";
 import { format, isToday } from "date-fns";
 import { Alert, Button } from "@mui/material";
 import { removeMember, respondToJoin } from "@/app/actions/joins";
-import { markBeaconMatched } from "@/app/actions/beacons";
+import { markPodMatched } from "@/app/actions/pods";
 import { ConfirmMarkMatchedDialog } from "@/components/ConfirmMarkMatchedDialog";
 import { ConfirmRemoveMemberDialog } from "@/components/ConfirmRemoveMemberDialog";
 import { LfgDialog } from "@/components/LfgDialog";
 import { GAMES_CONFIG } from "@/constants/gamesConfig";
-import type {
-  BeaconJoinWithProfile,
-  BeaconWithRelations,
-} from "@/types/database";
+import type { PodJoinWithProfile, PodWithRelations } from "@/types/database";
 
-interface MyBeaconPanelProps {
-  beacon: BeaconWithRelations;
+interface MyPodPanelProps {
+  pod: PodWithRelations;
   onChanged?: () => void;
 }
 
-export function MyBeaconPanel({ beacon, onChanged }: MyBeaconPanelProps) {
+export function MyPodPanel({ pod, onChanged }: MyPodPanelProps) {
   const [error, setError] = useState<string | null>(null);
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [confirmMatchedOpen, setConfirmMatchedOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [copied, setCopied] = useState<string | null>(null);
   const [expanded, setExpanded] = useState(false);
-  const [removeTarget, setRemoveTarget] =
-    useState<BeaconJoinWithProfile | null>(null);
+  const [removeTarget, setRemoveTarget] = useState<PodJoinWithProfile | null>(
+    null,
+  );
   const [removeError, setRemoveError] = useState<string | null>(null);
   const [removePending, setRemovePending] = useState(false);
 
-  const pendingRequests = beacon.beacon_joins.filter(
+  const pendingRequests = pod.pod_joins.filter(
     (join) => join.status === "PENDING",
   );
-  const acceptedMembers = beacon.beacon_joins.filter(
+  const acceptedMembers = pod.pod_joins.filter(
     (join) => join.status === "ACCEPTED",
   );
-  const isFull = acceptedMembers.length + 1 >= beacon.max_players;
-  const game = GAMES_CONFIG[beacon.game_key];
-  const scheduledDate = new Date(beacon.scheduled_at ?? beacon.created_at);
+  const isFull = acceptedMembers.length + 1 >= pod.max_players;
+  const game = GAMES_CONFIG[pod.game_key];
+  const scheduledDate = new Date(pod.scheduled_at ?? pod.created_at);
   const scheduledLabel = isToday(scheduledDate)
     ? `Today, ${format(scheduledDate, "p")}`
     : format(scheduledDate, "MMM d, p");
@@ -77,9 +75,9 @@ export function MyBeaconPanel({ beacon, onChanged }: MyBeaconPanelProps) {
   }
 
   async function handleMarkMatched() {
-    setPendingId(beacon.id);
+    setPendingId(pod.id);
     setError(null);
-    const result = await markBeaconMatched(beacon.id);
+    const result = await markPodMatched(pod.id);
     if (result.error) {
       setError(result.error);
     }
@@ -115,7 +113,7 @@ export function MyBeaconPanel({ beacon, onChanged }: MyBeaconPanelProps) {
         className="flex items-center justify-between gap-3 text-left"
       >
         <div className="flex items-center gap-2">
-          <h2 className="text-lg font-semibold text-zinc-50">Your Beacon</h2>
+          <h2 className="text-lg font-semibold text-zinc-50">Your Pod</h2>
           {pendingRequests.length > 0 && (
             <span className="rounded-full bg-indigo-500/10 px-2 py-0.5 text-xs font-medium text-indigo-300">
               {pendingRequests.length} join request
@@ -125,7 +123,7 @@ export function MyBeaconPanel({ beacon, onChanged }: MyBeaconPanelProps) {
         </div>
         <div className="flex items-center gap-3">
           <span className="text-sm text-zinc-400">
-            {acceptedMembers.length + 1}/{beacon.max_players} players
+            {acceptedMembers.length + 1}/{pod.max_players} players
           </span>
           <ChevronDown
             className={`h-4 w-4 shrink-0 text-zinc-500 transition-transform ${
@@ -188,8 +186,7 @@ export function MyBeaconPanel({ beacon, onChanged }: MyBeaconPanelProps) {
         </div>
       ) : (
         <p className="text-sm text-zinc-500">
-          No one has requested to join yet. Your beacon is live in the match
-          feed.
+          No one has requested to join yet. Your pod is live in the match feed.
         </p>
       )}
 
@@ -200,34 +197,34 @@ export function MyBeaconPanel({ beacon, onChanged }: MyBeaconPanelProps) {
           <div className="flex flex-col gap-2 text-sm text-zinc-300">
             <div className="flex justify-between">
               <span className="text-zinc-500">Game</span>
-              <span>{game?.name ?? beacon.game_key}</span>
+              <span>{game?.name ?? pod.game_key}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-zinc-500">Format</span>
-              <span>{beacon.format_key}</span>
+              <span>{pod.format_key}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-zinc-500">Playstyle</span>
-              <span className="capitalize">{beacon.playstyle_key}</span>
+              <span className="capitalize">{pod.playstyle_key}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-zinc-500">Match Type</span>
-              <span>{beacon.type}</span>
+              <span>{pod.type}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-zinc-500">When</span>
               <span>{scheduledLabel}</span>
             </div>
-            {beacon.location_name && (
+            {pod.location_name && (
               <div className="flex justify-between">
                 <span className="text-zinc-500">Location</span>
-                <span>{beacon.location_name}</span>
+                <span>{pod.location_name}</span>
               </div>
             )}
-            {beacon.power_tiers && beacon.power_tiers.length > 0 && (
+            {pod.power_tiers && pod.power_tiers.length > 0 && (
               <div className="flex justify-between">
                 <span className="text-zinc-500">Power Bracket</span>
-                <span>{beacon.power_tiers.join(", ")}</span>
+                <span>{pod.power_tiers.join(", ")}</span>
               </div>
             )}
           </div>
@@ -324,13 +321,13 @@ export function MyBeaconPanel({ beacon, onChanged }: MyBeaconPanelProps) {
             </div>
           )}
 
-          {beacon.notes && (
+          {pod.notes && (
             <div className="flex flex-col gap-1">
               <span className="text-sm font-medium text-zinc-400">
                 Your Notes
               </span>
               <p className="whitespace-pre-wrap text-sm text-zinc-300">
-                {beacon.notes}
+                {pod.notes}
               </p>
             </div>
           )}
@@ -343,12 +340,12 @@ export function MyBeaconPanel({ beacon, onChanged }: MyBeaconPanelProps) {
               size="small"
               sx={{ borderColor: "#27272a", color: "#d4d4d8" }}
             >
-              Edit Beacon
+              Edit Pod
             </Button>
             <Button
               type="button"
               onClick={() => setConfirmMatchedOpen(true)}
-              disabled={pendingId === beacon.id || acceptedMembers.length === 0}
+              disabled={pendingId === pod.id || acceptedMembers.length === 0}
               variant="contained"
               size="small"
             >
@@ -362,7 +359,7 @@ export function MyBeaconPanel({ beacon, onChanged }: MyBeaconPanelProps) {
         open={confirmMatchedOpen}
         onClose={() => setConfirmMatchedOpen(false)}
         onConfirm={handleMarkMatched}
-        pending={pendingId === beacon.id}
+        pending={pendingId === pod.id}
         error={error}
       />
 
@@ -379,8 +376,8 @@ export function MyBeaconPanel({ beacon, onChanged }: MyBeaconPanelProps) {
         open={editOpen}
         onClose={() => setEditOpen(false)}
         onSuccess={() => setEditOpen(false)}
-        profile={beacon.profiles}
-        editBeacon={beacon}
+        profile={pod.profiles}
+        editPod={pod}
       />
     </div>
   );

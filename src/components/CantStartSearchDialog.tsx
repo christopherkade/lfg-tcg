@@ -12,7 +12,7 @@ interface CantStartSearchDialogProps {
 /**
  * Shown instead of opening LfgDialog when the user clicks the LFG button
  * while they already have a PENDING request on (or have been ACCEPTED
- * into) someone else's still-ACTIVE beacon. Mirrors createBeacon's
+ * into) someone else's still-ACTIVE pod. Mirrors createPod's
  * server-side check of the same rule — this is just the friendlier
  * client-side heads up so the user isn't left guessing why "Search"
  * failed after filling out the whole dialog.
@@ -49,9 +49,9 @@ export function CantStartSearchDialog({
                 </h2>
                 <p className="text-sm text-zinc-500">
                   You can&apos;t start a new search while you have a pending
-                  request on (or have joined) someone else&apos;s beacon. Leave
-                  that beacon first — from its card in the match feed — if you
-                  want to search for a different group.
+                  request on (or have joined) someone else&apos;s pod. Leave
+                  that pod first — from its card in the match feed — if you want
+                  to search for a different group.
                 </p>
               </div>
             </div>

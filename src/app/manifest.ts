@@ -2,9 +2,9 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "ManaMatch",
-    short_name: "ManaMatch",
-    description: "Cross-TCG LFG matchmaker for IRL and online play.",
+    name: "PodMaker",
+    short_name: "PodMaker",
+    description: "Create your own TCG pods and find your next game, IRL or online.",
     start_url: "/",
     display: "standalone",
     background_color: "#09090b",

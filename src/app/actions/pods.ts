@@ -5,7 +5,7 @@ import { requireProfile } from "@/lib/session";
 import { GAMES_CONFIG } from "@/constants/gamesConfig";
 import type { MatchType, PlaystyleKey } from "@/types/database";
 
-export interface BeaconActionResult {
+export interface PodActionResult {
   error?: string;
 }
 
@@ -22,7 +22,7 @@ export interface StartSearchInput {
   notes: string;
 }
 
-interface NormalizedBeaconInput {
+interface NormalizedPodInput {
   brackets: number[] | null;
   locationName: string | null;
   scheduledAt: string | null;
@@ -30,14 +30,14 @@ interface NormalizedBeaconInput {
 }
 
 /**
- * Shared validation/normalization for both createBeacon and updateBeacon —
+ * Shared validation/normalization for both createPod and updatePod —
  * the same StartSearchInput shape (and rules) is used by the "Search"
- * dialog whether it's starting a brand new beacon or editing an existing
+ * dialog whether it's starting a brand new pod or editing an existing
  * (still ACTIVE) one.
  */
 function validateStartSearchInput(
   input: StartSearchInput,
-): { error: string } | { data: NormalizedBeaconInput } {
+): { error: string } | { data: NormalizedPodInput } {
   const game = GAMES_CONFIG[input.gameKey];
   if (!game) {
     return { error: "Please select a valid game." };
@@ -92,9 +92,9 @@ function validateStartSearchInput(
  * (preferred_*) so the dialog pre-fills with the last search next time,
  * and so the Match Feed keeps filtering meaningfully off `profiles`.
  */
-export async function createBeacon(
+export async function createPod(
   input: StartSearchInput,
-): Promise<BeaconActionResult> {
+): Promise<PodActionResult> {
   const { supabase, user, profile } = await requireProfile();
 
   const validated = validateStartSearchInput(input);
@@ -105,21 +105,21 @@ export async function createBeacon(
 
   // Block starting a new search while the user already has a PENDING
   // request on (or has been ACCEPTED into) someone else's still-ACTIVE
-  // beacon — mirrors the client-side check in LfgButton, which shows
+  // pod — mirrors the client-side check in LfgButton, which shows
   // CantStartSearchDialog instead of even opening the search dialog.
   const { data: activeJoin } = await supabase
-    .from("beacon_joins")
-    .select("id, beacons!inner(status)")
+    .from("pod_joins")
+    .select("id, pods!inner(status)")
     .eq("user_id", user.id)
     .in("status", ["PENDING", "ACCEPTED"])
-    .eq("beacons.status", "ACTIVE")
+    .eq("pods.status", "ACTIVE")
     .limit(1)
     .maybeSingle();
 
   if (activeJoin) {
     return {
       error:
-        "You can't start a new search while you have a pending request on (or have joined) another beacon. Leave it first.",
+        "You can't start a new search while you have a pending request on (or have joined) another pod. Leave it first.",
     };
   }
 
@@ -139,17 +139,17 @@ export async function createBeacon(
     })
     .eq("id", user.id);
 
-  // Expire any existing active beacon for this user before starting a new search
-  // (a single new insert would otherwise violate beacons_one_active_per_user).
+  // Expire any existing active pod for this user before starting a new search
+  // (a single new insert would otherwise violate pods_one_active_per_user).
   const { error: expireError } = await supabase
-    .from("beacons")
+    .from("pods")
     .update({ status: "EXPIRED" })
     .eq("user_id", user.id)
     .eq("status", "ACTIVE");
 
   if (expireError) {
     console.error(
-      "createBeacon: failed to expire previous beacon:",
+      "createPod: failed to expire previous pod:",
       expireError,
     );
     return {
@@ -157,7 +157,7 @@ export async function createBeacon(
     };
   }
 
-  const { error } = await supabase.from("beacons").insert({
+  const { error } = await supabase.from("pods").insert({
     user_id: user.id,
     game_key: input.gameKey,
     format_key: input.formatKey,
@@ -166,7 +166,7 @@ export async function createBeacon(
     type: input.matchType,
     location_name: locationName,
     // Snapshot of profiles.city at creation time — lets the Match Feed
-    // (Section 6) scope IRL beacons to the viewer's city via a plain
+    // (Section 6) scope IRL pods to the viewer's city via a plain
     // column filter, without joining back to profiles.
     city: profile.city,
     scheduled_at: scheduledAt,
@@ -175,30 +175,30 @@ export async function createBeacon(
   });
 
   if (error) {
-    console.error("createBeacon: failed to insert beacon:", error);
+    console.error("createPod: failed to insert pod:", error);
     return {
       error: `Something went wrong starting your search: ${error.message}`,
     };
   }
 
   revalidatePath("/");
-  revalidatePath("/beacons");
+  revalidatePath("/pods");
   return {};
 }
 
 /**
- * Lets the host edit the settings of their own still-ACTIVE beacon in
+ * Lets the host edit the settings of their own still-ACTIVE pod in
  * place (rather than cancelling and starting a new search). Unlike
- * createBeacon, this does NOT touch the user's `preferred_*` profile
+ * createPod, this does NOT touch the user's `preferred_*` profile
  * columns — those track the last *new search* settings, not one-off edits
- * to an already-live beacon. Realtime subscribers (MatchFeed, OwnBeaconPanel,
- * BeaconDetailDialog) already refetch on any `beacons` row change, so the
+ * to an already-live pod. Realtime subscribers (MatchFeed, OwnPodPanel,
+ * PodDetailDialog) already refetch on any `pods` row change, so the
  * update is reflected live everywhere without further wiring.
  */
-export async function updateBeacon(
-  beaconId: string,
+export async function updatePod(
+  podId: string,
   input: StartSearchInput,
-): Promise<BeaconActionResult> {
+): Promise<PodActionResult> {
   const { supabase, user, profile } = await requireProfile();
 
   const validated = validateStartSearchInput(input);
@@ -208,18 +208,18 @@ export async function updateBeacon(
   const { brackets, locationName, scheduledAt, notes } = validated.data;
 
   // Guard against shrinking max_players below the group's current accepted
-  // size — without this, a host could edit an already-filling beacon down
+  // size — without this, a host could edit an already-filling pod down
   // to fewer slots than it already has accepted members, silently pushing
   // it over its own cap.
   const { count: acceptedCount, error: countError } = await supabase
-    .from("beacon_joins")
+    .from("pod_joins")
     .select("id", { count: "exact", head: true })
-    .eq("beacon_id", beaconId)
+    .eq("pod_id", podId)
     .eq("status", "ACCEPTED");
 
   if (countError) {
     console.error(
-      "updateBeacon: failed to check accepted member count:",
+      "updatePod: failed to check accepted member count:",
       countError,
     );
     return {
@@ -235,7 +235,7 @@ export async function updateBeacon(
   }
 
   const { error } = await supabase
-    .from("beacons")
+    .from("pods")
     .update({
       game_key: input.gameKey,
       format_key: input.formatKey,
@@ -244,67 +244,67 @@ export async function updateBeacon(
       type: input.matchType,
       location_name: locationName,
       // Re-snapshot in case the host updated their profile's city since
-      // this beacon was first created.
+      // this pod was first created.
       city: profile.city,
       scheduled_at: scheduledAt,
       max_players: input.maxPlayers,
       notes,
     })
-    .eq("id", beaconId)
+    .eq("id", podId)
     .eq("user_id", user.id)
     .eq("status", "ACTIVE");
 
   if (error) {
-    console.error("updateBeacon failed:", error);
-    return { error: `Could not update your beacon: ${error.message}` };
+    console.error("updatePod failed:", error);
+    return { error: `Could not update your pod: ${error.message}` };
   }
 
   revalidatePath("/");
-  revalidatePath("/beacons");
+  revalidatePath("/pods");
   return {};
 }
 
-export async function cancelBeacon(
-  beaconId: string,
-): Promise<BeaconActionResult> {
+export async function cancelPod(
+  podId: string,
+): Promise<PodActionResult> {
   const { supabase, user } = await requireProfile();
 
   const { error } = await supabase
-    .from("beacons")
+    .from("pods")
     .update({ status: "EXPIRED" })
-    .eq("id", beaconId)
+    .eq("id", podId)
     .eq("user_id", user.id)
     .eq("status", "ACTIVE");
 
   if (error) {
-    console.error("cancelBeacon failed:", error);
+    console.error("cancelPod failed:", error);
     return { error: `Could not cancel your search: ${error.message}` };
   }
 
   revalidatePath("/");
-  revalidatePath("/beacons");
+  revalidatePath("/pods");
   return {};
 }
 
-export async function markBeaconMatched(
-  beaconId: string,
-): Promise<BeaconActionResult> {
+export async function markPodMatched(
+  podId: string,
+): Promise<PodActionResult> {
   const { supabase, user } = await requireProfile();
 
   const { error } = await supabase
-    .from("beacons")
+    .from("pods")
     .update({ status: "MATCHED" })
-    .eq("id", beaconId)
+    .eq("id", podId)
     .eq("user_id", user.id);
 
   if (error) {
-    console.error("markBeaconMatched failed:", error);
+    console.error("markPodMatched failed:", error);
     return {
-      error: `Could not mark this beacon as matched: ${error.message}`,
+      error: `Could not mark this pod as matched: ${error.message}`,
     };
   }
 
   revalidatePath("/");
-  revalidatePath("/beacons");
+  revalidatePath("/pods");
   return {};
 }

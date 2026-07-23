@@ -8,7 +8,7 @@ import { GAMES_CONFIG } from "@/constants/gamesConfig";
 import { PowerBracketPicker } from "@/components/PowerBracketPicker";
 import type { GameKey, MatchType } from "@/types/database";
 
-export interface BeaconFiltersValue {
+export interface PodFiltersValue {
   gameKey: GameKey | "ALL";
   matchType: MatchType | "ALL";
   formatKey: string | "ALL";
@@ -21,7 +21,7 @@ export interface BeaconFiltersValue {
 // profile) so first load still browses meaningfully instead of showing
 // every game/format at once; this constant only represents "no filters
 // applied" from the user's point of view.
-export const NEUTRAL_BEACON_FILTERS: BeaconFiltersValue = {
+export const NEUTRAL_POD_FILTERS: PodFiltersValue = {
   gameKey: "ALL",
   matchType: "ALL",
   formatKey: "ALL",
@@ -29,9 +29,9 @@ export const NEUTRAL_BEACON_FILTERS: BeaconFiltersValue = {
   powerBrackets: [],
 };
 
-interface BeaconFiltersProps {
-  value: BeaconFiltersValue;
-  onChange: (value: BeaconFiltersValue) => void;
+interface PodFiltersProps {
+  value: PodFiltersValue;
+  onChange: (value: PodFiltersValue) => void;
 }
 
 const MATCH_TYPE_OPTIONS: { key: MatchType | "ALL"; label: string }[] = [
@@ -41,6 +41,24 @@ const MATCH_TYPE_OPTIONS: { key: MatchType | "ALL"; label: string }[] = [
 ];
 
 type FilterKey = "game" | "matchType" | "format" | "date" | "powerBracket";
+
+/**
+ * Single source of truth for which filters actually render. Flip an entry
+ * to `false` to remove that filter's chip (and popover) from the bar
+ * entirely, or add a new `FilterKey` here plus a matching chip/popover pair
+ * below to introduce one — no other wiring (state, query logic in
+ * MatchFeed, etc.) needs to change just to toggle a filter's visibility.
+ * Format and Power Bracket are still additionally gated by
+ * `showFormatFilter`/`showPowerBracketFilter` below, since those two are
+ * only ever meaningful for certain games regardless of this constant.
+ */
+const ENABLED_FILTERS: Record<FilterKey, boolean> = {
+  game: true,
+  matchType: true,
+  format: true,
+  date: true,
+  powerBracket: false,
+};
 
 function ChevronIcon() {
   return (
@@ -83,7 +101,7 @@ function FilterChip({
   );
 }
 
-export function BeaconFilters({ value, onChange }: BeaconFiltersProps) {
+export function PodFilters({ value, onChange }: PodFiltersProps) {
   const [openFilter, setOpenFilter] = useState<FilterKey | null>(null);
   const [anchorEl, setAnchorEl] = useState<HTMLButtonElement | null>(null);
 
@@ -103,8 +121,11 @@ export function BeaconFilters({ value, onChange }: BeaconFiltersProps) {
   const selectedGame =
     value.gameKey !== "ALL" ? GAMES_CONFIG[value.gameKey] : null;
   const showFormatFilter =
-    selectedGame != null && selectedGame.formats.length > 1;
-  const showPowerBracketFilter = selectedGame?.hasPowerTiers ?? false;
+    ENABLED_FILTERS.format &&
+    selectedGame != null &&
+    selectedGame.formats.length > 1;
+  const showPowerBracketFilter =
+    ENABLED_FILTERS.powerBracket && (selectedGame?.hasPowerTiers ?? false);
 
   const hasActiveFilters =
     value.gameKey !== "ALL" ||
@@ -154,17 +175,21 @@ export function BeaconFilters({ value, onChange }: BeaconFiltersProps) {
   };
 
   return (
-    <div className="flex w-full max-w-md flex-wrap items-center gap-2">
-      <FilterChip
-        label={gameLabel}
-        active={value.gameKey !== "ALL"}
-        onClick={(event) => openFilterAt("game", event)}
-      />
-      <FilterChip
-        label={matchTypeLabel}
-        active={value.matchType !== "ALL"}
-        onClick={(event) => openFilterAt("matchType", event)}
-      />
+    <div className="flex w-full max-w-md flex-wrap items-center gap-2 sm:flex-nowrap">
+      {ENABLED_FILTERS.game && (
+        <FilterChip
+          label={gameLabel}
+          active={value.gameKey !== "ALL"}
+          onClick={(event) => openFilterAt("game", event)}
+        />
+      )}
+      {ENABLED_FILTERS.matchType && (
+        <FilterChip
+          label={matchTypeLabel}
+          active={value.matchType !== "ALL"}
+          onClick={(event) => openFilterAt("matchType", event)}
+        />
+      )}
       {showFormatFilter && (
         <FilterChip
           label={formatLabel}
@@ -172,11 +197,13 @@ export function BeaconFilters({ value, onChange }: BeaconFiltersProps) {
           onClick={(event) => openFilterAt("format", event)}
         />
       )}
-      <FilterChip
-        label={dateLabel}
-        active={value.date !== null}
-        onClick={(event) => openFilterAt("date", event)}
-      />
+      {ENABLED_FILTERS.date && (
+        <FilterChip
+          label={dateLabel}
+          active={value.date !== null}
+          onClick={(event) => openFilterAt("date", event)}
+        />
+      )}
       {showPowerBracketFilter && (
         <FilterChip
           label={powerBracketLabel}
@@ -187,72 +214,78 @@ export function BeaconFilters({ value, onChange }: BeaconFiltersProps) {
       {hasActiveFilters && (
         <button
           type="button"
-          onClick={() => onChange(NEUTRAL_BEACON_FILTERS)}
+          onClick={() => onChange(NEUTRAL_POD_FILTERS)}
           className="shrink-0 whitespace-nowrap text-xs font-medium text-zinc-500 transition-colors hover:text-zinc-300"
         >
           Clear all
         </button>
       )}
 
-      <Popover
-        open={openFilter === "game"}
-        anchorEl={anchorEl}
-        onClose={closeFilter}
-        anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
-        slotProps={popoverSlotProps}
-      >
-        <Box sx={{ p: 2, display: "flex", flexDirection: "column", gap: 1 }}>
-          <span className="text-xs font-medium text-zinc-500">Game</span>
-          <ToggleButtonGroup
-            value={value.gameKey}
-            exclusive
-            onChange={(_event, next) => handleGameChange(next)}
-            sx={{
-              flexWrap: "wrap",
-              bgcolor: "transparent",
-              border: 0,
-              p: 0,
-              gap: 1,
-              maxWidth: 260,
-            }}
-          >
-            <ToggleButton value="ALL">All Games</ToggleButton>
-            {Object.entries(GAMES_CONFIG).map(([key, game]) => (
-              <ToggleButton key={key} value={key}>
-                {game.name}
-              </ToggleButton>
-            ))}
-          </ToggleButtonGroup>
-        </Box>
-      </Popover>
+      {ENABLED_FILTERS.game && (
+        <Popover
+          open={openFilter === "game"}
+          anchorEl={anchorEl}
+          onClose={closeFilter}
+          anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
+          slotProps={popoverSlotProps}
+        >
+          <Box sx={{ p: 2, display: "flex", flexDirection: "column", gap: 1 }}>
+            <span className="text-xs font-medium text-zinc-500">Game</span>
+            <ToggleButtonGroup
+              value={value.gameKey}
+              exclusive
+              onChange={(_event, next) => handleGameChange(next)}
+              sx={{
+                flexWrap: "wrap",
+                bgcolor: "transparent",
+                border: 0,
+                p: 0,
+                gap: 1,
+                maxWidth: 260,
+              }}
+            >
+              <ToggleButton value="ALL">All Games</ToggleButton>
+              {Object.entries(GAMES_CONFIG).map(([key, game]) => (
+                <ToggleButton key={key} value={key}>
+                  {game.name}
+                </ToggleButton>
+              ))}
+            </ToggleButtonGroup>
+          </Box>
+        </Popover>
+      )}
 
-      <Popover
-        open={openFilter === "matchType"}
-        anchorEl={anchorEl}
-        onClose={closeFilter}
-        anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
-        slotProps={popoverSlotProps}
-      >
-        <Box sx={{ p: 2, display: "flex", flexDirection: "column", gap: 1 }}>
-          <span className="text-xs font-medium text-zinc-500">Match Type</span>
-          <ToggleButtonGroup
-            value={value.matchType}
-            exclusive
-            onChange={(_event, next: MatchType | "ALL" | null) => {
-              if (next !== null) {
-                onChange({ ...value, matchType: next });
-                closeFilter();
-              }
-            }}
-          >
-            {MATCH_TYPE_OPTIONS.map((option) => (
-              <ToggleButton key={option.key} value={option.key}>
-                {option.label}
-              </ToggleButton>
-            ))}
-          </ToggleButtonGroup>
-        </Box>
-      </Popover>
+      {ENABLED_FILTERS.matchType && (
+        <Popover
+          open={openFilter === "matchType"}
+          anchorEl={anchorEl}
+          onClose={closeFilter}
+          anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
+          slotProps={popoverSlotProps}
+        >
+          <Box sx={{ p: 2, display: "flex", flexDirection: "column", gap: 1 }}>
+            <span className="text-xs font-medium text-zinc-500">
+              Match Type
+            </span>
+            <ToggleButtonGroup
+              value={value.matchType}
+              exclusive
+              onChange={(_event, next: MatchType | "ALL" | null) => {
+                if (next !== null) {
+                  onChange({ ...value, matchType: next });
+                  closeFilter();
+                }
+              }}
+            >
+              {MATCH_TYPE_OPTIONS.map((option) => (
+                <ToggleButton key={option.key} value={option.key}>
+                  {option.label}
+                </ToggleButton>
+              ))}
+            </ToggleButtonGroup>
+          </Box>
+        </Popover>
+      )}
 
       {showFormatFilter && selectedGame && (
         <Popover
@@ -293,33 +326,35 @@ export function BeaconFilters({ value, onChange }: BeaconFiltersProps) {
         </Popover>
       )}
 
-      <Popover
-        open={openFilter === "date"}
-        anchorEl={anchorEl}
-        onClose={closeFilter}
-        anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
-        slotProps={popoverSlotProps}
-      >
-        <Box sx={{ p: 2 }}>
-          <DatePicker
-            value={value.date}
-            onChange={(next) => {
-              onChange({ ...value, date: next });
-              closeFilter();
-            }}
-            slotProps={{
-              textField: { fullWidth: true, size: "small" },
-              field: {
-                clearable: true,
-                onClear: () => {
-                  onChange({ ...value, date: null });
-                  closeFilter();
+      {ENABLED_FILTERS.date && (
+        <Popover
+          open={openFilter === "date"}
+          anchorEl={anchorEl}
+          onClose={closeFilter}
+          anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
+          slotProps={popoverSlotProps}
+        >
+          <Box sx={{ p: 2 }}>
+            <DatePicker
+              value={value.date}
+              onChange={(next) => {
+                onChange({ ...value, date: next });
+                closeFilter();
+              }}
+              slotProps={{
+                textField: { fullWidth: true, size: "small" },
+                field: {
+                  clearable: true,
+                  onClear: () => {
+                    onChange({ ...value, date: null });
+                    closeFilter();
+                  },
                 },
-              },
-            }}
-          />
-        </Box>
-      </Popover>
+              }}
+            />
+          </Box>
+        </Popover>
+      )}
 
       {showPowerBracketFilter && selectedGame && (
         <Popover

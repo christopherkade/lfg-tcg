@@ -1,15 +1,15 @@
 export type GameKey = "MTG" | "ONE_PIECE" | "POKEMON" | "LORCANA";
 export type PlaystyleKey = "casual" | "competitive";
 export type MatchType = "IRL" | "ONLINE";
-export type BeaconStatus = "ACTIVE" | "MATCHED" | "EXPIRED";
+export type PodStatus = "ACTIVE" | "MATCHED" | "EXPIRED";
 export type JoinStatus = "PENDING" | "ACCEPTED" | "REJECTED";
 export type NotificationType =
   | "JOIN_REQUEST"
   | "JOIN_ACCEPTED"
   | "JOIN_REJECTED"
   | "MEMBER_LEFT"
-  | "REMOVED_FROM_BEACON"
-  | "BEACON_UPDATED";
+  | "REMOVED_FROM_POD"
+  | "POD_UPDATED";
 
 export interface Profile {
   id: string;
@@ -27,7 +27,7 @@ export interface Profile {
   preferred_max_players: number;
 }
 
-export interface Beacon {
+export interface Pod {
   id: string;
   user_id: string;
   game_key: GameKey;
@@ -40,26 +40,26 @@ export interface Beacon {
   scheduled_at: string | null;
   max_players: number;
   notes: string | null;
-  status: BeaconStatus;
+  status: PodStatus;
   created_at: string;
   expires_at: string;
 }
 
-export interface BeaconJoin {
+export interface PodJoin {
   id: string;
-  beacon_id: string;
+  pod_id: string;
   user_id: string;
   status: JoinStatus;
   joined_at: string;
 }
 
-export interface BeaconJoinWithProfile extends BeaconJoin {
+export interface PodJoinWithProfile extends PodJoin {
   profiles: Profile;
 }
 
-export interface BeaconWithRelations extends Beacon {
+export interface PodWithRelations extends Pod {
   profiles: Profile;
-  beacon_joins: BeaconJoinWithProfile[];
+  pod_joins: PodJoinWithProfile[];
 }
 
 export interface Notification {
@@ -67,12 +67,12 @@ export interface Notification {
   recipient_id: string;
   actor_id: string | null;
   type: NotificationType;
-  beacon_id: string | null;
+  pod_id: string | null;
   read_at: string | null;
   created_at: string;
 }
 
 export interface NotificationWithRelations extends Notification {
   actor: Pick<Profile, "id" | "username" | "avatar_url"> | null;
-  beacon: Pick<Beacon, "id" | "game_key" | "format_key"> | null;
+  pod: Pick<Pod, "id" | "game_key" | "format_key"> | null;
 }

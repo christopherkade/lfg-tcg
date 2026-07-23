@@ -5,38 +5,36 @@ import { format, isToday } from "date-fns";
 import { Alert, Button, Chip } from "@mui/material";
 import { GAMES_CONFIG } from "@/constants/gamesConfig";
 import { CITY_MAP } from "@/constants/citiesConfig";
-import type { BeaconWithRelations } from "@/types/database";
+import type { PodWithRelations } from "@/types/database";
 
-interface BeaconDetailDialogProps {
-  beacon: BeaconWithRelations | null;
+interface PodDetailDialogProps {
+  pod: PodWithRelations | null;
   currentUserId: string;
   onClose: () => void;
-  onRequestJoin: (beaconId: string) => void;
-  onLeave: (beaconId: string) => void;
+  onRequestJoin: (podId: string) => void;
+  onLeave: (podId: string) => void;
   pending: boolean;
   error: string | null;
 }
 
-export function BeaconDetailDialog({
-  beacon,
+export function PodDetailDialog({
+  pod,
   currentUserId,
   onClose,
   onRequestJoin,
   onLeave,
   pending,
   error,
-}: BeaconDetailDialogProps) {
-  const acceptedMembers = beacon?.beacon_joins.filter(
+}: PodDetailDialogProps) {
+  const acceptedMembers = pod?.pod_joins.filter(
     (join) => join.status === "ACCEPTED",
   );
-  const ownJoin = beacon?.beacon_joins.find(
-    (join) => join.user_id === currentUserId,
-  );
+  const ownJoin = pod?.pod_joins.find((join) => join.user_id === currentUserId);
   const isFull =
-    beacon != null && (acceptedMembers?.length ?? 0) + 1 >= beacon.max_players;
-  const game = beacon ? GAMES_CONFIG[beacon.game_key] : undefined;
-  const scheduledDate = beacon
-    ? new Date(beacon.scheduled_at ?? beacon.created_at)
+    pod != null && (acceptedMembers?.length ?? 0) + 1 >= pod.max_players;
+  const game = pod ? GAMES_CONFIG[pod.game_key] : undefined;
+  const scheduledDate = pod
+    ? new Date(pod.scheduled_at ?? pod.created_at)
     : null;
   const scheduledLabel = scheduledDate
     ? isToday(scheduledDate)
@@ -46,7 +44,7 @@ export function BeaconDetailDialog({
 
   return (
     <AnimatePresence>
-      {beacon && (
+      {pod && (
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -65,34 +63,34 @@ export function BeaconDetailDialog({
             <div className="flex items-start justify-between gap-4">
               <div className="flex flex-col">
                 <h2 className="text-lg font-semibold text-zinc-50">
-                  {beacon.profiles.username}
+                  {pod.profiles.username}
                 </h2>
                 <span className="text-sm text-zinc-500">
-                  {beacon.profiles.discord_handle}
+                  {pod.profiles.discord_handle}
                 </span>
               </div>
               <span className="rounded-full border border-zinc-800 px-3 py-1 text-xs font-medium text-zinc-400">
                 {acceptedMembers ? acceptedMembers.length + 1 : 1}/
-                {beacon.max_players}
+                {pod.max_players}
               </span>
             </div>
 
             <div className="flex flex-col gap-2 text-sm text-zinc-300">
               <div className="flex justify-between">
                 <span className="text-zinc-500">Game</span>
-                <span>{game?.name ?? beacon.game_key}</span>
+                <span>{game?.name ?? pod.game_key}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-zinc-500">Format</span>
-                <span>{beacon.format_key}</span>
+                <span>{pod.format_key}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-zinc-500">Playstyle</span>
-                <span className="capitalize">{beacon.playstyle_key}</span>
+                <span className="capitalize">{pod.playstyle_key}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-zinc-500">Match Type</span>
-                <span>{beacon.type}</span>
+                <span>{pod.type}</span>
               </div>
               {scheduledLabel && (
                 <div className="flex justify-between">
@@ -100,30 +98,30 @@ export function BeaconDetailDialog({
                   <span>{scheduledLabel}</span>
                 </div>
               )}
-              {beacon.location_name && (
+              {pod.location_name && (
                 <div className="flex justify-between">
                   <span className="text-zinc-500">Location</span>
                   <span>
-                    {beacon.location_name}
-                    {beacon.city && CITY_MAP[beacon.city]
-                      ? ` (${CITY_MAP[beacon.city].label})`
+                    {pod.location_name}
+                    {pod.city && CITY_MAP[pod.city]
+                      ? ` (${CITY_MAP[pod.city].label})`
                       : ""}
                   </span>
                 </div>
               )}
-              {beacon.power_tiers && beacon.power_tiers.length > 0 && (
+              {pod.power_tiers && pod.power_tiers.length > 0 && (
                 <div className="flex justify-between">
                   <span className="text-zinc-500">Power Bracket</span>
-                  <span>{beacon.power_tiers.join(", ")}</span>
+                  <span>{pod.power_tiers.join(", ")}</span>
                 </div>
               )}
             </div>
 
-            {beacon.notes && (
+            {pod.notes && (
               <div className="flex flex-col gap-1 border-t border-zinc-800 pt-3">
                 <span className="text-sm font-medium text-zinc-400">Notes</span>
                 <p className="whitespace-pre-wrap text-sm text-zinc-300">
-                  {beacon.notes}
+                  {pod.notes}
                 </p>
               </div>
             )}
@@ -178,7 +176,7 @@ export function BeaconDetailDialog({
                   <Button
                     type="button"
                     disabled={pending}
-                    onClick={() => onLeave(beacon.id)}
+                    onClick={() => onLeave(pod.id)}
                     variant="outlined"
                     fullWidth
                     sx={{
@@ -202,7 +200,7 @@ export function BeaconDetailDialog({
                 <Button
                   type="button"
                   disabled={pending || isFull}
-                  onClick={() => onRequestJoin(beacon.id)}
+                  onClick={() => onRequestJoin(pod.id)}
                   variant="contained"
                   fullWidth
                   sx={{ py: 1.5 }}

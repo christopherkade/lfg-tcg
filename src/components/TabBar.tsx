@@ -17,7 +17,7 @@ interface TabBarProps {
 }
 
 const TABS: Tab[] = [
-  { href: "/beacons", label: "Beacons", icon: Users },
+  { href: "/pods", label: "Pods", icon: Users },
   { href: "/", label: "LFG", icon: Zap },
   { href: "/profile", label: "Profile", icon: UserCircle },
 ];
@@ -35,7 +35,7 @@ export function TabBar({ currentUserId }: TabBarProps) {
         <Typography
           sx={{ fontSize: "1rem", fontWeight: 700, color: "#fafafa" }}
         >
-          ManaMatch
+          PodMaker
         </Typography>
         <NotificationBell currentUserId={currentUserId} />
       </header>
@@ -46,7 +46,7 @@ export function TabBar({ currentUserId }: TabBarProps) {
           <Typography
             sx={{ fontSize: "1.125rem", fontWeight: 700, color: "#fafafa" }}
           >
-            ManaMatch
+            PodMaker
           </Typography>
           <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
             <Box sx={{ display: "flex", gap: 1 }}>

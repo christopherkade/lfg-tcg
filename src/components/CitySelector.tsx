@@ -27,7 +27,7 @@ export function CitySelector({ value, onChange }: CitySelectorProps) {
           {...params}
           label="City"
           size="small"
-          helperText="Used to only show you in-person beacons near you. Online beacons always show regardless of city."
+          helperText="Used to only show you in-person pods near you. Online pods always show regardless of city."
         />
       )}
     />

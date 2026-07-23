@@ -1,6 +1,6 @@
 # Product Requirement Document (PRD) & Technical Specification
 
-**Project:** Cross-TCG LFG Matchmaker (ManaMatch PWA)
+**Project:** Cross-TCG LFG Matchmaker (PodMaker PWA)
 **Stack:** Next.js (App Router), Supabase (Auth, Database, Realtime), Tailwind CSS, Framer Motion.
 **Approach:** Mobile-first Progressive Web App (PWA) focusing on real-time LFG matchmaking for IRL and Online play, initializing from a robust user profile preference system.
 
@@ -10,15 +10,15 @@
 
 ### Frontend
 
-- **Framework:** Next.js (App Router, leveraging Client Components for reactive settings forms and real-time beacon feed updates).
-- **Navigation:** A three-tab information architecture — **Active Beacons**, **LFG**, **Profile** — rendered as a fixed bottom tab bar with icons on mobile, and a top navbar with icon + label on desktop (`sm:` breakpoint and up). See Section 5 for the full screen breakdown.
+- **Framework:** Next.js (App Router, leveraging Client Components for reactive settings forms and real-time pod feed updates).
+- **Navigation:** A three-tab information architecture — **Active Pods**, **LFG**, **Profile** — rendered as a fixed bottom tab bar with icons on mobile, and a top navbar with icon + label on desktop (`sm:` breakpoint and up). See Section 5 for the full screen breakdown.
 - **Styling:** Tailwind CSS, designed mobile-first.
-- **Animations:** **Framer Motion** for conditional layout morphing (the Profile screen's power bracket picker) and the active beacon pulse.
+- **Animations:** **Framer Motion** for conditional layout morphing (the Profile screen's power bracket picker) and the active pod pulse.
 
 ### Backend & Realtime
 
 - **Database & Auth:** Supabase (PostgreSQL with Row Level Security). Authentication via Discord OAuth only (see Section 2).
-- **Realtime Subscriptions:** Enabled on the `beacons`, `beacon_joins`, and `notifications` tables to push instant matching feeds and notification-center updates.
+- **Realtime Subscriptions:** Enabled on the `pods`, `pod_joins`, and `notifications` tables to push instant matching feeds and notification-center updates.
 - **Notification center:** A persisted `notifications` table (populated exclusively by SECURITY DEFINER database triggers, not application code) backs a header bell with an unread-count badge — see Section 3's Notifications subsection and Section 7.
 
 ---
@@ -31,7 +31,7 @@
 - **Discord handle prefill:** On first login, the user's Discord identity metadata (`user.user_metadata`) is used to prefill the `discord_handle` field on the Profile screen (identity fields only, see Section 5); the user can edit it before submitting.
 - **Route gating:**
   - `proxy.ts` (this Next.js version's renamed `middleware.ts`) performs an _optimistic_ check for the Supabase auth cookie and redirects unauthenticated requests to `/login` (except `/login` and `/auth/callback` themselves). Proxy is not a substitute for real session validation.
-  - The real gate is server-side: each protected Server Component queries `profiles` by `auth.uid()`. If no session exists, redirect to `/login`. If a session exists but no `profiles` row exists yet, redirect to `/profile` to force onboarding before the LFG or Active Beacons tabs can be reached.
+  - The real gate is server-side: each protected Server Component queries `profiles` by `auth.uid()`. If no session exists, redirect to `/login`. If a session exists but no `profiles` row exists yet, redirect to `/profile` to force onboarding before the LFG or Active Pods tabs can be reached.
 
 ---
 
@@ -41,15 +41,15 @@ Execute this SQL snippet in your Supabase SQL Editor. The canonical, up-to-date 
 
 > **Important:** Every `preferred_*` column on `profiles` has a sensible default (see DDL below), so a brand-new profile row — created with only `id`/`username`/`discord_handle` from the Profile screen's identity form — is valid immediately without the constraints failing. This is what allows onboarding to stay a simple two-field form while the LFG search dialog (Section 5) still has real values to pre-fill with on first use.
 >
-> **Profile stores the _last-used_ search settings, not a fixed preference.** Game, format, playstyle, acceptable power brackets, match type, location, and desired group size are edited exclusively via the "Search" dialog on the LFG tab (not the Profile screen). Every time `createBeacon` runs, it both (a) updates these `preferred_*` columns to match what was just searched for, and (b) snapshots them into the new `beacons` row. This keeps the dialog's next pre-fill, and the Match Feed's filtering, in sync with the user's most recent search.
+> **Profile stores the _last-used_ search settings, not a fixed preference.** Game, format, playstyle, acceptable power brackets, match type, location, and desired group size are edited exclusively via the "Search" dialog on the LFG tab (not the Profile screen). Every time `createPod` runs, it both (a) updates these `preferred_*` columns to match what was just searched for, and (b) snapshots them into the new `pods` row. This keeps the dialog's next pre-fill, and the Match Feed's filtering, in sync with the user's most recent search.
 >
-> **`city` is the one profile column that's identity-like rather than a `preferred_*` search setting.** It's edited on the Profile screen (via `CitySelector`, alongside username/discord handle) rather than the LFG Search dialog, because it describes where the user generally is, not something they re-pick per search. `createBeacon`/`updateBeacon` still snapshot it onto each `beacons` row (same pattern as the `preferred_*` columns) so the Match Feed (Section 6) can scope IRL beacons by a plain column filter without joining back to `profiles`.
+> **`city` is the one profile column that's identity-like rather than a `preferred_*` search setting.** It's edited on the Profile screen (via `CitySelector`, alongside username/discord handle) rather than the LFG Search dialog, because it describes where the user generally is, not something they re-pick per search. `createPod`/`updatePod` still snapshot it onto each `pods` row (same pattern as the `preferred_*` columns) so the Match Feed (Section 6) can scope IRL pods by a plain column filter without joining back to `profiles`.
 >
-> **City is a config-driven slug, not free text — see `constants/citiesConfig.ts` (`CITIES_CONFIG`/`CITY_MAP`).** It mirrors `GAMES_CONFIG`'s extensibility pattern (Section 4): supporting a new city is a one-line addition to that array, no schema/migration needed. Using a stable slug (not the free-text `location_name` a searcher types per-beacon) is what lets the Match Feed (Section 6) scope IRL beacons to the viewer's city with a plain equality check instead of unreliable fuzzy text matching. `profiles.city` is optional — set once on the Profile screen (Section 5) like `username`/`discord_handle`, not part of the per-search "Search" dialog — and every `createBeacon`/`updateBeacon` call snapshots its current value onto the beacon's own `city` column, the same way the other `preferred_*` columns are snapshotted onto their beacon counterparts.
+> **City is a config-driven slug, not free text — see `constants/citiesConfig.ts` (`CITIES_CONFIG`/`CITY_MAP`).** It mirrors `GAMES_CONFIG`'s extensibility pattern (Section 4): supporting a new city is a one-line addition to that array, no schema/migration needed. Using a stable slug (not the free-text `location_name` a searcher types per-pod) is what lets the Match Feed (Section 6) scope IRL pods to the viewer's city with a plain equality check instead of unreliable fuzzy text matching. `profiles.city` is optional — set once on the Profile screen (Section 5) like `username`/`discord_handle`, not part of the per-search "Search" dialog — and every `createPod`/`updatePod` call snapshots its current value onto the pod's own `city` column, the same way the other `preferred_*` columns are snapshotted onto their pod counterparts.
 >
-> **`beacons` SELECT RLS must include accepted members, not just `status = 'ACTIVE'` or the owner.** Supabase Realtime's `postgres_changes` re-checks a table's SELECT policy against the row being changed for every single subscriber, on every event — if that check fails for a given subscriber, they simply never receive the event (no error, it's silent). If the policy were only `status = 'ACTIVE' OR user_id = auth.uid()`, then the instant a host marks their beacon `MATCHED`, every accepted member's subscription would start failing that check (they're neither `ACTIVE` nor the owner), so they'd never find out: `MatchedBeaconWatcher`'s `MatchedDialog` wouldn't fire for them, and their own `MatchFeed` would keep showing the now-stale card forever (no event ever tells their client to refetch and drop it). The fix is allowing accepted members through the policy regardless of the beacon's current `status`.
+> **`pods` SELECT RLS must include accepted members, not just `status = 'ACTIVE'` or the owner.** Supabase Realtime's `postgres_changes` re-checks a table's SELECT policy against the row being changed for every single subscriber, on every event — if that check fails for a given subscriber, they simply never receive the event (no error, it's silent). If the policy were only `status = 'ACTIVE' OR user_id = auth.uid()`, then the instant a host marks their pod `MATCHED`, every accepted member's subscription would start failing that check (they're neither `ACTIVE` nor the owner), so they'd never find out: `MatchedPodWatcher`'s `MatchedDialog` wouldn't fire for them, and their own `MatchFeed` would keep showing the now-stale card forever (no event ever tells their client to refetch and drop it). The fix is allowing accepted members through the policy regardless of the pod's current `status`.
 >
-> **That accepted-member check must go through the `public.is_accepted_beacon_member(uuid)` SECURITY DEFINER function, not an inline `exists (select 1 from beacon_joins ...)`.** `beacon_joins`'s own SELECT policy queries `beacons` back (to check host ownership), so an inline subquery on `beacons` creates a policy cycle — beacons policy → beacon_joins policy → beacons policy → ... — which Postgres rejects with `infinite recursion detected in policy for relation "beacons"`. The SECURITY DEFINER function runs as its (RLS-bypassing) owner, so its internal query against `beacon_joins` doesn't re-trigger `beacon_joins`'s RLS policy, breaking the cycle.
+> **That accepted-member check must go through the `public.is_accepted_pod_member(uuid)` SECURITY DEFINER function, not an inline `exists (select 1 from pod_joins ...)`.** `pod_joins`'s own SELECT policy queries `pods` back (to check host ownership), so an inline subquery on `pods` creates a policy cycle — pods policy → pod_joins policy → pods policy → ... — which Postgres rejects with `infinite recursion detected in policy for relation "pods"`. The SECURITY DEFINER function runs as its (RLS-bypassing) owner, so its internal query against `pod_joins` doesn't re-trigger `pod_joins`'s RLS policy, breaking the cycle.
 
 ```sql
 -- Baseline system enums
@@ -82,8 +82,8 @@ CREATE TABLE profiles (
     )
 );
 
--- 2. Beacons Table (active LFG requests, snapshotting the host's profile settings)
-CREATE TABLE beacons (
+-- 2. Pods Table (active LFG requests, snapshotting the host's profile settings)
+CREATE TABLE pods (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
     user_id UUID REFERENCES profiles(id) ON DELETE CASCADE NOT NULL,
     game_key TEXT NOT NULL,
@@ -101,37 +101,37 @@ CREATE TABLE beacons (
     expires_at TIMESTAMP WITH TIME ZONE DEFAULT (NOW() + INTERVAL '4 hours')
 );
 
--- Enforce a single ACTIVE beacon per user
-CREATE UNIQUE INDEX beacons_one_active_per_user ON beacons(user_id) WHERE status = 'ACTIVE';
+-- Enforce a single ACTIVE pod per user
+CREATE UNIQUE INDEX pods_one_active_per_user ON pods(user_id) WHERE status = 'ACTIVE';
 
--- 3. Beacon Joins (Join requests, subject to host approval)
-CREATE TABLE beacon_joins (
+-- 3. Pod Joins (Join requests, subject to host approval)
+CREATE TABLE pod_joins (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-    beacon_id UUID REFERENCES beacons(id) ON DELETE CASCADE NOT NULL,
+    pod_id UUID REFERENCES pods(id) ON DELETE CASCADE NOT NULL,
     user_id UUID REFERENCES profiles(id) ON DELETE CASCADE NOT NULL,
     status join_status NOT NULL DEFAULT 'PENDING',
     joined_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    CONSTRAINT unique_user_beacon UNIQUE (beacon_id, user_id)
+    CONSTRAINT unique_user_pod UNIQUE (pod_id, user_id)
 );
 
 -- 4. Notifications (persisted notification center backing the header bell)
 CREATE TYPE notification_type AS ENUM (
-    'JOIN_REQUEST', 'JOIN_ACCEPTED', 'JOIN_REJECTED', 'MEMBER_LEFT', 'REMOVED_FROM_BEACON', 'BEACON_UPDATED'
+    'JOIN_REQUEST', 'JOIN_ACCEPTED', 'JOIN_REJECTED', 'MEMBER_LEFT', 'POD_UPDATED'
 );
 CREATE TABLE notifications (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
     recipient_id UUID REFERENCES profiles(id) ON DELETE CASCADE NOT NULL,
     actor_id UUID REFERENCES profiles(id) ON DELETE SET NULL,
     type notification_type NOT NULL,
-    beacon_id UUID REFERENCES beacons(id) ON DELETE CASCADE,
+    pod_id UUID REFERENCES pods(id) ON DELETE CASCADE,
     read_at TIMESTAMP WITH TIME ZONE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 ```
 
-> **Notifications have no `message` column.** Display copy is composed client-side (`NotificationBell`'s `describeNotification()`) from `type` plus the embedded `actor`/`beacon` rows — this keeps copy easy to change/localize later without needing to backfill historical rows.
+> **Notifications have no `message` column.** Display copy is composed client-side (`NotificationBell`'s `describeNotification()`) from `type` plus the embedded `actor`/`pod` rows — this keeps copy easy to change/localize later without needing to backfill historical rows.
 >
-> **Rows are inserted exclusively by SECURITY DEFINER database triggers, never by application code.** `notify_on_beacon_join_insert/update/delete` (on `beacon_joins`) and `notify_on_beacon_update` (on `beacons`) — all defined alongside the RLS policies in `supabase/schema.sql` — cover, respectively: a new join request (host notified), a request accepted/rejected (joiner notified), an accepted member leaving (host notified), and the host editing an already-live beacon's details (every accepted member notified). Driving this from triggers rather than the server actions in `src/app/actions/` means every current and future mutation path gets consistent notification coverage automatically, and lets `notifications` ship with **no client-facing INSERT policy at all** — a user can never fabricate a notification for someone else. A `MATCHED` status transition is deliberately **not** one of these five types; it already has its own dedicated blocking `MatchedDialog` UX (via `MatchedBeaconWatcher`, see Section 5's Join Request Flow step 6), not a notification-center entry.
+> **Rows are inserted exclusively by SECURITY DEFINER database triggers, never by application code.** `notify_on_pod_join_insert/update/delete` (on `pod_joins`) and `notify_on_pod_update` (on `pods`) — all defined alongside the RLS policies in `supabase/schema.sql` — cover, respectively: a new join request (host notified), a request accepted/rejected (joiner notified), an accepted member leaving (host notified), and the host editing an already-live pod's details (every accepted member notified). Driving this from triggers rather than the server actions in `src/app/actions/` means every current and future mutation path gets consistent notification coverage automatically, and lets `notifications` ship with **no client-facing INSERT policy at all** — a user can never fabricate a notification for someone else. A `MATCHED` status transition is deliberately **not** one of these five types; it already has its own dedicated blocking `MatchedDialog` UX (via `MatchedPodWatcher`, see Section 5's Join Request Flow step 6), not a notification-center entry.
 
 ### Row Level Security
 
@@ -141,13 +141,13 @@ RLS must be enabled on all three tables with the following policies:
 | --------------- | --------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `profiles`      | SELECT          | Any authenticated user (needed to display host/joiner info in the feed and join requests)                                                                                                                                                                                                    |
 | `profiles`      | INSERT / UPDATE | Only where `auth.uid() = id`                                                                                                                                                                                                                                                                 |
-| `beacons`       | SELECT          | Where `status = 'ACTIVE'` OR `user_id = auth.uid()` (owners can always see their own beacon) OR `public.is_accepted_beacon_member(beacons.id)` is true (accepted members keep visibility after it leaves `ACTIVE`, e.g. `MATCHED` — see the Realtime + RLS-recursion notes below the schema) |
-| `beacons`       | INSERT          | Only where `user_id = auth.uid()`                                                                                                                                                                                                                                                            |
-| `beacons`       | UPDATE          | Only where `user_id = auth.uid()` (status / `max_players` changes)                                                                                                                                                                                                                           |
-| `beacon_joins`  | SELECT          | Where `status = 'ACCEPTED'` (accepted members are public on active beacons) OR `user_id = auth.uid()` (own requests) OR the beacon is owned by `auth.uid()` (host reviewing requests)                                                                                                        |
-| `beacon_joins`  | INSERT          | Only where `user_id = auth.uid()` AND the target beacon is not owned by `auth.uid()` (cannot join your own beacon)                                                                                                                                                                           |
-| `beacon_joins`  | UPDATE          | Only where the target beacon is owned by `auth.uid()` (only the host can Accept/Reject)                                                                                                                                                                                                      |
-| `beacon_joins`  | DELETE          | Where `user_id = auth.uid()` (a joiner can cancel a PENDING request or leave after being ACCEPTED) OR the target beacon is owned by `auth.uid()` (the host removing an already-ACCEPTED member, `removeMember`) — the same inline `beacons` ownership subquery already used by the UPDATE policy above, not a recursion risk since it only reads `beacons`' SELECT policy (itself routed through the SECURITY DEFINER `is_accepted_beacon_member`, not back into `beacon_joins`)                    |
+| `pods`       | SELECT          | Where `status = 'ACTIVE'` OR `user_id = auth.uid()` (owners can always see their own pod) OR `public.is_accepted_pod_member(pods.id)` is true (accepted members keep visibility after it leaves `ACTIVE`, e.g. `MATCHED` — see the Realtime + RLS-recursion notes below the schema) |
+| `pods`       | INSERT          | Only where `user_id = auth.uid()`                                                                                                                                                                                                                                                            |
+| `pods`       | UPDATE          | Only where `user_id = auth.uid()` (status / `max_players` changes)                                                                                                                                                                                                                           |
+| `pod_joins`  | SELECT          | Where `status = 'ACCEPTED'` (accepted members are public on active pods) OR `user_id = auth.uid()` (own requests) OR the pod is owned by `auth.uid()` (host reviewing requests)                                                                                                        |
+| `pod_joins`  | INSERT          | Only where `user_id = auth.uid()` AND the target pod is not owned by `auth.uid()` (cannot join your own pod)                                                                                                                                                                           |
+| `pod_joins`  | UPDATE          | Only where the target pod is owned by `auth.uid()` (only the host can Accept/Reject)                                                                                                                                                                                                      |
+| `pod_joins`  | DELETE          | Only where `user_id = auth.uid()` (a joiner can cancel a PENDING request or leave after being ACCEPTED)                                                                                                                                                                                      |
 | `notifications` | SELECT          | Only where `recipient_id = auth.uid()`                                                                                                                                                                                                                                                       |
 | `notifications` | UPDATE          | Only where `recipient_id = auth.uid()` (marking read/all-read)                                                                                                                                                                                                                               |
 | `notifications` | DELETE          | Only where `recipient_id = auth.uid()` (dismissing one notification or "Clear all")                                                                                                                                                                                                          |
@@ -155,13 +155,13 @@ RLS must be enabled on all three tables with the following policies:
 
 ### Realtime
 
-Enable Supabase Realtime replication on the `beacons`, `beacon_joins`, and `notifications` tables to push instant matching feed, join-request, and notification-center updates.
+Enable Supabase Realtime replication on the `pods`, `pod_joins`, and `notifications` tables to push instant matching feed, join-request, and notification-center updates.
 
 ---
 
 ## 4. Core Extensibility Architecture (`/constants/gamesConfig.ts`)
 
-This configuration matrix drives both the Profile screen's settings form and the Active Beacons match feed filtering.
+This configuration matrix drives both the Profile screen's settings form and the Active Pods match feed filtering.
 
 ```typescript
 export interface GameSetting {
@@ -231,7 +231,7 @@ export interface CitySetting {
 }
 
 // Adding a new city is a one-line addition here — no schema/migration
-// needed. `key` is the stable slug persisted on profiles.city/beacons.city.
+// needed. `key` is the stable slug persisted on profiles.city/pods.city.
 export const CITIES_CONFIG: CitySetting[] = [
   { key: "new_york", label: "New York City" },
   { key: "los_angeles", label: "Los Angeles" },
@@ -256,7 +256,7 @@ export const CITY_MAP: Record<string, CitySetting> = Object.fromEntries(
 
 ### Navigation Shell
 
-Three tabs, in this left-to-right order: **Active Beacons**, **LFG**, **Profile**. `LFG` (`/`) is the middle tab and the default route. `Active Beacons` (`/beacons`) is on the left. `Profile` (`/profile`) is on the right.
+Three tabs, in this left-to-right order: **Active Pods**, **LFG**, **Profile**. `LFG` (`/`) is the middle tab and the default route. `Active Pods` (`/pods`) is on the left. `Profile` (`/profile`) is on the right.
 
 - **Mobile:** a fixed bottom tab bar, one icon + label per tab.
 - **Desktop (`sm:` and up):** a top navbar with the app name on the left and the three tabs (icon + label) on the right, replacing the bottom bar.
@@ -264,7 +264,7 @@ Three tabs, in this left-to-right order: **Active Beacons**, **LFG**, **Profile*
 ### Screen 1: Profile (`/profile/page.tsx`) — identity only
 
 - **Standard Fields:** Text inputs for `username` and `discord_handle` (the latter prefilled from Discord OAuth identity metadata, see Section 2, and editable).
-- **City Field (`CitySelector`):** A config-driven autocomplete (options from `CITIES_CONFIG`, see Section 4) selecting `profiles.city`. Optional — a user who only ever plays Online can leave it unset. This is what lets the Match Feed (Section 5's Screen 3, Section 6) automatically scope IRL beacons to the viewer's own city while still always showing every Online beacon.
+- **City Field (`CitySelector`):** A config-driven autocomplete (options from `CITIES_CONFIG`, see Section 4) selecting `profiles.city`. Optional — a user who only ever plays Online can leave it unset. This is what lets the Match Feed (Section 5's Screen 3, Section 6) automatically scope IRL pods to the viewer's own city while still always showing every Online pod.
 - Saving submits `username`/`discord_handle`/`city` in one upsert to `profiles` (see Section 3); the `preferred_*` search-setting columns are left untouched by this form (they're edited via the LFG Search dialog instead, see Screen 2).
 - **Sign Out:** A destructive-styled (red) button below the profile form that calls `supabase.auth.signOut()` and redirects to `/login`.
 
@@ -291,80 +291,79 @@ The LFG tab's base state renders **only the pulsing action button** (plus a smal
    - **Format Selector:** Button list of `GAMES_CONFIG[game].formats` (hidden when the game only has one format).
    - **Match Type Switch:** Segmented toggle between **IRL** and **ONLINE**.
    - **Location Field (conditional):** Required text input, shown only when Match Type is **IRL**.
-   - **Scheduled Date & Time (conditional):** A `DatePicker` + `TimePicker` pair, required only when Match Type is **IRL** (combined into `beacons.scheduled_at`). Left unset for **ONLINE** beacons, which fall back to `created_at` wherever a beacon's date/time is displayed or filtered (Match Feed cards, `BeaconDetailDialog`'s "When" row, and the Date filter in Section 6).
+   - **Scheduled Date & Time (conditional):** A `DatePicker` + `TimePicker` pair, required only when Match Type is **IRL** (combined into `pods.scheduled_at`). Left unset for **ONLINE** pods, which fall back to `created_at` wherever a pod's date/time is displayed or filtered (Match Feed cards, `PodDetailDialog`'s "When" row, and the Date filter in Section 6).
    - **Playstyle Toggle:** Segmented toggle between **Casual** and **Competitive**.
    - **Conditional Power Bracket Interface (Framer Motion Enhanced, multi-select):** Shown only when `selectedGame === 'MTG'`. Each of the 5 nodes toggles independently — any combination can be selected. Submission is blocked until at least one bracket is selected while the game is MTG; switching away from MTG clears the selection.
-   - **Players Needed Stepper:** Numeric stepper (2–6, default 2) — total group size including the host. When editing an already-live beacon (`updateBeacon`), this can't be lowered below the beacon's current accepted group size (accepted `beacon_joins` + the host) — `updateBeacon` re-checks that count server-side and rejects the edit with an error rather than silently shrinking the cap below who's already in.
+   - **Players Needed Stepper:** Numeric stepper (2–6, default 2) — total group size including the host. When editing an already-live pod (`updatePod`), this can't be lowered below the pod's current accepted group size (accepted `pod_joins` + the host) — `updatePod` re-checks that count server-side and rejects the edit with an error rather than silently shrinking the cap below who's already in.
    - **Notes Field (optional):** A free-text textarea (300 char max, with a live character counter) for anything else players should know (deck theme, house rules, etc.). Reset to empty each time the dialog opens — unlike the other fields, it is a one-off message for this search, not a persisted preference.
-   - A **Search** button at the bottom of the dialog submits these fields (see `createBeacon` below); a **Cancel** button (or clicking the backdrop) closes the dialog without starting a search.
-2. **Search Initialization:** Clicking **Search** calls `createBeacon` with the dialog's field values. This both (a) updates the user's `profiles.preferred_*` columns to match (so the dialog pre-fills with this search next time, and the Match Feed keeps filtering off it), and (b) snapshots those same values into a new `beacons` row (game, format, playstyle, brackets → `power_tiers`, match type, location, `max_players`, notes). The `notes` value is stored only on the `beacons` row, not persisted onto `profiles`. Blocked if the user already has an ACTIVE beacon (enforced by the `beacons_one_active_per_user` index). On success the dialog closes and the button starts its infinite pulsing glow animation, mapped to the current game's `glowColor`.
-3. **Search Resignation:** While searching, clicking the button (now showing **CANCEL**) directly flips the beacon's `status` to `EXPIRED` — no dialog involved.
+   - A **Search** button at the bottom of the dialog submits these fields (see `createPod` below); a **Cancel** button (or clicking the backdrop) closes the dialog without starting a search.
+2. **Search Initialization:** Clicking **Search** calls `createPod` with the dialog's field values. This both (a) updates the user's `profiles.preferred_*` columns to match (so the dialog pre-fills with this search next time, and the Match Feed keeps filtering off it), and (b) snapshots those same values into a new `pods` row (game, format, playstyle, brackets → `power_tiers`, match type, location, `max_players`, notes). The `notes` value is stored only on the `pods` row, not persisted onto `profiles`. Blocked if the user already has an ACTIVE pod (enforced by the `pods_one_active_per_user` index). On success the dialog closes and the button starts its infinite pulsing glow animation, mapped to the current game's `glowColor`.
+3. **Search Resignation:** While searching, clicking the button (now showing **CANCEL**) directly flips the pod's `status` to `EXPIRED` — no dialog involved.
 
-### Screen 3: Active Beacons (`/beacons/page.tsx`) — browse + host management
+### Screen 3: Active Pods (`/pods/page.tsx`) — browse + host management
 
-The left tab. Combines the Match Feed (browsing others' beacons) with the host's own Beacon Panel (if they have an ACTIVE beacon), so all beacon-related activity lives in one place separate from the LFG action button. The Match Feed's filter bar (see below) is always shown above the feed, even with zero results, so its "No active beacons match your filters yet." message renders directly beneath the filters/heading rather than centered in the remaining screen space.
+The left tab. Combines the Match Feed (browsing others' pods) with the host's own Pod Panel (if they have an ACTIVE pod), so all pod-related activity lives in one place separate from the LFG action button. The Match Feed's filter bar (see below) is always shown above the feed, even with zero results, so its "No active pods match your filters yet." message renders directly beneath the filters/heading rather than centered in the remaining screen space.
 
-**My Beacon Panel** (shown at the top of this screen only when the user has an ACTIVE beacon):
+**My Pod Panel** (shown at the top of this screen only when the user has an ACTIVE pod):
 
-- Lists pending join requests (`beacon_joins.status = 'PENDING'`) as requester profile cards (avatar, username, discord_handle) with **Accept** / **Reject** actions.
+- Lists pending join requests (`pod_joins.status = 'PENDING'`) as requester profile cards (avatar, username, discord_handle) with **Accept** / **Reject** actions.
 - Lists already-accepted members (`status = 'ACCEPTED'`) so the host can track pod fill progress against `max_players`. Discord's public API does not allow third-party apps to auto-create a group DM for arbitrary users (the `gdm.join` OAuth scope needed is restricted/deprecated for new apps), and a profile-by-ID deep link (`discord.com/users/<id>`) isn't a viable substitute either — Discord only resolves that for users you already share a server with or are friends with, so for two strangers matched by this app it just bounces to `/channels/@me` regardless of how correct the id is. The only mechanism that reliably works for strangers is Discord's own "Add Friend" search-by-username flow, so each Group Member row has its own **Copy Handle** button, plus a **Copy All Handles** button below the list, so the host can paste handles straight into that search.
-- Each Group Member row also has a **Remove** button (host-only) for dropping an already-ACCEPTED member from the group — e.g. a no-show or a bad fit before the beacon is marked matched. It opens `ConfirmRemoveMemberDialog` (same lightweight warning-dialog pattern as `ConfirmMarkMatchedDialog`) before calling `removeMember`, which simply deletes that `beacon_joins` row (same effect on group size/re-request eligibility as the member leaving voluntarily via `leaveBeacon`). Unlike a voluntary leave, this notifies the *removed member* rather than the host — see the `REMOVED_FROM_BEACON` type below.
 - Accept/Reject actions are disabled once accepted joiners plus the host reach `max_players`.
-- **Mark as Matched button:** host-only. Rather than immediately flipping the beacon's `status`, it first opens a lightweight **warning dialog** (`ConfirmMarkMatchedDialog`) reminding the host to add everyone on Discord (via the Copy Handle buttons above) before continuing, since marking as matched removes the beacon from the match feed for good. Only once the host clicks **Mark as Matched** inside that dialog does the beacon's `status` actually become `MATCHED` (manual action — no automatic transition based on fill count).
+- **Mark as Matched button:** host-only. Rather than immediately flipping the pod's `status`, it first opens a lightweight **warning dialog** (`ConfirmMarkMatchedDialog`) reminding the host to add everyone on Discord (via the Copy Handle buttons above) before continuing, since marking as matched removes the pod from the match feed for good. Only once the host clicks **Mark as Matched** inside that dialog does the pod's `status` actually become `MATCHED` (manual action — no automatic transition based on fill count).
 
-**Match Feed** (below My Beacon Panel, always shown): browsing UI for other users' active beacons. It always filters by the viewer's own `playstyle_key` (from `profiles.preferred_playstyle`) **and by city scoping** (not user-adjustable, same as `playstyle_key` — see Section 6): Online beacons always show regardless of city, while IRL beacons are always restricted to ones whose snapshotted `city` matches the viewer's own `profiles.city`; a viewer with no city on file sees zero IRL beacons (an inline hint on the screen points them to the Profile tab) but still sees every Online beacon. On top of that sits an adjustable **`BeaconFilters`** bar (`/components/BeaconFilters.tsx`) rendered above the "Match Feed" heading, so it's the first browsing control on the whole screen. It renders as a single row of pill-shaped chips that **wraps onto additional lines rather than horizontally scrolling** once it runs out of width (no overflow scrollbar) — one chip per filter, each labeled with its current value or a neutral placeholder (e.g. "Date", "Format") when unset, and styled distinctly (filled) once active. Clicking a chip opens a small `Popover` anchored to it containing that filter's actual control; only one popover is open at a time. The filters are: **Game** (segmented buttons, defaulting to the viewer's `preferred_game`, with an "All Games" option — changing it resets Format and Power Bracket, mirroring `LfgDialog`'s `handleGameChange`), **Match Type** (All / IRL / Online), **Format** (chip only rendered once a specific game with more than one format is selected), **Date** (a clearable date picker matched against each beacon's effective date — `scheduled_at`, falling back to `created_at` for beacons with none), and **Power Bracket** (chip only rendered for games with `hasPowerTiers`; unlike Game, this does **not** default from `profiles.preferred_brackets` — it always starts unset/unrestricted, since that column reflects the viewer's last one-off LFG *search*, not a standing browse preference, and silently applying it here previously hid beacons outside whatever bracket the viewer happened to search for last with no visible cause). A **Clear all** text link (shown only once at least one filter differs from the neutral "show everything" state) resets every filter, including Game, back to "All" (this never touches city scoping, which isn't part of `BeaconFiltersValue`). See Section 6. Each card is a summary only (host, format/type/location/city/brackets, accepted members, and the viewer's own join status badge if they've already requested) — it has no action button. Clicking anywhere on the card opens a **Beacon Detail dialog** (`BeaconDetailDialog`) showing the full beacon information — host identity, game/format/playstyle/match type/location/city, power brackets, `notes`, and the accepted-members list — plus the **Request to Join** action/status, which only ever appears in this dialog.
+**Match Feed** (below My Pod Panel, always shown): browsing UI for other users' active pods. It always filters by the viewer's own `playstyle_key` (from `profiles.preferred_playstyle`) **and by city scoping** (not user-adjustable, same as `playstyle_key` — see Section 6): Online pods always show regardless of city, while IRL pods are always restricted to ones whose snapshotted `city` matches the viewer's own `profiles.city`; a viewer with no city on file sees zero IRL pods (an inline hint on the screen points them to the Profile tab) but still sees every Online pod. On top of that sits an adjustable **`PodFilters`** bar (`/components/PodFilters.tsx`) rendered above the "Match Feed" heading, so it's the first browsing control on the whole screen. It renders as a single row of pill-shaped chips that **wraps onto additional lines rather than horizontally scrolling** once it runs out of width (no overflow scrollbar) — one chip per filter, each labeled with its current value or a neutral placeholder (e.g. "Date", "Format") when unset, and styled distinctly (filled) once active. Clicking a chip opens a small `Popover` anchored to it containing that filter's actual control; only one popover is open at a time. The filters are: **Game** (segmented buttons, defaulting to the viewer's `preferred_game`, with an "All Games" option — changing it resets Format and Power Bracket, mirroring `LfgDialog`'s `handleGameChange`), **Match Type** (All / IRL / Online), **Format** (chip only rendered once a specific game with more than one format is selected), **Date** (a clearable date picker matched against each pod's effective date — `scheduled_at`, falling back to `created_at` for pods with none), and **Power Bracket** (chip only rendered for games with `hasPowerTiers`; unlike Game, this does **not** default from `profiles.preferred_brackets` — it always starts unset/unrestricted, since that column reflects the viewer's last one-off LFG *search*, not a standing browse preference, and silently applying it here previously hid pods outside whatever bracket the viewer happened to search for last with no visible cause). A **Clear all** text link (shown only once at least one filter differs from the neutral "show everything" state) resets every filter, including Game, back to "All" (this never touches city scoping, which isn't part of `PodFiltersValue`). See Section 6. Each card is a summary only (host, format/type/location/city/brackets, accepted members, and the viewer's own join status badge if they've already requested) — it has no action button. Clicking anywhere on the card opens a **Pod Detail dialog** (`PodDetailDialog`) showing the full pod information — host identity, game/format/playstyle/match type/location/city, power brackets, `notes`, and the accepted-members list — plus the **Request to Join** action/status, which only ever appears in this dialog.
 
 ### Join Request Flow (Match Feed → Host Approval → Mutual Reveal)
 
-1. A searcher browsing the Match Feed (Active Beacons tab) sees an ACTIVE beacon card showing the host's public info and any already-**ACCEPTED** members of the group/pod. Clicking the card opens the Beacon Detail dialog described above.
-2. Clicking **Request to Join** (from the detail dialog — the card itself has no join button) inserts a `beacon_joins` row with `status = 'PENDING'`. The dialog then shows a "Pending" state to the searcher, also reflected as a status badge back on the card.
-3. The host sees the new pending request appear in real time on their own Beacon Panel (Active Beacons tab), including the requester's profile. A `notifications` row is also inserted for the host (`JOIN_REQUEST`, via a database trigger — see Section 3), which the header `NotificationBell` surfaces as an unread badge plus, if the site is currently open, a native OS notification (via the browser `Notification` API, if permission was granted) and an in-app toast. Clicking the notification, toast, or its entry in the bell dropdown navigates the host to `/beacons` — the Beacon Panel there is where they act.
-4. The host clicks **Accept** or **Reject**. On accept, `status` becomes `'ACCEPTED'` and the requester is added to the visible members list on both the host's panel and the Match Feed card; the requester now also sees the full accepted-members list (including discord handles) for that beacon. On reject, `status` becomes `'REJECTED'` and the request is terminal (no re-request in this scope). Either way, a trigger inserts a `JOIN_ACCEPTED`/`JOIN_REJECTED` notification for the requester, surfaced the same way via `NotificationBell`.
-5. At any point before the beacon is matched, the searcher can back out from the **Beacon Detail dialog** itself: if their request is still `PENDING` the button reads **Cancel Request**; once `ACCEPTED` it reads **Leave**. Both call the same `leaveBeacon` action, which simply deletes their own `beacon_joins` row (the unique `(beacon_id, user_id)` constraint means they're free to request to join again afterwards, unlike a terminal `REJECTED` row). Leaving after being `ACCEPTED` triggers the host-facing `MEMBER_LEFT` notification described below; cancelling a still-`PENDING` request notifies no one.
-6. When the host marks the beacon as matched (see My Beacon Panel above), every ACCEPTED member (not the host, who already knows) is shown a blocking **`MatchedDialog`** — telling them to head to Discord and warning that the beacon's card is about to disappear from the match feed (since `MATCHED` beacons no longer satisfy the `status = 'ACTIVE'` filter every match feed query uses). This is a dialog rather than a dismissable snackbar/notification specifically because it's the only cue those members get that the card will vanish, and deliberately isn't part of the `notifications` bell (see Section 3). Delivered via `MatchedBeaconWatcher`'s realtime subscription (a `beacons` UPDATE handler checking `status = 'MATCHED'` plus an own-`beacon_joins` lookup), subject to the same foreground-only caveat as the rest of that component (see Section 7).
-7. A few further trigger-backed notification types round out the notification center (not tied to the join flow above): **`MEMBER_LEFT`** — the host is notified when an already-accepted member leaves their beacon voluntarily via `leaveBeacon` (cancelling a still-PENDING request notifies no one); **`REMOVED_FROM_BEACON`** — the removed member (not the host) is notified when the host removes them via `removeMember` (Section 5's My Beacon Panel "Remove" button) — the same `beacon_joins` DELETE trigger that fires `MEMBER_LEFT` distinguishes the two cases by comparing `auth.uid()` against the deleted row's `user_id` (member left) versus the beacon's `user_id` (host removed them); and **`BEACON_UPDATED`** — every accepted member is notified when the host edits their live beacon's details via `updateBeacon` (Section 5's My Beacon Panel "Edit Beacon" button).
+1. A searcher browsing the Match Feed (Active Pods tab) sees an ACTIVE pod card showing the host's public info and any already-**ACCEPTED** members of the group/pod. Clicking the card opens the Pod Detail dialog described above.
+2. Clicking **Request to Join** (from the detail dialog — the card itself has no join button) inserts a `pod_joins` row with `status = 'PENDING'`. The dialog then shows a "Pending" state to the searcher, also reflected as a status badge back on the card.
+3. The host sees the new pending request appear in real time on their own Pod Panel (Active Pods tab), including the requester's profile. A `notifications` row is also inserted for the host (`JOIN_REQUEST`, via a database trigger — see Section 3), which the header `NotificationBell` surfaces as an unread badge plus, if the site is currently open, a native OS notification (via the browser `Notification` API, if permission was granted) and an in-app toast. Clicking the notification, toast, or its entry in the bell dropdown navigates the host to `/pods` — the Pod Panel there is where they act.
+4. The host clicks **Accept** or **Reject**. On accept, `status` becomes `'ACCEPTED'` and the requester is added to the visible members list on both the host's panel and the Match Feed card; the requester now also sees the full accepted-members list (including discord handles) for that pod. On reject, `status` becomes `'REJECTED'` and the request is terminal (no re-request in this scope). Either way, a trigger inserts a `JOIN_ACCEPTED`/`JOIN_REJECTED` notification for the requester, surfaced the same way via `NotificationBell`.
+5. At any point before the pod is matched, the searcher can back out from the **Pod Detail dialog** itself: if their request is still `PENDING` the button reads **Cancel Request**; once `ACCEPTED` it reads **Leave**. Both call the same `leavePod` action, which simply deletes their own `pod_joins` row (the unique `(pod_id, user_id)` constraint means they're free to request to join again afterwards, unlike a terminal `REJECTED` row). Leaving after being `ACCEPTED` triggers the host-facing `MEMBER_LEFT` notification described below; cancelling a still-`PENDING` request notifies no one.
+6. When the host marks the pod as matched (see My Pod Panel above), every ACCEPTED member (not the host, who already knows) is shown a blocking **`MatchedDialog`** — telling them to head to Discord and warning that the pod's card is about to disappear from the match feed (since `MATCHED` pods no longer satisfy the `status = 'ACTIVE'` filter every match feed query uses). This is a dialog rather than a dismissable snackbar/notification specifically because it's the only cue those members get that the card will vanish, and deliberately isn't part of the `notifications` bell (see Section 3). Delivered via `MatchedPodWatcher`'s realtime subscription (a `pods` UPDATE handler checking `status = 'MATCHED'` plus an own-`pod_joins` lookup), subject to the same foreground-only caveat as the rest of that component (see Section 7).
+7. Two further trigger-backed notification types round out the notification center (not tied to the join flow above): **`MEMBER_LEFT`** — the host is notified when an already-accepted member leaves their pod (cancelling a still-PENDING request notifies no one); and **`POD_UPDATED`** — every accepted member is notified when the host edits their live pod's details via `updatePod` (Section 5's My Pod Panel "Edit Pod" button).
 
 ---
 
 ## 6. Match Feed Query Layout (`/components/MatchFeed.tsx`)
 
-A component updating dynamically via real-time channel infrastructure. It takes the viewer's `profile` and their user id as props, plus owns its own **`BeaconFiltersValue`** state (`/components/BeaconFilters.tsx`, rendered as the wrapping chip-and-popover bar described in Section 5) driving the filter bar described in Section 5. That state's *initial* value only seeds `gameKey` from the viewer's profile (`profile.preferred_game`) so first load still browses meaningfully instead of showing every game at once — every other field, including `powerBrackets`, starts unset/unrestricted (see Section 5's Power Bracket note on why it deliberately does **not** seed from `profiles.preferred_brackets`); from there the user can broaden or narrow any field (including Game, down to "All Games") independently of `profiles`.
+A component updating dynamically via real-time channel infrastructure. It takes the viewer's `profile` and their user id as props, plus owns its own **`PodFiltersValue`** state (`/components/PodFilters.tsx`, rendered as the wrapping chip-and-popover bar described in Section 5) driving the filter bar described in Section 5. That state's *initial* value only seeds `gameKey` from the viewer's profile (`profile.preferred_game`) so first load still browses meaningfully instead of showing every game at once — every other field, including `powerBrackets`, starts unset/unrestricted (see Section 5's Power Bracket note on why it deliberately does **not** seed from `profiles.preferred_brackets`); from there the user can broaden or narrow any field (including Game, down to "All Games") independently of `profiles`.
 
-**Any beacon the viewer has a live `beacon_joins` row on (`PENDING` or `ACCEPTED`) is always included in the results, unconditionally** — fetched via a separate, unfiltered query (against `beacon_joins` with `beacons!inner(...)` embedded) run every time alongside the filtered query below, then merged in (de-duplicated by id) ahead of the filtered rows. This exists so a beacon the viewer is actively part of can never disappear from their own feed just because they later change a browsing filter, or because it fails the always-on `playstyle_key`/city scoping described next — they still need to see it to track status, coordinate, or leave. That still-live join is itself scoped to `beacons.status = 'ACTIVE'` and not yet expired (a `MATCHED` beacon is deliberately excluded here too, same as everywhere else — it has its own dedicated `MatchedDialog` flow instead, see Section 5's Join Request Flow step 6).
+**Any pod the viewer has a live `pod_joins` row on (`PENDING` or `ACCEPTED`) is always included in the results, unconditionally** — fetched via a separate, unfiltered query (against `pod_joins` with `pods!inner(...)` embedded) run every time alongside the filtered query below, then merged in (de-duplicated by id) ahead of the filtered rows. This exists so a pod the viewer is actively part of can never disappear from their own feed just because they later change a browsing filter, or because it fails the always-on `playstyle_key`/city scoping described next — they still need to see it to track status, coordinate, or leave. That still-live join is itself scoped to `pods.status = 'ACTIVE'` and not yet expired (a `MATCHED` pod is deliberately excluded here too, same as everywhere else — it has its own dedicated `MatchedDialog` flow instead, see Section 5's Join Request Flow step 6).
 
-The separate filtered query always excludes the viewer's own beacon and expired rows, always filters by `playstyle_key` **and by city scoping** (city isn't part of `BeaconFiltersValue` — it's an always-on constraint like `playstyle_key`, not a user-adjustable filter): Online beacons (`type = 'ONLINE'`) always pass regardless of city; IRL beacons only pass if their snapshotted `city` equals the viewer's own `profiles.city`. If the viewer has no city on file, IRL beacons are excluded from this filtered query outright (it's skipped entirely when `filters.matchType === "IRL"`, since there's nothing to compare against) while Online beacons still show — the always-included joined beacons above are unaffected by this and still show regardless. The query joins each beacon's `beacon_joins` so accepted members can be rendered on the card, and conditionally applies each remaining filter field (game/format as plain equality checks once set to something other than "All", power brackets as an array **overlap** check `&&` once at least one is selected). The **Date** filter isn't a plain column filter — since ONLINE beacons have no `scheduled_at` — so it's applied client-side after the fetch, comparing each row's effective date (`scheduled_at ?? created_at`) against the selected day:
+The separate filtered query always excludes the viewer's own pod and expired rows, always filters by `playstyle_key` **and by city scoping** (city isn't part of `PodFiltersValue` — it's an always-on constraint like `playstyle_key`, not a user-adjustable filter): Online pods (`type = 'ONLINE'`) always pass regardless of city; IRL pods only pass if their snapshotted `city` equals the viewer's own `profiles.city`. If the viewer has no city on file, IRL pods are excluded from this filtered query outright (it's skipped entirely when `filters.matchType === "IRL"`, since there's nothing to compare against) while Online pods still show — the always-included joined pods above are unaffected by this and still show regardless. The query joins each pod's `pod_joins` so accepted members can be rendered on the card, and conditionally applies each remaining filter field (game/format as plain equality checks once set to something other than "All", power brackets as an array **overlap** check `&&` once at least one is selected). The **Date** filter isn't a plain column filter — since ONLINE pods have no `scheduled_at` — so it's applied client-side after the fetch, comparing each row's effective date (`scheduled_at ?? created_at`) against the selected day:
 
 ```typescript
-// filters is BeaconFiltersValue — local component state seeded from the
+// filters is PodFiltersValue — local component state seeded from the
 // viewer's profile, not a fixed reflection of it.
-const fetchActiveBeacons = async (
+const fetchActivePods = async (
   profile: Profile,
   currentUserId: string,
-  filters: BeaconFiltersValue,
+  filters: PodFiltersValue,
 ) => {
-  // Always-included, unfiltered: beacons the viewer has a live join on.
+  // Always-included, unfiltered: pods the viewer has a live join on.
   const { data: joinedData } = await supabase
-    .from("beacon_joins")
-    .select("beacons!inner(*, profiles(*), beacon_joins(*, profiles(*)))")
+    .from("pod_joins")
+    .select("pods!inner(*, profiles(*), pod_joins(*, profiles(*)))")
     .eq("user_id", currentUserId)
     .in("status", ["PENDING", "ACCEPTED"])
-    .eq("beacons.status", "ACTIVE")
-    .gt("beacons.expires_at", new Date().toISOString());
-  const joinedBeacons = (joinedData ?? []).map((row) => row.beacons);
+    .eq("pods.status", "ACTIVE")
+    .gt("pods.expires_at", new Date().toISOString());
+  const joinedPods = (joinedData ?? []).map((row) => row.pods);
 
   // City scoping short-circuit: an IRL-only view is impossible to satisfy
-  // for a viewer with no city on file — joinedBeacons above are unaffected.
+  // for a viewer with no city on file — joinedPods above are unaffected.
   let filteredRows = [];
   if (!(filters.matchType === "IRL" && !profile.city)) {
     let query = supabase
-      .from("beacons")
-      .select("*, profiles(*), beacon_joins(*, profiles(*))")
+      .from("pods")
+      .select("*, profiles(*), pod_joins(*, profiles(*))")
       .eq("playstyle_key", profile.preferred_playstyle)
       .eq("status", "ACTIVE")
       .gt("expires_at", new Date().toISOString())
       .neq("user_id", currentUserId);
 
-    // City scoping: Online beacons always show; IRL beacons are always
+    // City scoping: Online pods always show; IRL pods are always
     // restricted to the viewer's own city, regardless of the Match Type
     // filter below.
     if (filters.matchType === "ONLINE") {
@@ -380,7 +379,7 @@ const fetchActiveBeacons = async (
     if (filters.gameKey !== "ALL") query = query.eq("game_key", filters.gameKey);
     if (filters.formatKey !== "ALL") query = query.eq("format_key", filters.formatKey);
     // Overlap match: any shared bracket between the selected brackets and
-    // the beacon's snapshotted power_tiers counts as a match.
+    // the pod's snapshotted power_tiers counts as a match.
     if (filters.powerBrackets.length) {
       query = query.overlaps("power_tiers", filters.powerBrackets);
     }
@@ -388,19 +387,19 @@ const fetchActiveBeacons = async (
     const { data } = await query;
     filteredRows = data ?? [];
     if (filters.date) {
-      filteredRows = filteredRows.filter((beacon) =>
-        isSameDay(new Date(beacon.scheduled_at ?? beacon.created_at), filters.date),
+      filteredRows = filteredRows.filter((pod) =>
+        isSameDay(new Date(pod.scheduled_at ?? pod.created_at), filters.date),
       );
     }
   }
 
-  // Merge, joined beacons first, de-duplicated against the filtered rows.
-  const joinedIds = new Set(joinedBeacons.map((b) => b.id));
-  setBeacons([...joinedBeacons, ...filteredRows.filter((b) => !joinedIds.has(b.id))]);
+  // Merge, joined pods first, de-duplicated against the filtered rows.
+  const joinedIds = new Set(joinedPods.map((b) => b.id));
+  setPods([...joinedPods, ...filteredRows.filter((b) => !joinedIds.has(b.id))]);
 };
 ```
 
-Only `beacon_joins` rows with `status = 'ACCEPTED'` should be rendered as visible group members on each card; `PENDING`/`REJECTED` rows belonging to other users are not shown to searchers (RLS also restricts this — a searcher can only ever see their own join rows).
+Only `pod_joins` rows with `status = 'ACCEPTED'` should be rendered as visible group members on each card; `PENDING`/`REJECTED` rows belonging to other users are not shown to searchers (RLS also restricts this — a searcher can only ever see their own join rows).
 
 ---
 
@@ -410,19 +409,19 @@ This implementation pass targets **installability**, plus foreground join-reques
 
 - `app/manifest.ts` (Next.js built-in manifest convention) with name, short_name, theme/background colors, and 192x192 / 512x512 icons in `public/`.
 - No service worker, no offline caching in this scope.
-- **Notification center (not push):** `NotificationBell` (rendered in `TabBar`'s desktop navbar and a dedicated mobile top bar, since the mobile layout previously had no top header) reads/subscribes to the persisted `notifications` table (Section 3) and shows an unread-count badge, a dropdown of recent notifications, plus a native OS `Notification` and in-app toast when a new one arrives while the tab is open. Each notification row has its own dismiss (`X`) button (`deleteNotification`), and a **Clear all** link above the list (`deleteAllNotifications`) removes every notification for the user at once — both optimistically update local state before the server action resolves, and both are scoped to `recipient_id = auth.uid()` at the query level as well as by RLS (Section 3). `MatchedBeaconWatcher` (mounted app-wide in the `(app)` layout, formerly `JoinRequestNotifier`) separately shows a blocking `MatchedDialog` to accepted members when their beacon is marked `MATCHED` (see Section 5's Join Request Flow, step 6). Both only fire while the PWA/tab process is actually running (foreground or backgrounded tab) — there is no service worker or server-triggered push involved, so nothing is delivered while the app is fully closed. The persisted `notifications` table means the bell's unread history survives reloads/relaunches even though live delivery is foreground-only.
+- **Notification center (not push):** `NotificationBell` (rendered in `TabBar`'s desktop navbar and a dedicated mobile top bar, since the mobile layout previously had no top header) reads/subscribes to the persisted `notifications` table (Section 3) and shows an unread-count badge, a dropdown of recent notifications, plus a native OS `Notification` and in-app toast when a new one arrives while the tab is open. Each notification row has its own dismiss (`X`) button (`deleteNotification`), and a **Clear all** link above the list (`deleteAllNotifications`) removes every notification for the user at once — both optimistically update local state before the server action resolves, and both are scoped to `recipient_id = auth.uid()` at the query level as well as by RLS (Section 3). `MatchedPodWatcher` (mounted app-wide in the `(app)` layout, formerly `JoinRequestNotifier`) separately shows a blocking `MatchedDialog` to accepted members when their pod is marked `MATCHED` (see Section 5's Join Request Flow, step 6). Both only fire while the PWA/tab process is actually running (foreground or backgrounded tab) — there is no service worker or server-triggered push involved, so nothing is delivered while the app is fully closed. The persisted `notifications` table means the bell's unread history survives reloads/relaunches even though live delivery is foreground-only.
 
 ---
 
 ## 8. Explicit Scope Exclusions
 
 - No true push notifications (no service worker, no server-triggered delivery while the app is fully closed) and no offline/service-worker caching — see Section 7. The foreground `Notification`/snackbar join-request alert is not a substitute for push.
-- No geolocation/proximity matching for IRL beacons — `location_name` remains a free-text venue name, and city-level scoping (`profiles.city`/`beacons.city`, Section 3) is a fixed list of exact-match slugs (`CITIES_CONFIG`, Section 4), not real geolocation or a distance/radius calculation.
+- No geolocation/proximity matching for IRL pods — `location_name` remains a free-text venue name, and city-level scoping (`profiles.city`/`pods.city`, Section 3) is a fixed list of exact-match slugs (`CITIES_CONFIG`, Section 4), not real geolocation or a distance/radius calculation.
 - No automated expiry sweep job (pg_cron / scheduled Edge Function); expiry is enforced only via query-time `expires_at` filtering. A follow-up scheduled job is recommended but out of scope for this pass.
 - No pagination/infinite scroll on the Match Feed (MVP scale assumption).
 - No re-request after a `REJECTED` join (terminal state for this pass).
 - No per-search override screen separate from the dialog described in Section 5 — the LFG tab's Search dialog is the only place game settings are edited; the Profile tab holds identity fields (and sign-out) only.
-- No automatic Discord group DM/channel creation — Discord's public API requires each participant to individually authorize the `gdm.join` OAuth scope (restricted/effectively deprecated for new apps), and a bot token cannot create or add arbitrary users to a group DM. There's also no reliable profile-by-ID deep link for two strangers (see Section 5's My Beacon Panel). The Copy Handle / Copy All Handles buttons on the Group Members list are a manual-assist alternative, not real automation.
+- No automatic Discord group DM/channel creation — Discord's public API requires each participant to individually authorize the `gdm.join` OAuth scope (restricted/effectively deprecated for new apps), and a bot token cannot create or add arbitrary users to a group DM. There's also no reliable profile-by-ID deep link for two strangers (see Section 5's My Pod Panel). The Copy Handle / Copy All Handles buttons on the Group Members list are a manual-assist alternative, not real automation.
 
 ---
 
@@ -434,23 +433,21 @@ This implementation pass targets **installability**, plus foreground join-reques
 3. Execute the schema + RLS + Realtime SQL from Section 3 (`supabase/schema.sql`) in the Supabase SQL Editor.
 4. Scaffold core database types directly matching properties outlined in Section 3.
 5. Add `proxy.ts` for optimistic auth redirects and `/auth/callback/route.ts` for the Discord OAuth code exchange, per Section 2.
-6. Build the `(app)` route group with a shared layout rendering `TabBar` (mobile bottom nav / desktop top navbar) around three routes: `/` (LFG), `/beacons` (Active Beacons), `/profile` (Profile). `/login` and `/auth/callback` stay outside this group.
+6. Build the `(app)` route group with a shared layout rendering `TabBar` (mobile bottom nav / desktop top navbar) around three routes: `/` (LFG), `/pods` (Active Pods), `/profile` (Profile). `/login` and `/auth/callback` stay outside this group.
 7. Code the Profile screen (`/profile/page.tsx`) as an identity-only form (username, discord handle) plus a destructive Sign Out button, per Section 5.
 8. Code the LFG tab's Search dialog (`LfgDialog`), pre-filled from the profile's last-used settings (game, format, match type, location, playstyle, multi-select power brackets, players needed), wiring the conditional Framer Motion bracket picker to the MTG check.
 9. Build dynamic UI components leveraging Tailwind values inherited dynamically from `GAMES_CONFIG[game].themeColor`.
-10. Implement the beacon lifecycle as Server Actions: `createBeacon` takes the dialog's field values, persists them onto `profiles.preferred_*`, and snapshots them into a new `beacons` row; `cancelBeacon`/`markBeaconMatched` operate by id. Implement the join-request flow (request/accept/reject), per Sections 5 and 6.
+10. Implement the pod lifecycle as Server Actions: `createPod` takes the dialog's field values, persists them onto `profiles.preferred_*`, and snapshots them into a new `pods` row; `cancelPod`/`markPodMatched` operate by id. Implement the join-request flow (request/accept/reject), per Sections 5 and 6.
 11. Bind real-time reactive data hooks matching data parameter strings directly into the Postgres engine layers.
 12. Add `app/manifest.ts` and icons per Section 7.
-13. Add the optional `notes` field to the Search dialog and `beacons` table; add `BeaconDetailDialog` (opened by clicking a Match Feed card) per Section 5; add join-request alerting (native `Notification` + in-app snackbar on new join requests, mounted in the `(app)` layout) per Sections 5 and 7.
-14. Add per-member **Copy Handle** / **Copy All Handles** buttons to the Group Members list, and a **Mark as Matched** button that opens `ConfirmMarkMatchedDialog` (a warning reminding the host to add everyone on Discord first) before `markBeaconMatched` actually runs, per Section 5 and Section 8's Discord API constraint.
-15. Extend the join-request alerting with a `MatchedDialog`, shown to each accepted member (not the host) when their beacon transitions to `MATCHED`, per Section 5's Join Request Flow step 6.
-16. Add the persisted `notifications` table + `notification_type` enum + SECURITY DEFINER triggers (`notify_on_beacon_join_insert/update/delete`, `notify_on_beacon_update`) per Section 3, covering join request / accepted / rejected / member-left / beacon-updated. Build `NotificationBell` (unread badge, dropdown, toast + native notification on new inserts, realtime-subscribed with no server-side `filter` — RLS's `recipient_id = auth.uid()` check alone scopes each subscriber to their own rows, matching every other realtime subscription in this codebase) and mount it in `TabBar`'s desktop navbar plus a new mobile top bar. Narrow the former `JoinRequestNotifier` down to just the `MatchedDialog` watcher and rename it `MatchedBeaconWatcher`, since `NotificationBell` now owns the join-request/accepted/rejected alerts via the persisted table instead of listening to `beacon_joins`/`beacons` directly.
-17. Add `profiles.city` (Section 3) plus the config-driven `constants/citiesConfig.ts` (`CITIES_CONFIG`/`CITY_MAP`, Section 4) and its `CitySelector` autocomplete on the Profile screen (Section 5). Add `beacons.city`, snapshotted from `profiles.city` by `createBeacon`/`updateBeacon` the same way every other `preferred_*` field is snapshotted. Wire the always-on city scoping into `MatchFeed`'s query (Section 6): Online beacons always show, IRL beacons are restricted to the viewer's own city.
-18. Add `beacons.scheduled_at` (Section 3) and the Search dialog's Date/Time picker fields, required for IRL and validated in `validateStartSearchInput` (Section 5's Screen 2); display it (falling back to `created_at` for ONLINE beacons) on Match Feed cards and in `BeaconDetailDialog`'s "When" row.
-19. Add the adjustable `BeaconFilters` bar (`/components/BeaconFilters.tsx`) above the Match Feed — Game, Match Type, Format, Date, and Power Bracket, per Section 5's Screen 3 and Section 6 — seeded from the viewer's profile but independently adjustable, with a "Clear all" reset to the neutral `NEUTRAL_BEACON_FILTERS` state.
-20. Add a **Cancel Request**/**Leave** action to `BeaconDetailDialog` for the searcher's own join (`leaveBeacon`, Section 5's Join Request Flow step 5), and per-notification delete plus a "Clear all" action to `NotificationBell` (`deleteNotification`/`deleteAllNotifications`, Section 7), backed by the `notifications` DELETE RLS policy (Section 3).
-21. Add a host-only **Remove** button per Group Member row in My Beacon Panel (Section 5), opening `ConfirmRemoveMemberDialog` before calling the new `removeMember` server action, which deletes that member's `beacon_joins` row. Update the `beacon_joins` DELETE RLS policy (Section 3) to also allow deletion where the target beacon is owned by `auth.uid()`, alongside the existing `user_id = auth.uid()` clause.
-22. Add the `REMOVED_FROM_BEACON` notification type (Section 3's `notification_type` enum) and update the `beacon_joins` DELETE trigger to branch on whether `auth.uid()` matches the deleted row's `user_id` (voluntary leave → `MEMBER_LEFT` to the host, unchanged) or the beacon's `user_id` (host removal → `REMOVED_FROM_BEACON` to the removed member instead). Wire the new type into `NotificationBell`'s icon map and `describeNotification()`, per Section 5's Join Request Flow step 7.
+13. Add the optional `notes` field to the Search dialog and `pods` table; add `PodDetailDialog` (opened by clicking a Match Feed card) per Section 5; add join-request alerting (native `Notification` + in-app snackbar on new join requests, mounted in the `(app)` layout) per Sections 5 and 7.
+14. Add per-member **Copy Handle** / **Copy All Handles** buttons to the Group Members list, and a **Mark as Matched** button that opens `ConfirmMarkMatchedDialog` (a warning reminding the host to add everyone on Discord first) before `markPodMatched` actually runs, per Section 5 and Section 8's Discord API constraint.
+15. Extend the join-request alerting with a `MatchedDialog`, shown to each accepted member (not the host) when their pod transitions to `MATCHED`, per Section 5's Join Request Flow step 6.
+16. Add the persisted `notifications` table + `notification_type` enum + SECURITY DEFINER triggers (`notify_on_pod_join_insert/update/delete`, `notify_on_pod_update`) per Section 3, covering join request / accepted / rejected / member-left / pod-updated. Build `NotificationBell` (unread badge, dropdown, toast + native notification on new inserts, realtime-subscribed with no server-side `filter` — RLS's `recipient_id = auth.uid()` check alone scopes each subscriber to their own rows, matching every other realtime subscription in this codebase) and mount it in `TabBar`'s desktop navbar plus a new mobile top bar. Narrow the former `JoinRequestNotifier` down to just the `MatchedDialog` watcher and rename it `MatchedPodWatcher`, since `NotificationBell` now owns the join-request/accepted/rejected alerts via the persisted table instead of listening to `pod_joins`/`pods` directly.
+17. Add `profiles.city` (Section 3) plus the config-driven `constants/citiesConfig.ts` (`CITIES_CONFIG`/`CITY_MAP`, Section 4) and its `CitySelector` autocomplete on the Profile screen (Section 5). Add `pods.city`, snapshotted from `profiles.city` by `createPod`/`updatePod` the same way every other `preferred_*` field is snapshotted. Wire the always-on city scoping into `MatchFeed`'s query (Section 6): Online pods always show, IRL pods are restricted to the viewer's own city.
+18. Add `pods.scheduled_at` (Section 3) and the Search dialog's Date/Time picker fields, required for IRL and validated in `validateStartSearchInput` (Section 5's Screen 2); display it (falling back to `created_at` for ONLINE pods) on Match Feed cards and in `PodDetailDialog`'s "When" row.
+19. Add the adjustable `PodFilters` bar (`/components/PodFilters.tsx`) above the Match Feed — Game, Match Type, Format, Date, and Power Bracket, per Section 5's Screen 3 and Section 6 — seeded from the viewer's profile but independently adjustable, with a "Clear all" reset to the neutral `NEUTRAL_POD_FILTERS` state.
+20. Add a **Cancel Request**/**Leave** action to `PodDetailDialog` for the searcher's own join (`leavePod`, Section 5's Join Request Flow step 5), and per-notification delete plus a "Clear all" action to `NotificationBell` (`deleteNotification`/`deleteAllNotifications`, Section 7), backed by the `notifications` DELETE RLS policy (Section 3).
 ```
 
 If you have questions at any point, ask me directly.

@@ -12,10 +12,10 @@ export interface ProfileFormState {
 /**
  * Saves identity fields only (username, discord handle, city). Game/search
  * settings are edited via the "Search" dialog on the LFG tab instead —
- * see src/app/actions/beacons.ts `createBeacon`. `city` is optional (a
+ * see src/app/actions/pods.ts `createPod`. `city` is optional (a
  * user who only ever plays Online doesn't need one) but, when provided,
  * must be one of `CITIES_CONFIG`'s slugs — this is what lets the Match
- * Feed (Section 6) filter IRL beacons by plain equality instead of fuzzy
+ * Feed (Section 6) filter IRL pods by plain equality instead of fuzzy
  * free-text matching.
  */
 export async function upsertProfile(
@@ -60,7 +60,7 @@ export async function upsertProfile(
   }
 
   revalidatePath("/");
-  revalidatePath("/beacons");
+  revalidatePath("/pods");
   redirect("/");
 }
 

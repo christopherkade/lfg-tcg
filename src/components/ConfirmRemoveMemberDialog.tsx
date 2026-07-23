@@ -15,7 +15,7 @@ interface ConfirmRemoveMemberDialogProps {
 
 /**
  * Confirmation gate before a host removes an already-ACCEPTED member from
- * their beacon (`removeMember`) — mirrors `ConfirmMarkMatchedDialog`'s
+ * their pod (`removeMember`) — mirrors `ConfirmMarkMatchedDialog`'s
  * lightweight warning pattern since this is also a destructive action that
  * frees up a spot but can't be silently undone by the host.
  */

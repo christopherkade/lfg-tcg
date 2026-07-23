@@ -2,47 +2,42 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { MyBeaconPanel } from "@/components/MyBeaconPanel";
-import type { BeaconWithRelations } from "@/types/database";
+import { MyPodPanel } from "@/components/MyPodPanel";
+import type { PodWithRelations } from "@/types/database";
 
-interface OwnBeaconPanelProps {
+interface OwnPodPanelProps {
   currentUserId: string;
-  initialBeacon: BeaconWithRelations | null;
+  initialPod: PodWithRelations | null;
 }
 
 /**
- * Client wrapper around MyBeaconPanel that keeps the host's own active
- * beacon (and its join requests / accepted members) in sync with realtime
+ * Client wrapper around MyPodPanel that keeps the host's own active
+ * pod (and its join requests / accepted members) in sync with realtime
  * changes, so the panel appears/disappears and its request list updates
  * live instead of only reflecting whatever was fetched on the last page
  * load. Mirrors MatchFeed's "no server-side filter, just refetch on any
  * change" approach.
  */
-export function OwnBeaconPanel({
-  currentUserId,
-  initialBeacon,
-}: OwnBeaconPanelProps) {
-  const [beacon, setBeacon] = useState<BeaconWithRelations | null>(
-    initialBeacon,
-  );
+export function OwnPodPanel({ currentUserId, initialPod }: OwnPodPanelProps) {
+  const [pod, setPod] = useState<PodWithRelations | null>(initialPod);
 
-  const fetchOwnBeacon = useCallback(async () => {
+  const fetchOwnPod = useCallback(async () => {
     const supabase = createClient();
     const { data } = await supabase
-      .from("beacons")
-      .select("*, profiles(*), beacon_joins(*, profiles(*))")
+      .from("pods")
+      .select("*, profiles(*), pod_joins(*, profiles(*))")
       .eq("user_id", currentUserId)
       .eq("status", "ACTIVE")
       .maybeSingle();
-    setBeacon((data as BeaconWithRelations) ?? null);
+    setPod((data as PodWithRelations) ?? null);
   }, [currentUserId]);
 
   // Routed through a ref rather than listed as an effect dependency — see
   // repo memory on realtime channel churn / ref-indirection pattern.
-  const fetchOwnBeaconRef = useRef(fetchOwnBeacon);
+  const fetchOwnPodRef = useRef(fetchOwnPod);
   useEffect(() => {
-    fetchOwnBeaconRef.current = fetchOwnBeacon;
-  }, [fetchOwnBeacon]);
+    fetchOwnPodRef.current = fetchOwnPod;
+  }, [fetchOwnPod]);
 
   // Resilience fallback: Supabase Realtime's postgres_changes delivery has
   // been observed to be unreliable in this project (channel stays
@@ -52,7 +47,7 @@ export function OwnBeaconPanel({
   useEffect(() => {
     function handleFocusOrVisible() {
       if (document.visibilityState === "visible") {
-        fetchOwnBeaconRef.current();
+        fetchOwnPodRef.current();
       }
     }
     document.addEventListener("visibilitychange", handleFocusOrVisible);
@@ -67,16 +62,16 @@ export function OwnBeaconPanel({
     const supabase = createClient();
 
     const channel = supabase
-      .channel(`own-beacon-panel-${currentUserId}`)
+      .channel(`own-pod-panel-${currentUserId}`)
       .on(
         "postgres_changes",
-        { event: "*", schema: "public", table: "beacons" },
-        () => fetchOwnBeaconRef.current(),
+        { event: "*", schema: "public", table: "pods" },
+        () => fetchOwnPodRef.current(),
       )
       .on(
         "postgres_changes",
-        { event: "*", schema: "public", table: "beacon_joins" },
-        () => fetchOwnBeaconRef.current(),
+        { event: "*", schema: "public", table: "pod_joins" },
+        () => fetchOwnPodRef.current(),
       )
       .subscribe();
 
@@ -85,9 +80,9 @@ export function OwnBeaconPanel({
     };
   }, [currentUserId]);
 
-  if (!beacon) {
+  if (!pod) {
     return null;
   }
 
-  return <MyBeaconPanel beacon={beacon} onChanged={fetchOwnBeacon} />;
+  return <MyPodPanel pod={pod} onChanged={fetchOwnPod} />;
 }

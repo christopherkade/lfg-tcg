@@ -14,8 +14,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "ManaMatch",
-  description: "Cross-TCG LFG matchmaker for IRL and online play.",
+  title: "PodMaker",
+  description:
+    "Create your own TCG pods and find your next game, IRL or online.",
 };
 
 export default function RootLayout({

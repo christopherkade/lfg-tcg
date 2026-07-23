@@ -17,11 +17,11 @@ export default async function ProfilePage() {
         <h1 className="text-2xl font-bold text-zinc-50">
           {profile ? "Edit Profile" : "Set Up Your Profile"}
         </h1>
-        <p className="max-w-sm text-sm text-zinc-400">
-          Tell us how you like to play so we can find you the right matches.
-        </p>
       </div>
-      <ProfileForm initialProfile={profile} defaultDiscordHandle={defaultDiscordHandle} />
+      <ProfileForm
+        initialProfile={profile}
+        defaultDiscordHandle={defaultDiscordHandle}
+      />
     </div>
   );
 }
