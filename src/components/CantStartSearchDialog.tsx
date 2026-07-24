@@ -49,7 +49,7 @@ export function CantStartSearchDialog({
                 <h2 className="text-lg font-semibold text-zinc-50">
                   {t("cantStartSearchDialog.title")}
                 </h2>
-                <p className="text-sm text-zinc-500">
+                <p className="text-sm text-white">
                   {t("cantStartSearchDialog.body")}
                 </p>
               </div>

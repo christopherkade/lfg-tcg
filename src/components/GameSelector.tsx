@@ -37,7 +37,7 @@ function gamePillSx(activeColor: string) {
     border: "1px solid",
     borderColor: "#27272a",
     bgcolor: "#18181b",
-    color: "#a1a1aa",
+    color: "#d4d4d8",
     minWidth: 0,
     px: 1,
     py: { xs: 0.75, sm: 1.25 },
@@ -82,7 +82,7 @@ export function GameSelector({
       }}
     >
       {includeAllOption && (
-        <ToggleButton value="ALL" sx={gamePillSx("#F2762E")}>
+        <ToggleButton value="ALL" sx={gamePillSx("#34D399")}>
           <Box
             component="span"
             sx={{ fontSize: { xs: "0.8rem", sm: "0.875rem" } }}
@@ -92,7 +92,7 @@ export function GameSelector({
         </ToggleButton>
       )}
       {Object.entries(GAMES_CONFIG).map(([key, game]) => {
-        const activeColor = ACTIVE_COLORS[key] ?? "#F2762E";
+        const activeColor = ACTIVE_COLORS[key] ?? "#34D399";
         return (
           <ToggleButton key={key} value={key} sx={gamePillSx(activeColor)}>
             <Box

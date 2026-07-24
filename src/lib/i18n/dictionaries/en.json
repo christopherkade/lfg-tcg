@@ -116,6 +116,7 @@
   "myPodPanel.copied": "Copied",
   "myPodPanel.remove": "Remove",
   "myPodPanel.copyAllHandles": "Copy All Handles",
+  "myPodPanel.copyLink": "Copy Link",
   "myPodPanel.yourNotes": "Your Notes",
   "myPodPanel.editPod": "Edit Pod",
   "myPodPanel.markAsMatched": "Mark as Matched",
@@ -132,6 +133,8 @@
   "notification.memberLeft": "{actor} left your pod",
   "notification.removedFromPod": "{actor} removed you from their pod",
   "notification.podUpdated": "{actor} updated the details of a pod you joined",
+  "notification.podDestroyed": "{actor}'s pod was cancelled before finding a match",
+  "notification.podExpiredInactivity": "A pod expired after 12 hours of inactivity and was removed",
   "notification.someone": "Someone",
 
   "lfgButton.searchingFor": "Searching for",

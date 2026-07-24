@@ -53,7 +53,7 @@ export function ConfirmMarkMatchedDialog({
                 <h2 className="text-lg font-semibold text-zinc-50">
                   {t("confirmMarkMatchedDialog.title")}
                 </h2>
-                <p className="text-sm text-zinc-500">
+                <p className="text-sm text-white">
                   {t("confirmMarkMatchedDialog.body")}
                 </p>
               </div>
@@ -67,7 +67,7 @@ export function ConfirmMarkMatchedDialog({
                 onClick={onClose}
                 variant="outlined"
                 fullWidth
-                sx={{ py: 1.5, borderColor: "#27272a", color: "#a1a1aa" }}
+                sx={{ py: 1.5, borderColor: "#52525b", color: "#d4d4d8" }}
               >
                 {t("confirmMarkMatchedDialog.notYet")}
               </Button>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { isSameDay } from "date-fns";
 import { AnimatePresence, motion } from "framer-motion";
 import { SearchX } from "lucide-react";
@@ -18,6 +19,8 @@ import type { PodWithRelations, Profile } from "@/types/database";
 interface MatchFeedProps {
   profile: Profile;
   currentUserId: string;
+  /** Pod to auto-open in PodDetailDialog, from visiting /pods/<id> directly. */
+  initialSharedPod?: PodWithRelations | null;
 }
 
 // Shape of each row returned by the "joined pods" query below — a
@@ -51,15 +54,32 @@ function getInitialFilters(profile: Profile): PodFiltersValue {
   };
 }
 
-export function MatchFeed({ profile, currentUserId }: MatchFeedProps) {
+export function MatchFeed({
+  profile,
+  currentUserId,
+  initialSharedPod = null,
+}: MatchFeedProps) {
   const { t, locale } = useTranslation();
+  const router = useRouter();
   const [pods, setPods] = useState<PodWithRelations[] | null>(null);
   const [pendingPodId, setPendingPodId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [selectedPodId, setSelectedPodId] = useState<string | null>(null);
+  const [selectedPodId, setSelectedPodId] = useState<string | null>(
+    initialSharedPod?.id ?? null,
+  );
   const [filters, setFilters] = useState<PodFiltersValue>(() =>
     getInitialFilters(profile),
   );
+
+  // A pod opened via a shared /pods/<id> link isn't necessarily part of the
+  // viewer's own feed (it may not match their filters, or may even be their
+  // own pod, which the feed query below always excludes) — so it's tracked
+  // separately from `pods` and only merged in for the dialog lookup below,
+  // rather than being forced into the visible feed list.
+  const [pinnedPod, setPinnedPod] = useState<PodWithRelations | null>(
+    initialSharedPod,
+  );
+  const pinnedPodIdRef = useRef(initialSharedPod?.id ?? null);
 
   const fetchActivePods = useCallback(
     async (activeFilters: PodFiltersValue) => {
@@ -151,6 +171,20 @@ export function MatchFeed({ profile, currentUserId }: MatchFeedProps) {
       ];
 
       setPods(rows);
+
+      // Keep the shared/pinned pod (opened via /pods/<id>) fresh across every
+      // refetch trigger below (realtime events, focus resync, post-join/leave
+      // refetch) so its join status in the dialog never goes stale — it's
+      // intentionally excluded from `rows` above since it may not match the
+      // viewer's filters or may be their own pod.
+      if (pinnedPodIdRef.current) {
+        const { data: pinnedData } = await supabase
+          .from("pods")
+          .select("*, profiles(*), pod_joins(*, profiles(*))")
+          .eq("id", pinnedPodIdRef.current)
+          .maybeSingle();
+        setPinnedPod((pinnedData as PodWithRelations) ?? null);
+      }
     },
     [profile.preferred_playstyle, profile.city, currentUserId],
   );
@@ -253,7 +287,9 @@ export function MatchFeed({ profile, currentUserId }: MatchFeedProps) {
     setPendingPodId(null);
   }
 
-  const selectedPod = pods?.find((pod) => pod.id === selectedPodId) ?? null;
+  const selectedPod =
+    pods?.find((pod) => pod.id === selectedPodId) ??
+    (pinnedPod?.id === selectedPodId ? pinnedPod : null);
 
   return (
     <>
@@ -262,22 +298,22 @@ export function MatchFeed({ profile, currentUserId }: MatchFeedProps) {
           <PodFilters value={filters} onChange={handleFiltersChange} />
         </div>
         <div className="flex w-full max-w-md flex-col gap-3">
-          <h2 className="text-lg font-semibold text-zinc-50">{t("matchFeed.title")}</h2>
+          <h2 className="text-lg font-semibold text-white">{t("matchFeed.title")}</h2>
           {!profile.city && (
-            <p className="text-xs text-zinc-500">
+            <p className="text-xs text-white">
               {t("matchFeed.noCityHint")}
             </p>
           )}
           {error && <Alert severity="error">{error}</Alert>}
           {pods === null ? (
-            <p className="text-sm text-zinc-500">{t("matchFeed.loading")}</p>
+            <p className="text-sm text-white">{t("matchFeed.loading")}</p>
           ) : pods.length === 0 ? (
             <div className="flex flex-col items-center gap-2 py-8 text-center">
-              <SearchX className="h-8 w-8 text-zinc-700" />
-              <p className="text-sm font-medium text-zinc-400">
+              <SearchX className="h-8 w-8 text-white" />
+              <p className="text-sm font-medium text-white">
                 {t("matchFeed.empty.title")}
               </p>
-              <p className="text-xs text-zinc-500">
+              <p className="text-xs text-white">
                 {t("matchFeed.empty.subtitle")}
               </p>
             </div>
@@ -315,7 +351,7 @@ export function MatchFeed({ profile, currentUserId }: MatchFeedProps) {
                         >
                           {pod.profiles.username[0]?.toUpperCase()}
                         </Avatar>
-                        <span className="font-medium text-zinc-50">
+                        <span className="font-medium text-white">
                           {pod.profiles.username}
                         </span>
                         {isJoined && (
@@ -324,11 +360,11 @@ export function MatchFeed({ profile, currentUserId }: MatchFeedProps) {
                           </span>
                         )}
                       </div>
-                      <span className="text-xs text-zinc-500">
+                      <span className="text-xs text-white">
                         {acceptedMembers.length + 1}/{pod.max_players}
                       </span>
                     </div>
-                    <div className="flex flex-wrap gap-2 text-xs text-zinc-400">
+                    <div className="flex flex-wrap gap-2 text-xs text-white">
                       <span>{t(`format.${pod.format_key}` as TranslationKey)}</span>
                       <span>&middot;</span>
                       <span>
@@ -366,7 +402,7 @@ export function MatchFeed({ profile, currentUserId }: MatchFeedProps) {
                         {acceptedMembers.map((join) => (
                           <div
                             key={join.id}
-                            className="flex items-center justify-between text-xs text-zinc-400"
+                            className="flex items-center justify-between text-xs text-white"
                           >
                             <div className="flex items-center gap-1.5">
                               <Avatar
@@ -385,7 +421,7 @@ export function MatchFeed({ profile, currentUserId }: MatchFeedProps) {
 
                     {ownJoin &&
                       (ownJoin.status === "REJECTED" ? (
-                        <span className="self-start rounded-full bg-zinc-800 px-3 py-1 text-xs font-medium text-zinc-400">
+                        <span className="self-start rounded-full bg-zinc-800 px-3 py-1 text-xs font-medium text-white">
                           {t("matchFeed.requestRejected")}
                         </span>
                       ) : (
@@ -416,7 +452,18 @@ export function MatchFeed({ profile, currentUserId }: MatchFeedProps) {
       <PodDetailDialog
         pod={selectedPod}
         currentUserId={currentUserId}
-        onClose={() => setSelectedPodId(null)}
+        onClose={() => {
+          setSelectedPodId(null);
+          // Only strip the URL back to /pods once the viewer closes out of
+          // a pod they opened via a shared /pods/<id> link — doing this
+          // eagerly on mount instead (the previous approach) navigated away
+          // from the dynamic route immediately, remounting this component
+          // without `initialSharedPod` and closing the dialog right after
+          // it flashed open.
+          if (pinnedPodIdRef.current) {
+            router.replace("/pods", { scroll: false });
+          }
+        }}
         onRequestJoin={handleRequestJoin}
         onLeave={handleLeave}
         pending={selectedPod != null && pendingPodId === selectedPod.id}

@@ -242,14 +242,16 @@ export function LfgDialog({
             exit={{ y: 40, opacity: 0 }}
             transition={{ duration: 0.2, ease: "easeOut" }}
             onClick={(event) => event.stopPropagation()}
-            className="flex max-h-[calc(100vh-2rem)] w-full flex-col overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-950 sm:max-w-lg"
+            className="flex max-h-[calc(100vh-2rem)] w-full flex-col overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-950 sm:max-w-xl"
           >
             <div className="flex shrink-0 items-start justify-between gap-3 border-b border-zinc-900 px-4 py-3 sm:px-6 sm:py-4">
               <div className="flex flex-col gap-0.5">
                 <h2 className="text-base font-semibold text-zinc-50">
-                  {editPod ? t("lfgDialog.title.edit") : t("lfgDialog.title.create")}
+                  {editPod
+                    ? t("lfgDialog.title.edit")
+                    : t("lfgDialog.title.create")}
                 </h2>
-                <p className="text-xs text-zinc-400">
+                <p className="text-xs text-white">
                   {editPod
                     ? t("lfgDialog.subtitle.edit")
                     : t("lfgDialog.subtitle.create")}
@@ -267,11 +269,14 @@ export function LfgDialog({
 
             <div className="flex flex-col gap-3 overflow-y-auto px-4 py-3 sm:gap-4 sm:px-6 sm:py-4">
               <section className="flex flex-col gap-2 rounded-xl border border-zinc-900 bg-zinc-900/40 p-3 sm:gap-2.5 sm:p-3.5">
-                <div className="flex items-center gap-1.5 text-[11px] font-semibold tracking-wide text-zinc-400 uppercase">
+                <div className="flex items-center gap-1.5 text-[11px] font-semibold tracking-wide text-white uppercase">
                   <Swords className="h-3.5 w-3.5" />
                   {t("lfgDialog.section.game")}
                 </div>
-                <GameSelector value={selectedGame} onChange={handleGameChange} />
+                <GameSelector
+                  value={selectedGame}
+                  onChange={handleGameChange}
+                />
 
                 {game && game.formats.length > 1 && (
                   <ToggleButtonGroup
@@ -304,7 +309,7 @@ export function LfgDialog({
               </section>
 
               <section className="flex flex-col gap-2.5 rounded-xl border border-zinc-900 bg-zinc-900/40 p-3 sm:gap-3 sm:p-3.5">
-                <div className="flex items-center gap-1.5 text-[11px] font-semibold tracking-wide text-zinc-400 uppercase">
+                <div className="flex items-center gap-1.5 text-[11px] font-semibold tracking-wide text-white uppercase">
                   <CalendarClock className="h-3.5 w-3.5" />
                   {t("lfgDialog.section.whenWhere")}
                 </div>
@@ -335,9 +340,7 @@ export function LfgDialog({
                       id="dialog_location_name"
                       label={t("lfgDialog.locationLabel")}
                       value={locationName}
-                      onChange={(event) =>
-                        setLocationName(event.target.value)
-                      }
+                      onChange={(event) => setLocationName(event.target.value)}
                       placeholder={t("lfgDialog.locationPlaceholder")}
                       fullWidth
                       size="small"
@@ -366,14 +369,14 @@ export function LfgDialog({
               </section>
 
               <section className="flex flex-col gap-2.5 rounded-xl border border-zinc-900 bg-zinc-900/40 p-3 sm:gap-3 sm:p-3.5">
-                <div className="flex items-center gap-1.5 text-[11px] font-semibold tracking-wide text-zinc-400 uppercase">
+                <div className="flex items-center gap-1.5 text-[11px] font-semibold tracking-wide text-white uppercase">
                   <Sparkles className="h-3.5 w-3.5" />
                   {t("lfgDialog.section.preferences")}
                 </div>
 
                 <div className="flex flex-col gap-2.5 sm:gap-3">
                   <div className="flex flex-col gap-1.5">
-                    <span className="text-xs font-medium text-zinc-300">
+                    <span className="text-xs font-medium text-white">
                       {t("lfgDialog.playstyleLabel")}
                     </span>
                     <PlaystyleToggle
@@ -383,7 +386,7 @@ export function LfgDialog({
                   </div>
 
                   <div className="flex flex-col gap-1.5">
-                    <span className="text-xs font-medium text-zinc-300">
+                    <span className="text-xs font-medium text-white">
                       {t("lfgDialog.playersLabel")}
                     </span>
                     <ToggleButtonGroup
@@ -438,6 +441,7 @@ export function LfgDialog({
                   fullWidth
                   size="small"
                   helperText={`${notes.length}/300`}
+                  sx={{ mt: 1 }}
                 />
               </section>
 

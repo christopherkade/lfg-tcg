@@ -18,9 +18,11 @@ import type { PodJoinWithProfile, PodWithRelations } from "@/types/database";
 interface MyPodPanelProps {
   pod: PodWithRelations;
   onChanged?: () => void;
+  /** Briefly pulses the panel's border/glow — used right after pod creation. */
+  highlight?: boolean;
 }
 
-export function MyPodPanel({ pod, onChanged }: MyPodPanelProps) {
+export function MyPodPanel({ pod, onChanged, highlight = false }: MyPodPanelProps) {
   const { t, locale } = useTranslation();
   const [error, setError] = useState<string | null>(null);
   const [pendingId, setPendingId] = useState<string | null>(null);
@@ -107,7 +109,29 @@ export function MyPodPanel({ pod, onChanged }: MyPodPanelProps) {
   }
 
   return (
-    <div className="flex w-full max-w-md flex-col gap-4 rounded-2xl border border-indigo-500/50 bg-zinc-900 p-5">
+    <motion.div
+      animate={
+        highlight
+          ? {
+              boxShadow: [
+                "0 0 0 0 rgba(129, 140, 248, 0)",
+                "0 0 0 6px rgba(129, 140, 248, 0.2)",
+              ],
+            }
+          : { boxShadow: "0 0 0 0 rgba(129, 140, 248, 0)" }
+      }
+      transition={
+        highlight
+          ? {
+              duration: 0.9,
+              repeat: 3,
+              repeatType: "reverse",
+              ease: "easeInOut",
+            }
+          : { duration: 0.4 }
+      }
+      className="flex w-full max-w-md flex-col gap-4 rounded-2xl border border-indigo-500/50 bg-zinc-900 p-5"
+    >
       <button
         type="button"
         onClick={() => setExpanded((prev) => !prev)}
@@ -388,6 +412,35 @@ export function MyPodPanel({ pod, onChanged }: MyPodPanelProps) {
           <div className="flex justify-end gap-3">
             <Button
               type="button"
+              onClick={() =>
+                copyText("__link__", `${window.location.origin}/pods/${pod.id}`)
+              }
+              variant="outlined"
+              size="small"
+              startIcon={
+                <AnimatePresence mode="wait" initial={false}>
+                  <motion.span
+                    key={copied === "__link__" ? "check" : "copy"}
+                    initial={{ scale: 0.5, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    exit={{ scale: 0.5, opacity: 0 }}
+                    transition={{ duration: 0.15, ease: "easeOut" }}
+                    className="inline-flex"
+                  >
+                    {copied === "__link__" ? (
+                      <Check className="h-3.5 w-3.5" />
+                    ) : (
+                      <Copy className="h-3.5 w-3.5" />
+                    )}
+                  </motion.span>
+                </AnimatePresence>
+              }
+              sx={{ borderColor: "#27272a", color: "#d4d4d8" }}
+            >
+              {copied === "__link__" ? t("myPodPanel.copied") : t("myPodPanel.copyLink")}
+            </Button>
+            <Button
+              type="button"
               onClick={() => setEditOpen(true)}
               variant="outlined"
               size="small"
@@ -435,6 +488,6 @@ export function MyPodPanel({ pod, onChanged }: MyPodPanelProps) {
         profile={pod.profiles}
         editPod={pod}
       />
-    </div>
+    </motion.div>
   );
 }

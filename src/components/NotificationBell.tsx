@@ -15,7 +15,9 @@ import {
 } from "@mui/material";
 import {
   Bell,
+  Clock,
   PencilLine,
+  Trash2,
   UserCheck,
   UserMinus,
   UserPlus,
@@ -60,6 +62,8 @@ const TYPE_ICON: Record<NotificationType, LucideIcon> = {
   MEMBER_LEFT: UserMinus,
   REMOVED_FROM_POD: UserX,
   POD_UPDATED: PencilLine,
+  POD_DESTROYED: Trash2,
+  POD_EXPIRED_INACTIVITY: Clock,
 };
 
 function describeNotification(
@@ -81,6 +85,10 @@ function describeNotification(
       return t("notification.removedFromPod", { actor: actorName });
     case "POD_UPDATED":
       return t("notification.podUpdated", { actor: actorName });
+    case "POD_DESTROYED":
+      return t("notification.podDestroyed", { actor: actorName });
+    case "POD_EXPIRED_INACTIVITY":
+      return t("notification.podExpiredInactivity");
   }
 }
 
@@ -326,7 +334,7 @@ export function NotificationBell({ currentUserId }: NotificationBellProps) {
 
   return (
     <>
-      <IconButton onClick={handleOpen} sx={{ color: "#a1a1aa" }}>
+      <IconButton onClick={handleOpen} sx={{ color: "#ffffff" }}>
         <Badge badgeContent={unreadCount} max={9} color="error">
           <Bell className="h-5 w-5" />
         </Badge>
@@ -377,7 +385,7 @@ export function NotificationBell({ currentUserId }: NotificationBellProps) {
                 borderRadius: 1,
                 fontSize: "0.75rem",
                 fontWeight: 600,
-                color: "#a1a1aa",
+                color: "#ffffff",
                 "&:hover": { color: "#e4e4e7" },
               }}
             >
@@ -389,7 +397,7 @@ export function NotificationBell({ currentUserId }: NotificationBellProps) {
 
         {notifications === null && (
           <div className="flex min-h-40 items-center justify-center px-4 py-6">
-            <Typography sx={{ fontSize: "0.875rem", color: "#71717a" }}>
+            <Typography sx={{ fontSize: "0.875rem", color: "#ffffff" }}>
               {t("notificationBell.loading")}
             </Typography>
           </div>
@@ -397,7 +405,7 @@ export function NotificationBell({ currentUserId }: NotificationBellProps) {
 
         {notifications !== null && notifications.length === 0 && (
           <div className="flex min-h-40 items-center justify-center px-4 py-6">
-            <Typography sx={{ fontSize: "0.875rem", color: "#71717a" }}>
+            <Typography sx={{ fontSize: "0.875rem", color: "#ffffff" }}>
               {t("notificationBell.empty")}
             </Typography>
           </div>
@@ -424,7 +432,7 @@ export function NotificationBell({ currentUserId }: NotificationBellProps) {
                 <Typography sx={{ fontSize: "0.8125rem", color: "#e4e4e7" }}>
                   {describeNotification(notification, t)}
                 </Typography>
-                <Typography sx={{ fontSize: "0.6875rem", color: "#71717a" }}>
+                <Typography sx={{ fontSize: "0.6875rem", color: "#ffffff" }}>
                   {formatDistanceToNowStrict(
                     new Date(notification.created_at),
                     { addSuffix: true, locale: dateFnsLocale },
@@ -438,7 +446,7 @@ export function NotificationBell({ currentUserId }: NotificationBellProps) {
                 onClick={(event) => handleDelete(event, notification)}
                 sx={{
                   mt: -0.5,
-                  color: "#71717a",
+                  color: "#ffffff",
                   "&:hover": { color: "#d4d4d8" },
                 }}
               >
@@ -481,7 +489,7 @@ export function NotificationBell({ currentUserId }: NotificationBellProps) {
                 event.stopPropagation();
                 setToast(null);
               }}
-              sx={{ color: "#71717a", "&:hover": { color: "#d4d4d8" } }}
+              sx={{ color: "#ffffff", "&:hover": { color: "#d4d4d8" } }}
             >
               <X className="h-4 w-4" />
             </IconButton>

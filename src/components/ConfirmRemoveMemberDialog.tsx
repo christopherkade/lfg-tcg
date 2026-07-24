@@ -57,7 +57,7 @@ export function ConfirmRemoveMemberDialog({
                     name: memberName ?? t("confirmRemoveMemberDialog.titleFallback"),
                   })}
                 </h2>
-                <p className="text-sm text-zinc-500">
+                <p className="text-sm text-white">
                   {t("confirmRemoveMemberDialog.body")}
                 </p>
               </div>
@@ -71,7 +71,7 @@ export function ConfirmRemoveMemberDialog({
                 onClick={onClose}
                 variant="outlined"
                 fullWidth
-                sx={{ py: 1.5, borderColor: "#27272a", color: "#a1a1aa" }}
+                sx={{ py: 1.5, borderColor: "#52525b", color: "#d4d4d8" }}
               >
                 {t("confirmRemoveMemberDialog.cancel")}
               </Button>

@@ -9,7 +9,9 @@ export type NotificationType =
   | "JOIN_REJECTED"
   | "MEMBER_LEFT"
   | "REMOVED_FROM_POD"
-  | "POD_UPDATED";
+  | "POD_UPDATED"
+  | "POD_DESTROYED"
+  | "POD_EXPIRED_INACTIVITY";
 
 export interface Profile {
   id: string;

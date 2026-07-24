@@ -116,6 +116,7 @@
   "myPodPanel.copied": "Copié",
   "myPodPanel.remove": "Retirer",
   "myPodPanel.copyAllHandles": "Copier tous les identifiants",
+  "myPodPanel.copyLink": "Copier le lien",
   "myPodPanel.yourNotes": "Vos notes",
   "myPodPanel.editPod": "Modifier la table",
   "myPodPanel.markAsMatched": "Marquer comme complète",
@@ -132,6 +133,8 @@
   "notification.memberLeft": "{actor} a quitté votre table",
   "notification.removedFromPod": "{actor} vous a retiré de sa table",
   "notification.podUpdated": "{actor} a modifié les détails d'une table que vous avez rejointe",
+  "notification.podDestroyed": "La table de {actor} a été annulée avant qu'un match soit trouvé",
+  "notification.podExpiredInactivity": "Une table a expiré après 12 heures d'inactivité et a été supprimée",
   "notification.someone": "Quelqu'un",
 
   "lfgButton.searchingFor": "Recherche en cours pour",

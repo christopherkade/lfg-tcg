@@ -8,9 +8,9 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --color-ember: #F2762E;
-  --color-ember-light: #F79A5D;
-  --color-ember-dark: #C85A1D;
+  --color-ember: #34D399;
+  --color-ember-light: #6EE7B7;
+  --color-ember-dark: #059669;
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }

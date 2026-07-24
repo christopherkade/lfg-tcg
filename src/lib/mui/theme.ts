@@ -15,9 +15,9 @@ export const theme = createTheme({
       secondary: "#a1a1aa", // zinc-400
     },
     primary: {
-      main: "#F2762E", // ember (the app's "active" pill / brand accent color)
-      light: "#F79A5D",
-      dark: "#C85A1D",
+      main: "#34D399", // emerald (the app's "active" pill / brand accent color)
+      light: "#6EE7B7",
+      dark: "#059669",
       contrastText: "#09090b",
     },
     divider: "#27272a", // zinc-800
@@ -39,6 +39,21 @@ export const theme = createTheme({
           textTransform: "none",
           borderRadius: 9999,
           fontWeight: 500,
+          "&.Mui-disabled": {
+            color: "#71717a", // zinc-500 (MUI's default disabled text is too faint on this dark bg)
+          },
+        },
+        contained: {
+          "&.Mui-disabled": {
+            backgroundColor: "#27272a", // zinc-800
+            color: "#71717a", // zinc-500
+          },
+        },
+        outlined: {
+          "&.Mui-disabled": {
+            borderColor: "#3f3f46", // zinc-700
+            color: "#71717a", // zinc-500
+          },
         },
       },
     },
@@ -69,13 +84,13 @@ export const theme = createTheme({
           borderRadius: 9999,
           border: 0,
           fontWeight: 500,
-          color: "#a1a1aa",
+          color: "#d4d4d8",
           "&.Mui-selected": {
-            backgroundColor: "#F2762E",
+            backgroundColor: "#34D399",
             color: "#09090b",
           },
           "&.Mui-selected:hover": {
-            backgroundColor: "#F79A5D",
+            backgroundColor: "#6EE7B7",
           },
         },
       },
@@ -92,7 +107,7 @@ export const theme = createTheme({
             borderColor: "#3f3f46",
           },
           "&.Mui-focused fieldset": {
-            borderColor: "#F2762E",
+            borderColor: "#34D399",
           },
         },
       },

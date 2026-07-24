@@ -68,34 +68,34 @@ export function PodDetailDialog({
                   <h2 className="text-lg font-semibold text-zinc-50">
                     {pod.profiles.username}
                   </h2>
-                  <span className="text-sm text-zinc-500">
+                  <span className="text-sm text-white">
                     {pod.profiles.discord_handle}
                   </span>
                 </div>
               </div>
-              <span className="rounded-full border border-zinc-800 px-3 py-1 text-xs font-medium text-zinc-400">
+              <span className="rounded-full border border-zinc-800 px-3 py-1 text-xs font-medium text-white">
                 {acceptedMembers ? acceptedMembers.length + 1 : 1}/
                 {pod.max_players}
               </span>
             </div>
 
-            <div className="flex flex-col gap-2 text-sm text-zinc-300">
+            <div className="flex flex-col gap-2 text-sm text-white">
               <div className="flex justify-between">
-                <span className="text-zinc-500">{t("podDetailDialog.game")}</span>
+                <span className="text-white">{t("podDetailDialog.game")}</span>
                 <span>{game?.name ?? pod.game_key}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-zinc-500">{t("podDetailDialog.format")}</span>
+                <span className="text-white">{t("podDetailDialog.format")}</span>
                 <span>{t(`format.${pod.format_key}` as TranslationKey)}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-zinc-500">{t("podDetailDialog.playstyle")}</span>
+                <span className="text-white">{t("podDetailDialog.playstyle")}</span>
                 <span className="capitalize">
                   {t(`playstyle.${pod.playstyle_key}` as TranslationKey)}
                 </span>
               </div>
               <div className="flex justify-between">
-                <span className="text-zinc-500">{t("podDetailDialog.matchType")}</span>
+                <span className="text-white">{t("podDetailDialog.matchType")}</span>
                 <span>
                   {pod.type === "IRL"
                     ? t("podFilters.matchTypeIrl")
@@ -104,13 +104,13 @@ export function PodDetailDialog({
               </div>
               {scheduledLabel && (
                 <div className="flex justify-between">
-                  <span className="text-zinc-500">{t("podDetailDialog.when")}</span>
+                  <span className="text-white">{t("podDetailDialog.when")}</span>
                   <span>{scheduledLabel}</span>
                 </div>
               )}
               {pod.location_name && (
                 <div className="flex justify-between">
-                  <span className="text-zinc-500">{t("podDetailDialog.location")}</span>
+                  <span className="text-white">{t("podDetailDialog.location")}</span>
                   <span>
                     {pod.location_name}
                     {pod.city && CITY_MAP[pod.city]
@@ -121,7 +121,7 @@ export function PodDetailDialog({
               )}
               {pod.power_tiers && pod.power_tiers.length > 0 && (
                 <div className="flex justify-between">
-                  <span className="text-zinc-500">{t("podDetailDialog.powerBracket")}</span>
+                  <span className="text-white">{t("podDetailDialog.powerBracket")}</span>
                   <span>{pod.power_tiers.join(", ")}</span>
                 </div>
               )}
@@ -129,8 +129,8 @@ export function PodDetailDialog({
 
             {pod.notes && (
               <div className="flex flex-col gap-1 border-t border-zinc-800 pt-3">
-                <span className="text-sm font-medium text-zinc-400">{t("podDetailDialog.notes")}</span>
-                <p className="whitespace-pre-wrap text-sm text-zinc-300">
+                <span className="text-sm font-medium text-white">{t("podDetailDialog.notes")}</span>
+                <p className="whitespace-pre-wrap text-sm text-white">
                   {pod.notes}
                 </p>
               </div>
@@ -138,13 +138,13 @@ export function PodDetailDialog({
 
             {acceptedMembers && acceptedMembers.length > 0 && (
               <div className="flex flex-col gap-2 border-t border-zinc-800 pt-3">
-                <span className="text-sm font-medium text-zinc-400">
+                <span className="text-sm font-medium text-white">
                   {t("podDetailDialog.groupMembers")}
                 </span>
                 {acceptedMembers.map((join) => (
                   <div
                     key={join.id}
-                    className="flex items-center justify-between text-sm text-zinc-300"
+                    className="flex items-center justify-between text-sm text-white"
                   >
                     <div className="flex items-center gap-2">
                       <Avatar
@@ -155,7 +155,7 @@ export function PodDetailDialog({
                       </Avatar>
                       <span>{join.profiles.username}</span>
                     </div>
-                    <span className="text-zinc-500">
+                    <span className="text-white">
                       {join.profiles.discord_handle}
                     </span>
                   </div>
@@ -171,7 +171,7 @@ export function PodDetailDialog({
                 onClick={onClose}
                 variant="outlined"
                 fullWidth
-                sx={{ py: 1.5, borderColor: "#27272a", color: "#a1a1aa" }}
+                sx={{ py: 1.5, borderColor: "#52525b", color: "#d4d4d8" }}
               >
                 {t("podDetailDialog.close")}
               </Button>

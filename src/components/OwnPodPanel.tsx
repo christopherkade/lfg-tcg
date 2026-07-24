@@ -1,13 +1,24 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { MyPodPanel } from "@/components/MyPodPanel";
 import type { PodWithRelations } from "@/types/database";
 
+// Matches MyPodPanel's highlight animation length (4 segments × 0.9s) so the
+// state clears right as the pulse settles back to rest, not mid-pulse.
+const HIGHLIGHT_DURATION_MS = 3600;
+
 interface OwnPodPanelProps {
   currentUserId: string;
   initialPod: PodWithRelations | null;
+  /**
+   * True when the page was reached via ?highlight=own (set by LfgButton
+   * right after creating a pod), so the just-created pod can be called out
+   * with a brief pulse instead of silently appearing at the top of /pods.
+   */
+  initialHighlight?: boolean;
 }
 
 /**
@@ -18,8 +29,24 @@ interface OwnPodPanelProps {
  * load. Mirrors MatchFeed's "no server-side filter, just refetch on any
  * change" approach.
  */
-export function OwnPodPanel({ currentUserId, initialPod }: OwnPodPanelProps) {
+export function OwnPodPanel({
+  currentUserId,
+  initialPod,
+  initialHighlight = false,
+}: OwnPodPanelProps) {
+  const router = useRouter();
   const [pod, setPod] = useState<PodWithRelations | null>(initialPod);
+
+  // A freshly created pod arrives here via ?highlight=own (see LfgButton).
+  // Captured into state and immediately stripped from the URL so the pulse
+  // only plays once, not on every refresh/back-navigation.
+  const [highlight, setHighlight] = useState(initialHighlight);
+  useEffect(() => {
+    if (!initialHighlight) return;
+    router.replace("/pods", { scroll: false });
+    const timeout = setTimeout(() => setHighlight(false), HIGHLIGHT_DURATION_MS);
+    return () => clearTimeout(timeout);
+  }, [initialHighlight, router]);
 
   const fetchOwnPod = useCallback(async () => {
     const supabase = createClient();
@@ -84,5 +111,5 @@ export function OwnPodPanel({ currentUserId, initialPod }: OwnPodPanelProps) {
     return null;
   }
 
-  return <MyPodPanel pod={pod} onChanged={fetchOwnPod} />;
+  return <MyPodPanel pod={pod} onChanged={fetchOwnPod} highlight={highlight} />;
 }

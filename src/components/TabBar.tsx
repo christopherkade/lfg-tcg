@@ -37,7 +37,7 @@ export function TabBar({ currentUserId }: TabBarProps) {
           header" on desktop). */}
       <header className="flex items-center justify-between border-b border-zinc-800 bg-zinc-950 px-4 py-3 sm:hidden">
         <Typography
-          sx={{ fontSize: "1rem", fontWeight: 700, color: "#F2762E" }}
+          sx={{ fontSize: "1rem", fontWeight: 700, color: "#34D399" }}
         >
           PodMaker
         </Typography>
@@ -51,7 +51,7 @@ export function TabBar({ currentUserId }: TabBarProps) {
       <nav className="hidden border-b border-zinc-800 bg-zinc-950 sm:block">
         <div className="mx-auto flex max-w-3xl items-center justify-between px-6 py-4">
           <Typography
-            sx={{ fontSize: "1.125rem", fontWeight: 700, color: "#F2762E" }}
+            sx={{ fontSize: "1.125rem", fontWeight: 700, color: "#34D399" }}
           >
             PodMaker
           </Typography>
@@ -69,11 +69,11 @@ export function TabBar({ currentUserId }: TabBarProps) {
                     sx={{
                       px: 2,
                       py: 1,
-                      bgcolor: isActive ? "#F2762E" : "transparent",
-                      color: isActive ? "#ffffff" : "#a1a1aa",
+                      bgcolor: isActive ? "#34D399" : "transparent",
+                      color: isActive ? "#09090b" : "#ffffff",
                       "&:hover": {
-                        bgcolor: isActive ? "#F79A5D" : "#18181b",
-                        color: isActive ? "#ffffff" : "#e4e4e7",
+                        bgcolor: isActive ? "#6EE7B7" : "#18181b",
+                        color: isActive ? "#09090b" : "#ffffff",
                       },
                     }}
                   >
@@ -100,7 +100,7 @@ export function TabBar({ currentUserId }: TabBarProps) {
               key={tab.href}
               href={tab.href}
               className={`flex flex-1 flex-col items-center gap-1 py-3 text-xs font-medium transition-colors ${
-                isActive ? "text-ember" : "text-zinc-500"
+                isActive ? "text-ember" : "text-white"
               }`}
             >
               <Icon className="h-5 w-5" />

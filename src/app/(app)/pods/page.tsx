@@ -1,24 +1,20 @@
 import { requireProfile } from "@/lib/session";
-import { OwnPodPanel } from "@/components/OwnPodPanel";
-import { MatchFeed } from "@/components/MatchFeed";
-import type { PodWithRelations } from "@/types/database";
+import { PodsView } from "./PodsView";
 
-export default async function PodsPage() {
-  const { supabase, user, profile } = await requireProfile();
+interface PodsPageProps {
+  searchParams: Promise<{ highlight?: string }>;
+}
 
-  const { data: ownPod } = await supabase
-    .from("pods")
-    .select("*, profiles(*), pod_joins(*, profiles(*))")
-    .eq("user_id", user.id)
-    .eq("status", "ACTIVE")
-    .maybeSingle();
-
-  const activePod = ownPod as PodWithRelations | null;
+export default async function PodsPage({ searchParams }: PodsPageProps) {
+  const { supabase, user, profile } = await requireProfile("/pods");
+  const { highlight } = await searchParams;
 
   return (
-    <div className="flex flex-1 flex-col items-center gap-8 bg-zinc-950 px-6 py-10">
-      <OwnPodPanel currentUserId={user.id} initialPod={activePod} />
-      <MatchFeed profile={profile} currentUserId={user.id} />
-    </div>
+    <PodsView
+      supabase={supabase}
+      userId={user.id}
+      profile={profile}
+      highlightOwn={highlight === "own"}
+    />
   );
 }

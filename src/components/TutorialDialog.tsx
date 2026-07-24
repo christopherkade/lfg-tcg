@@ -44,7 +44,7 @@ export function TutorialDialog() {
       <IconButton
         onClick={() => setOpen(true)}
         aria-label={t("tutorial.buttonLabel")}
-        sx={{ color: "#a1a1aa" }}
+        sx={{ color: "#ffffff" }}
       >
         <CircleHelp className="h-5 w-5" />
       </IconButton>
@@ -77,7 +77,7 @@ export function TutorialDialog() {
           <IconButton
             onClick={() => setOpen(false)}
             size="small"
-            sx={{ color: "#71717a", "&:hover": { color: "#d4d4d8" } }}
+            sx={{ color: "#ffffff", "&:hover": { color: "#d4d4d8" } }}
           >
             <X className="h-4 w-4" />
           </IconButton>
@@ -100,7 +100,7 @@ export function TutorialDialog() {
                       {t(step.titleKey)}
                     </Typography>
                     <Typography
-                      sx={{ fontSize: "0.8125rem", color: "#a1a1aa" }}
+                      sx={{ fontSize: "0.8125rem", color: "#ffffff" }}
                     >
                       {t(step.bodyKey)}
                     </Typography>

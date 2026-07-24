@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { Radio, X } from "lucide-react";
 import { Fab, Alert } from "@mui/material";
@@ -27,6 +28,7 @@ export function LfgButton({
   hasActiveJoin: initialHasActiveJoin,
 }: LfgButtonProps) {
   const { t } = useTranslation();
+  const router = useRouter();
   const [ownPod, setOwnPod] = useState(initialOwnPod);
   const [hasActiveJoin, setHasActiveJoin] = useState(initialHasActiveJoin);
   const [pending, setPending] = useState(false);
@@ -171,7 +173,7 @@ export function LfgButton({
   return (
     <div className="flex flex-col items-center gap-6">
       <div className="flex flex-col items-center gap-1 text-center">
-        <span className="text-sm font-medium text-zinc-400">
+        <span className="text-sm font-medium text-white">
           {isSearching ? t("lfgButton.searchingFor") : t("lfgButton.lastSearch")}
         </span>
         <span className="text-lg font-semibold text-zinc-50">
@@ -225,17 +227,18 @@ export function LfgButton({
           display: "flex",
           flexDirection: "column",
           gap: 0.5,
-          bgcolor: "#18181b",
+          bgcolor: "#27272a",
+          border: "1px solid #3f3f46",
           color: "#fafafa",
           fontSize: "1.125rem",
           fontWeight: 700,
           // Let framer-motion own transform/box-shadow (the 3D press
           // effect below) instead of racing MUI's own CSS transition.
           transition: "background-color 150ms ease",
-          "&:hover": { bgcolor: "#27272a" },
-          "&:active": { bgcolor: "#09090b" },
+          "&:hover": { bgcolor: "#3f3f46" },
+          "&:active": { bgcolor: "#18181b" },
           "&.Mui-disabled": {
-            bgcolor: "#18181b",
+            bgcolor: "#27272a",
             opacity: 0.6,
             color: "#fafafa",
           },
@@ -257,6 +260,7 @@ export function LfgButton({
           setDialogOpen(false);
           void fetchOwnPodRef.current();
           void fetchHasActiveJoinRef.current();
+          router.push("/pods?highlight=own");
         }}
         profile={profile}
       />

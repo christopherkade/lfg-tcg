@@ -95,7 +95,7 @@ function FilterChip({
       className={`flex shrink-0 items-center gap-1 rounded-full border px-3 py-1.5 text-xs font-medium whitespace-nowrap transition-colors ${
         active
           ? "border-ember/30 bg-ember/10 text-ember"
-          : "border-zinc-800 bg-zinc-900 text-zinc-400 hover:border-zinc-700 hover:text-zinc-300"
+          : "border-zinc-800 bg-zinc-900 text-white hover:border-zinc-700 hover:text-white"
       }`}
     >
       {label}
@@ -220,7 +220,7 @@ export function PodFilters({ value, onChange }: PodFiltersProps) {
         <button
           type="button"
           onClick={() => onChange(NEUTRAL_POD_FILTERS)}
-          className="shrink-0 whitespace-nowrap text-xs font-medium text-zinc-500 transition-colors hover:text-zinc-300"
+          className="shrink-0 whitespace-nowrap text-xs font-medium text-white transition-colors hover:text-white"
         >
           {t("podFilters.clearAll")}
         </button>
@@ -243,7 +243,7 @@ export function PodFilters({ value, onChange }: PodFiltersProps) {
               width: 260,
             }}
           >
-            <span className="text-xs font-medium text-zinc-300">{t("podFilters.gameSectionLabel")}</span>
+            <span className="text-xs font-medium text-white">{t("podFilters.gameSectionLabel")}</span>
             <GameSelector
               value={value.gameKey}
               onChange={handleGameChange}
@@ -263,7 +263,7 @@ export function PodFilters({ value, onChange }: PodFiltersProps) {
           slotProps={popoverSlotProps}
         >
           <Box sx={{ p: 2, display: "flex", flexDirection: "column", gap: 1 }}>
-            <span className="text-xs font-medium text-zinc-300">
+            <span className="text-xs font-medium text-white">
               {t("podFilters.matchTypeLabel")}
             </span>
             <ToggleButtonGroup
@@ -295,7 +295,7 @@ export function PodFilters({ value, onChange }: PodFiltersProps) {
           slotProps={popoverSlotProps}
         >
           <Box sx={{ p: 2, display: "flex", flexDirection: "column", gap: 1 }}>
-            <span className="text-xs font-medium text-zinc-300">{t("podFilters.formatLabel")}</span>
+            <span className="text-xs font-medium text-white">{t("podFilters.formatLabel")}</span>
             <ToggleButtonGroup
               value={value.formatKey}
               exclusive
