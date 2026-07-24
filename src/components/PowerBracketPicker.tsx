@@ -7,6 +7,7 @@ import {
   ToggleButtonGroup,
   Typography,
 } from "@mui/material";
+import { useTranslation } from "@/lib/i18n/LocaleContext";
 
 interface PowerBracketPickerProps {
   visible: boolean;
@@ -21,8 +22,10 @@ export function PowerBracketPicker({
   value,
   onChange,
   maxTier = 5,
-  label = "Power Brackets",
+  label,
 }: PowerBracketPickerProps) {
+  const { t } = useTranslation();
+  const resolvedLabel = label ?? t("powerBracketPicker.defaultLabel");
   const tiers = Array.from({ length: maxTier }, (_, i) => i + 1);
 
   return (
@@ -35,18 +38,20 @@ export function PowerBracketPicker({
           transition={{ duration: 0.25, ease: "easeInOut" }}
           className="overflow-hidden"
         >
-          <Box sx={{ display: "flex", flexDirection: "column", gap: 1, pt: 2 }}>
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
             <Typography
-              variant="body2"
-              sx={{ color: "#a1a1aa", fontWeight: 500 }}
+              variant="caption"
+              sx={{ color: "#d4d4d8", fontWeight: 500 }}
             >
-              {label}{" "}
-              <Box component="span" sx={{ color: "#52525b" }}>
-                (select all you&apos;ll play)
+              {resolvedLabel}{" "}
+              <Box component="span" sx={{ color: "#a1a1aa" }}>
+                {t("powerBracketPicker.hint")}
               </Box>
             </Typography>
             <ToggleButtonGroup
               value={value}
+              fullWidth
+              size="small"
               onChange={(_event, next: number[]) =>
                 onChange([...next].sort((a, b) => a - b))
               }
@@ -57,22 +62,12 @@ export function PowerBracketPicker({
                   key={tier}
                   value={tier}
                   sx={{
-                    height: 40,
-                    width: 40,
-                    borderRadius: "9999px !important",
+                    fontSize: "0.75rem",
+                    px: 0,
+                    borderRadius: "8px !important",
                     border: "1px solid #27272a !important",
                     marginLeft: "0px !important",
                     bgcolor: "#18181b",
-                    color: "#a1a1aa",
-                    fontWeight: 600,
-                    "&.Mui-selected": {
-                      borderColor: "rgba(245, 158, 11, 0.5) !important",
-                      bgcolor: "rgba(245, 158, 11, 0.1)",
-                      color: "#f59e0b",
-                    },
-                    "&.Mui-selected:hover": {
-                      bgcolor: "rgba(245, 158, 11, 0.16)",
-                    },
                   }}
                 >
                   {tier}

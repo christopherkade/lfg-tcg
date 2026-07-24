@@ -21,6 +21,16 @@
 - **Realtime Subscriptions:** Enabled on the `pods`, `pod_joins`, and `notifications` tables to push instant matching feeds and notification-center updates.
 - **Notification center:** A persisted `notifications` table (populated exclusively by SECURITY DEFINER database triggers, not application code) backs a header bell with an unread-count badge — see Section 3's Notifications subsection and Section 7.
 
+### Localization (English / French)
+
+- **Approach:** A lightweight, dependency-free i18n layer under `src/lib/i18n/` — no `next-intl`/`next-i18next`. Two flat JSON dictionaries (`dictionaries/en.json`, `dictionaries/fr.json`, one key per UI string) are looked up via `translate(locale, key, vars?)`, which does `{placeholder}` substitution for interpolated strings (e.g. server-action errors that embed a raw Supabase `error.message`).
+- **Locale storage:** A `pm_locale` cookie (`en` | `fr`, default `en`) — not a `profiles` column, since this is a device/browser-level display preference rather than account data. No URL locale segments (`/en/`, `/fr/`); routes are unchanged.
+- **Client wiring:** `LocaleProvider`/`useTranslation()` (`src/lib/i18n/LocaleContext.tsx`) expose `{ locale, setLocale, t }` via React Context, mounted once in the root layout around `ThemeRegistry`. `setLocale` updates both React state and the `pm_locale` cookie directly (`document.cookie`) so the next server render picks it up — no server round-trip needed for the switch itself. Every text-bearing component in `src/components/` is a Client Component, so this hook is the only wiring those components need.
+- **Server wiring:** `getServerLocale()` (`src/lib/i18n/server.ts`) reads the cookie via `await cookies()` (same async pattern as `src/lib/supabase/server.ts`) for the root layout's `<html lang>` and initial `LocaleProvider` value, for the Profile screen's server-rendered heading, and inside every server action in `src/app/actions/` so returned `{ error }` strings are translated before crossing back to the client.
+- **`LocaleSwitcher`** (`src/components/LocaleSwitcher.tsx`): an EN/FR segmented toggle, rendered in `TabBar` (both the mobile top bar and desktop navbar, next to `TutorialDialog`/`NotificationBell`) and in the top-right corner of `/login` (which has no `TabBar`).
+- **Dates:** `formatPodWhen` (`src/lib/date.ts`) takes `(pod, locale, t)` and passes a `date-fns/locale` (`fr` or `undefined`) into every `format`/`formatDistanceToNowStrict` call, plus routes its wrapper phrases ("Starts in…", "Posted…", "Today, …") through `t()`. `NotificationBell`'s own relative-timestamp line does the same.
+- **Not translated:** game names (`GAMES_CONFIG[key].name`, e.g. "Magic: The Gathering") and city labels (`CITIES_CONFIG`) are treated as proper nouns and stay as authored. Formats, power-bracket label, and playstyle options are translated via key-based lookups (`format.${key}`, `tier.powerBracket`, `playstyle.${key}`) resolved at render time, so `GAMES_CONFIG`'s shape didn't need to change. The `<title>`/`<meta description>` in the root layout's static `metadata` export remain English-only (SEO/crawler-facing, out of scope for this pass).
+
 ---
 
 ## 2. Authentication
@@ -98,7 +108,8 @@ CREATE TABLE pods (
     notes TEXT CHECK (notes IS NULL OR length(notes) <= 300), -- Optional free-text note set in the Search dialog, one-off (not persisted onto profiles)
     status TEXT DEFAULT 'ACTIVE',    -- 'ACTIVE', 'MATCHED', 'EXPIRED'
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    expires_at TIMESTAMP WITH TIME ZONE DEFAULT (NOW() + INTERVAL '4 hours')
+    expires_at TIMESTAMP WITH TIME ZONE DEFAULT (NOW() + INTERVAL '4 hours'),
+    matched_at TIMESTAMP WITH TIME ZONE -- set by markPodMatched when status -> MATCHED; drives the retention sweep below
 );
 
 -- Enforce a single ACTIVE pod per user
@@ -156,6 +167,15 @@ RLS must be enabled on all three tables with the following policies:
 ### Realtime
 
 Enable Supabase Realtime replication on the `pods`, `pod_joins`, and `notifications` tables to push instant matching feed, join-request, and notification-center updates.
+
+### Matched/Expired Pod Cleanup
+
+An hourly `pg_cron` job (`sweep-matched-expired-pods`, defined in `supabase/sql/matched_pod_cleanup.sql`, applied directly in the Supabase SQL editor since this project has no tracked migrations) permanently deletes:
+
+- `MATCHED` pods once `matched_at` is more than 24 hours old.
+- `EXPIRED` pods once `expires_at` is more than 24 hours old.
+
+The 24-hour grace window on `MATCHED` pods exists because `pod_joins` rows cascade-delete with their pod (`ON DELETE CASCADE`, above), and `MatchedPodWatcher` (Section 7) needs both rows to still exist in order to detect an accepted member's match and surface the `MatchedDialog` — an immediate delete on `markPodMatched` risks a member who wasn't actively polling missing that dialog entirely. Deleting a pod also cascades to its `notifications` rows, so any notification history tied to that pod (join requests, accept/reject, member-left) disappears with it once the sweep runs — this is accepted as intentional since `notifications` is a live inbox, not a permanent audit log.
 
 ---
 
@@ -260,6 +280,8 @@ Three tabs, in this left-to-right order: **Active Pods**, **LFG**, **Profile**. 
 
 - **Mobile:** a fixed bottom tab bar, one icon + label per tab.
 - **Desktop (`sm:` and up):** a top navbar with the app name on the left and the three tabs (icon + label) on the right, replacing the bottom bar.
+- **Tutorial button (`TutorialDialog`):** a question-mark icon button rendered directly to the left of `NotificationBell` in both the mobile top bar and the desktop navbar (same header row either way). Clicking it opens a modal walking through the app's core loop step by step (set up profile → start an LFG search → browse/get matched on Active Pods → host accepts join requests → notification bell → mark pod as matched). Purely informational — no state, no server calls.
+- **Locale switcher (`LocaleSwitcher`):** an EN/FR toggle rendered alongside `TutorialDialog`/`NotificationBell` in both header rows (and separately, top-right, on `/login`, which has no `TabBar`). See Section 1's Localization subsection.
 
 ### Screen 1: Profile (`/profile/page.tsx`) — identity only
 
@@ -417,7 +439,6 @@ This implementation pass targets **installability**, plus foreground join-reques
 
 - No true push notifications (no service worker, no server-triggered delivery while the app is fully closed) and no offline/service-worker caching — see Section 7. The foreground `Notification`/snackbar join-request alert is not a substitute for push.
 - No geolocation/proximity matching for IRL pods — `location_name` remains a free-text venue name, and city-level scoping (`profiles.city`/`pods.city`, Section 3) is a fixed list of exact-match slugs (`CITIES_CONFIG`, Section 4), not real geolocation or a distance/radius calculation.
-- No automated expiry sweep job (pg_cron / scheduled Edge Function); expiry is enforced only via query-time `expires_at` filtering. A follow-up scheduled job is recommended but out of scope for this pass.
 - No pagination/infinite scroll on the Match Feed (MVP scale assumption).
 - No re-request after a `REJECTED` join (terminal state for this pass).
 - No per-search override screen separate from the dialog described in Section 5 — the LFG tab's Search dialog is the only place game settings are edited; the Profile tab holds identity fields (and sign-out) only.
@@ -448,6 +469,7 @@ This implementation pass targets **installability**, plus foreground join-reques
 18. Add `pods.scheduled_at` (Section 3) and the Search dialog's Date/Time picker fields, required for IRL and validated in `validateStartSearchInput` (Section 5's Screen 2); display it (falling back to `created_at` for ONLINE pods) on Match Feed cards and in `PodDetailDialog`'s "When" row.
 19. Add the adjustable `PodFilters` bar (`/components/PodFilters.tsx`) above the Match Feed — Game, Match Type, Format, Date, and Power Bracket, per Section 5's Screen 3 and Section 6 — seeded from the viewer's profile but independently adjustable, with a "Clear all" reset to the neutral `NEUTRAL_POD_FILTERS` state.
 20. Add a **Cancel Request**/**Leave** action to `PodDetailDialog` for the searcher's own join (`leavePod`, Section 5's Join Request Flow step 5), and per-notification delete plus a "Clear all" action to `NotificationBell` (`deleteNotification`/`deleteAllNotifications`, Section 7), backed by the `notifications` DELETE RLS policy (Section 3).
+21. Add `TutorialDialog` (a question-mark icon button opening a step-by-step "how it works" modal) next to `NotificationBell` in both of `TabBar`'s header rows, per Section 5's Navigation Shell.
 ```
 
 If you have questions at any point, ask me directly.

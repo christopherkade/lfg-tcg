@@ -2,10 +2,22 @@
 
 import { Box, ToggleButton, ToggleButtonGroup } from "@mui/material";
 import { GAMES_CONFIG } from "@/constants/gamesConfig";
+import { useTranslation } from "@/lib/i18n/LocaleContext";
 
 interface GameSelectorProps {
   value: string;
   onChange: (gameKey: string) => void;
+  /** Renders an extra "All Games" pill (value `"ALL"`) ahead of the games. */
+  includeAllOption?: boolean;
+  /**
+   * Grid column count per breakpoint. Defaults to the dialog's layout
+   * (2 columns on narrow screens, 4 once there's room). The default's `sm`
+   * step is a *viewport*-width breakpoint, so callers rendering this inside
+   * a narrow, fixed-width container (e.g. a popover) on an otherwise wide
+   * screen must override it — otherwise the grid still switches to 4
+   * columns and the pills overflow their container.
+   */
+  columns?: { xs: number; sm: number };
 }
 
 // Mirrors each game's Tailwind theme color (see gamesConfig.ts) as hex
@@ -19,7 +31,34 @@ const ACTIVE_COLORS: Record<string, string> = {
   LORCANA: "#a855f7", // purple-500
 };
 
-export function GameSelector({ value, onChange }: GameSelectorProps) {
+function gamePillSx(activeColor: string) {
+  return {
+    borderRadius: "10px !important",
+    border: "1px solid",
+    borderColor: "#27272a",
+    bgcolor: "#18181b",
+    color: "#a1a1aa",
+    minWidth: 0,
+    px: 1,
+    py: { xs: 0.75, sm: 1.25 },
+    "&.Mui-selected": {
+      borderColor: `${activeColor}4d`,
+      bgcolor: `${activeColor}1a`,
+      color: activeColor,
+    },
+    "&.Mui-selected:hover": {
+      bgcolor: `${activeColor}26`,
+    },
+  };
+}
+
+export function GameSelector({
+  value,
+  onChange,
+  includeAllOption,
+  columns = { xs: 2, sm: 4 },
+}: GameSelectorProps) {
+  const { t } = useTranslation();
   return (
     <ToggleButtonGroup
       value={value}
@@ -31,40 +70,47 @@ export function GameSelector({ value, onChange }: GameSelectorProps) {
       }}
       sx={{
         display: "grid",
-        gridTemplateColumns: { xs: "repeat(2, 1fr)", sm: "repeat(4, 1fr)" },
-        gap: 1.5,
+        gridTemplateColumns: {
+          xs: `repeat(${columns.xs}, minmax(0, 1fr))`,
+          sm: `repeat(${columns.sm}, minmax(0, 1fr))`,
+        },
+        gap: 1,
         width: "100%",
         bgcolor: "transparent",
         border: 0,
         p: 0,
       }}
     >
-      {Object.entries(GAMES_CONFIG).map(([key, game]) => {
-        const activeColor = ACTIVE_COLORS[key] ?? "#fafafa";
-        return (
-          <ToggleButton
-            key={key}
-            value={key}
-            sx={{
-              borderRadius: "12px !important",
-              border: "1px solid",
-              borderColor: "#27272a",
-              bgcolor: "#18181b",
-              color: "#a1a1aa",
-              px: 1.5,
-              py: 2,
-              "&.Mui-selected": {
-                borderColor: `${activeColor}4d`,
-                bgcolor: `${activeColor}1a`,
-                color: activeColor,
-              },
-              "&.Mui-selected:hover": {
-                bgcolor: `${activeColor}26`,
-              },
-            }}
+      {includeAllOption && (
+        <ToggleButton value="ALL" sx={gamePillSx("#F2762E")}>
+          <Box
+            component="span"
+            sx={{ fontSize: { xs: "0.8rem", sm: "0.875rem" } }}
           >
-            <Box component="span" sx={{ fontSize: "0.875rem" }}>
-              {game.name}
+            {t("gameSelector.allGames")}
+          </Box>
+        </ToggleButton>
+      )}
+      {Object.entries(GAMES_CONFIG).map(([key, game]) => {
+        const activeColor = ACTIVE_COLORS[key] ?? "#F2762E";
+        return (
+          <ToggleButton key={key} value={key} sx={gamePillSx(activeColor)}>
+            <Box
+              component="span"
+              sx={{ fontSize: { xs: "0.8rem", sm: "0.875rem" } }}
+            >
+              <Box
+                component="span"
+                sx={{
+                  display: { xs: "inline", sm: "none" },
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {game.shortName ?? game.name}
+              </Box>
+              <Box component="span" sx={{ display: { xs: "none", sm: "inline" } }}>
+                {game.name}
+              </Box>
             </Box>
           </ToggleButton>
         );

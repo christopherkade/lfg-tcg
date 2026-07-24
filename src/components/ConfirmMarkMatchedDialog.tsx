@@ -3,6 +3,7 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { AlertTriangle } from "lucide-react";
 import { Alert, Button } from "@mui/material";
+import { useTranslation } from "@/lib/i18n/LocaleContext";
 
 interface ConfirmMarkMatchedDialogProps {
   open: boolean;
@@ -25,6 +26,7 @@ export function ConfirmMarkMatchedDialog({
   pending,
   error,
 }: ConfirmMarkMatchedDialogProps) {
+  const { t } = useTranslation();
   return (
     <AnimatePresence>
       {open && (
@@ -49,13 +51,10 @@ export function ConfirmMarkMatchedDialog({
               </div>
               <div className="flex flex-col gap-1">
                 <h2 className="text-lg font-semibold text-zinc-50">
-                  Got everyone on Discord?
+                  {t("confirmMarkMatchedDialog.title")}
                 </h2>
                 <p className="text-sm text-zinc-500">
-                  Marking as matched removes this pod from the match feed for
-                  good. Make sure you&apos;ve added everyone via Discord&apos;s
-                  Add Friend search (copy their handles from the Group Members
-                  list) before you continue.
+                  {t("confirmMarkMatchedDialog.body")}
                 </p>
               </div>
             </div>
@@ -70,7 +69,7 @@ export function ConfirmMarkMatchedDialog({
                 fullWidth
                 sx={{ py: 1.5, borderColor: "#27272a", color: "#a1a1aa" }}
               >
-                Not Yet
+                {t("confirmMarkMatchedDialog.notYet")}
               </Button>
               <Button
                 type="button"
@@ -80,7 +79,9 @@ export function ConfirmMarkMatchedDialog({
                 fullWidth
                 sx={{ py: 1.5 }}
               >
-                {pending ? "Matching..." : "Mark as Matched"}
+                {pending
+                  ? t("confirmMarkMatchedDialog.matching")
+                  : t("confirmMarkMatchedDialog.markAsMatched")}
               </Button>
             </div>
           </motion.div>

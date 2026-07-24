@@ -2,18 +2,21 @@
 
 import { useActionState, useState } from "react";
 import { LogOut } from "lucide-react";
-import { Alert, Button, TextField } from "@mui/material";
+import { Alert, Avatar, Button, TextField } from "@mui/material";
 import {
   upsertProfile,
   signOut,
   type ProfileFormState,
 } from "@/app/actions/profile";
 import { CitySelector } from "@/components/CitySelector";
+import { LocaleSwitcher } from "@/components/LocaleSwitcher";
+import { useTranslation } from "@/lib/i18n/LocaleContext";
 import type { Profile } from "@/types/database";
 
 interface ProfileFormProps {
   initialProfile: Profile | null;
   defaultDiscordHandle: string;
+  defaultAvatarUrl: string | null;
 }
 
 const initialState: ProfileFormState = {};
@@ -21,20 +24,31 @@ const initialState: ProfileFormState = {};
 export function ProfileForm({
   initialProfile,
   defaultDiscordHandle,
+  defaultAvatarUrl,
 }: ProfileFormProps) {
+  const { t } = useTranslation();
   const [state, formAction, pending] = useActionState(
     upsertProfile,
     initialState,
   );
   const [city, setCity] = useState<string | null>(initialProfile?.city ?? null);
+  const avatarUrl = initialProfile?.avatar_url ?? defaultAvatarUrl ?? undefined;
 
   return (
     <div className="flex w-full max-w-md flex-col gap-8">
+      <div className="flex justify-center">
+        <Avatar
+          src={avatarUrl}
+          sx={{ width: 72, height: 72 }}
+        >
+          {(initialProfile?.username ?? defaultDiscordHandle)?.[0]?.toUpperCase()}
+        </Avatar>
+      </div>
       <form action={formAction} className="flex flex-col gap-6">
         <TextField
           id="username"
           name="username"
-          label="Username"
+          label={t("profileForm.username")}
           defaultValue={initialProfile?.username ?? ""}
           required
           fullWidth
@@ -44,7 +58,7 @@ export function ProfileForm({
         <TextField
           id="discord_handle"
           name="discord_handle"
-          label="Discord Handle"
+          label={t("profileForm.discordHandle")}
           defaultValue={initialProfile?.discord_handle ?? defaultDiscordHandle}
           required
           fullWidth
@@ -53,6 +67,8 @@ export function ProfileForm({
 
         <input type="hidden" name="city" value={city ?? ""} />
         <CitySelector value={city} onChange={setCity} />
+
+        <LocaleSwitcher />
 
         {state?.error && <Alert severity="error">{state.error}</Alert>}
 
@@ -63,7 +79,7 @@ export function ProfileForm({
           fullWidth
           sx={{ py: 1.5 }}
         >
-          {pending ? "Saving..." : "Save Profile"}
+          {pending ? t("profileForm.save.pending") : t("profileForm.save.idle")}
         </Button>
       </form>
 
@@ -84,7 +100,7 @@ export function ProfileForm({
             },
           }}
         >
-          Sign Out
+          {t("profileForm.signOut")}
         </Button>
       </form>
     </div>

@@ -5,7 +5,10 @@ import { Box, Popover, ToggleButton, ToggleButtonGroup } from "@mui/material";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { format as formatDate } from "date-fns";
 import { GAMES_CONFIG } from "@/constants/gamesConfig";
+import { GameSelector } from "@/components/GameSelector";
 import { PowerBracketPicker } from "@/components/PowerBracketPicker";
+import { useTranslation } from "@/lib/i18n/LocaleContext";
+import type { TranslationKey } from "@/lib/i18n";
 import type { GameKey, MatchType } from "@/types/database";
 
 export interface PodFiltersValue {
@@ -34,10 +37,10 @@ interface PodFiltersProps {
   onChange: (value: PodFiltersValue) => void;
 }
 
-const MATCH_TYPE_OPTIONS: { key: MatchType | "ALL"; label: string }[] = [
-  { key: "ALL", label: "All" },
-  { key: "IRL", label: "IRL" },
-  { key: "ONLINE", label: "Online" },
+const MATCH_TYPE_OPTIONS: { key: MatchType | "ALL"; labelKey: TranslationKey }[] = [
+  { key: "ALL", labelKey: "podFilters.matchTypeAll" },
+  { key: "IRL", labelKey: "podFilters.matchTypeIrl" },
+  { key: "ONLINE", labelKey: "podFilters.matchTypeOnline" },
 ];
 
 type FilterKey = "game" | "matchType" | "format" | "date" | "powerBracket";
@@ -55,7 +58,7 @@ type FilterKey = "game" | "matchType" | "format" | "date" | "powerBracket";
 const ENABLED_FILTERS: Record<FilterKey, boolean> = {
   game: true,
   matchType: true,
-  format: true,
+  format: false,
   date: true,
   powerBracket: false,
 };
@@ -91,7 +94,7 @@ function FilterChip({
       onClick={onClick}
       className={`flex shrink-0 items-center gap-1 rounded-full border px-3 py-1.5 text-xs font-medium whitespace-nowrap transition-colors ${
         active
-          ? "border-zinc-50/30 bg-zinc-50/10 text-zinc-50"
+          ? "border-ember/30 bg-ember/10 text-ember"
           : "border-zinc-800 bg-zinc-900 text-zinc-400 hover:border-zinc-700 hover:text-zinc-300"
       }`}
     >
@@ -102,6 +105,7 @@ function FilterChip({
 }
 
 export function PodFilters({ value, onChange }: PodFiltersProps) {
+  const { t } = useTranslation();
   const [openFilter, setOpenFilter] = useState<FilterKey | null>(null);
   const [anchorEl, setAnchorEl] = useState<HTMLButtonElement | null>(null);
 
@@ -151,21 +155,22 @@ export function PodFilters({ value, onChange }: PodFiltersProps) {
     closeFilter();
   }
 
-  const gameLabel = selectedGame ? selectedGame.name : "All Games";
+  const gameLabel = selectedGame ? selectedGame.name : t("podFilters.allGames");
   const matchTypeLabel =
     value.matchType === "ALL"
-      ? "Match Type"
-      : (MATCH_TYPE_OPTIONS.find((option) => option.key === value.matchType)
-          ?.label ?? "Match Type");
+      ? t("podFilters.matchTypeLabel")
+      : t(
+          (MATCH_TYPE_OPTIONS.find((option) => option.key === value.matchType)
+            ?.labelKey ?? "podFilters.matchTypeLabel"),
+        );
   const formatLabel =
     value.formatKey === "ALL"
-      ? "Format"
-      : (selectedGame?.formats.find((f) => f.key === value.formatKey)?.label ??
-        "Format");
-  const dateLabel = value.date ? formatDate(value.date, "MMM d") : "Date";
+      ? t("podFilters.formatLabel")
+      : t(`format.${value.formatKey}` as TranslationKey);
+  const dateLabel = value.date ? formatDate(value.date, "MMM d") : t("podFilters.dateLabel");
   const powerBracketLabel = value.powerBrackets.length
-    ? `${selectedGame?.tierLabel ?? "Bracket"} ${value.powerBrackets.join(", ")}`
-    : (selectedGame?.tierLabel ?? "Power Bracket");
+    ? `${selectedGame?.tierLabel ? t("tier.powerBracket") : t("podFilters.bracketShort")} ${value.powerBrackets.join(", ")}`
+    : (selectedGame?.tierLabel ? t("tier.powerBracket") : t("podFilters.powerBracketLabel"));
 
   const popoverSlotProps = {
     paper: {
@@ -175,7 +180,7 @@ export function PodFilters({ value, onChange }: PodFiltersProps) {
   };
 
   return (
-    <div className="flex w-full max-w-md flex-wrap items-center gap-2 sm:flex-nowrap">
+    <div className="mx-auto flex w-full max-w-md flex-wrap items-center gap-2 sm:flex-nowrap">
       {ENABLED_FILTERS.game && (
         <FilterChip
           label={gameLabel}
@@ -217,7 +222,7 @@ export function PodFilters({ value, onChange }: PodFiltersProps) {
           onClick={() => onChange(NEUTRAL_POD_FILTERS)}
           className="shrink-0 whitespace-nowrap text-xs font-medium text-zinc-500 transition-colors hover:text-zinc-300"
         >
-          Clear all
+          {t("podFilters.clearAll")}
         </button>
       )}
 
@@ -229,28 +234,22 @@ export function PodFilters({ value, onChange }: PodFiltersProps) {
           anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
           slotProps={popoverSlotProps}
         >
-          <Box sx={{ p: 2, display: "flex", flexDirection: "column", gap: 1 }}>
-            <span className="text-xs font-medium text-zinc-500">Game</span>
-            <ToggleButtonGroup
+          <Box
+            sx={{
+              p: 2,
+              display: "flex",
+              flexDirection: "column",
+              gap: 1,
+              width: 260,
+            }}
+          >
+            <span className="text-xs font-medium text-zinc-300">{t("podFilters.gameSectionLabel")}</span>
+            <GameSelector
               value={value.gameKey}
-              exclusive
-              onChange={(_event, next) => handleGameChange(next)}
-              sx={{
-                flexWrap: "wrap",
-                bgcolor: "transparent",
-                border: 0,
-                p: 0,
-                gap: 1,
-                maxWidth: 260,
-              }}
-            >
-              <ToggleButton value="ALL">All Games</ToggleButton>
-              {Object.entries(GAMES_CONFIG).map(([key, game]) => (
-                <ToggleButton key={key} value={key}>
-                  {game.name}
-                </ToggleButton>
-              ))}
-            </ToggleButtonGroup>
+              onChange={handleGameChange}
+              includeAllOption
+              columns={{ xs: 2, sm: 2 }}
+            />
           </Box>
         </Popover>
       )}
@@ -264,8 +263,8 @@ export function PodFilters({ value, onChange }: PodFiltersProps) {
           slotProps={popoverSlotProps}
         >
           <Box sx={{ p: 2, display: "flex", flexDirection: "column", gap: 1 }}>
-            <span className="text-xs font-medium text-zinc-500">
-              Match Type
+            <span className="text-xs font-medium text-zinc-300">
+              {t("podFilters.matchTypeLabel")}
             </span>
             <ToggleButtonGroup
               value={value.matchType}
@@ -279,7 +278,7 @@ export function PodFilters({ value, onChange }: PodFiltersProps) {
             >
               {MATCH_TYPE_OPTIONS.map((option) => (
                 <ToggleButton key={option.key} value={option.key}>
-                  {option.label}
+                  {t(option.labelKey)}
                 </ToggleButton>
               ))}
             </ToggleButtonGroup>
@@ -296,7 +295,7 @@ export function PodFilters({ value, onChange }: PodFiltersProps) {
           slotProps={popoverSlotProps}
         >
           <Box sx={{ p: 2, display: "flex", flexDirection: "column", gap: 1 }}>
-            <span className="text-xs font-medium text-zinc-500">Format</span>
+            <span className="text-xs font-medium text-zinc-300">{t("podFilters.formatLabel")}</span>
             <ToggleButtonGroup
               value={value.formatKey}
               exclusive
@@ -315,10 +314,10 @@ export function PodFilters({ value, onChange }: PodFiltersProps) {
                 maxWidth: 260,
               }}
             >
-              <ToggleButton value="ALL">All Formats</ToggleButton>
+              <ToggleButton value="ALL">{t("podFilters.allFormats")}</ToggleButton>
               {selectedGame.formats.map((formatOption) => (
                 <ToggleButton key={formatOption.key} value={formatOption.key}>
-                  {formatOption.label}
+                  {t(`format.${formatOption.key}` as TranslationKey)}
                 </ToggleButton>
               ))}
             </ToggleButtonGroup>
@@ -376,7 +375,7 @@ export function PodFilters({ value, onChange }: PodFiltersProps) {
                 onChange({ ...value, powerBrackets: brackets })
               }
               maxTier={selectedGame.maxTier}
-              label={selectedGame.tierLabel}
+              label={selectedGame.tierLabel ? t("tier.powerBracket") : undefined}
             />
           </Box>
         </Popover>

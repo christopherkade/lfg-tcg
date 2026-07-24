@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { ThemeRegistry } from "@/components/ThemeRegistry";
+import { LocaleProvider } from "@/lib/i18n/LocaleContext";
+import { getServerLocale } from "@/lib/i18n/server";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -19,18 +21,22 @@ export const metadata: Metadata = {
     "Create your own TCG pods and find your next game, IRL or online.",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const locale = await getServerLocale();
+
   return (
     <html
-      lang="en"
+      lang={locale}
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-zinc-950">
-        <ThemeRegistry>{children}</ThemeRegistry>
+        <LocaleProvider initialLocale={locale}>
+          <ThemeRegistry>{children}</ThemeRegistry>
+        </LocaleProvider>
       </body>
     </html>
   );

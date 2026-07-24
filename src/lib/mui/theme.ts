@@ -15,7 +15,9 @@ export const theme = createTheme({
       secondary: "#a1a1aa", // zinc-400
     },
     primary: {
-      main: "#fafafa", // zinc-50 (the app's "active" pill color)
+      main: "#F2762E", // ember (the app's "active" pill / brand accent color)
+      light: "#F79A5D",
+      dark: "#C85A1D",
       contrastText: "#09090b",
     },
     divider: "#27272a", // zinc-800
@@ -69,11 +71,11 @@ export const theme = createTheme({
           fontWeight: 500,
           color: "#a1a1aa",
           "&.Mui-selected": {
-            backgroundColor: "#fafafa",
+            backgroundColor: "#F2762E",
             color: "#09090b",
           },
           "&.Mui-selected:hover": {
-            backgroundColor: "#e4e4e7",
+            backgroundColor: "#F79A5D",
           },
         },
       },
@@ -90,7 +92,7 @@ export const theme = createTheme({
             borderColor: "#3f3f46",
           },
           "&.Mui-focused fieldset": {
-            borderColor: "#52525b",
+            borderColor: "#F2762E",
           },
         },
       },

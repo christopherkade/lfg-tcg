@@ -1,15 +1,18 @@
 "use client";
 
 import { useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import { Check, ChevronDown, Copy, UserX, X } from "lucide-react";
-import { format, isToday } from "date-fns";
-import { Alert, Button } from "@mui/material";
+import { Alert, Avatar, Button } from "@mui/material";
 import { removeMember, respondToJoin } from "@/app/actions/joins";
 import { markPodMatched } from "@/app/actions/pods";
 import { ConfirmMarkMatchedDialog } from "@/components/ConfirmMarkMatchedDialog";
 import { ConfirmRemoveMemberDialog } from "@/components/ConfirmRemoveMemberDialog";
 import { LfgDialog } from "@/components/LfgDialog";
 import { GAMES_CONFIG } from "@/constants/gamesConfig";
+import { formatPodWhen } from "@/lib/date";
+import { useTranslation } from "@/lib/i18n/LocaleContext";
+import type { TranslationKey } from "@/lib/i18n";
 import type { PodJoinWithProfile, PodWithRelations } from "@/types/database";
 
 interface MyPodPanelProps {
@@ -18,6 +21,7 @@ interface MyPodPanelProps {
 }
 
 export function MyPodPanel({ pod, onChanged }: MyPodPanelProps) {
+  const { t, locale } = useTranslation();
   const [error, setError] = useState<string | null>(null);
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [confirmMatchedOpen, setConfirmMatchedOpen] = useState(false);
@@ -38,10 +42,7 @@ export function MyPodPanel({ pod, onChanged }: MyPodPanelProps) {
   );
   const isFull = acceptedMembers.length + 1 >= pod.max_players;
   const game = GAMES_CONFIG[pod.game_key];
-  const scheduledDate = new Date(pod.scheduled_at ?? pod.created_at);
-  const scheduledLabel = isToday(scheduledDate)
-    ? `Today, ${format(scheduledDate, "p")}`
-    : format(scheduledDate, "MMM d, p");
+  const scheduledLabel = formatPodWhen(pod, locale, t);
 
   async function copyText(key: string, text: string) {
     try {
@@ -113,17 +114,21 @@ export function MyPodPanel({ pod, onChanged }: MyPodPanelProps) {
         className="flex items-center justify-between gap-3 text-left"
       >
         <div className="flex items-center gap-2">
-          <h2 className="text-lg font-semibold text-zinc-50">Your Pod</h2>
+          <h2 className="text-lg font-semibold text-zinc-50">{t("myPodPanel.title")}</h2>
           {pendingRequests.length > 0 && (
             <span className="rounded-full bg-indigo-500/10 px-2 py-0.5 text-xs font-medium text-indigo-300">
-              {pendingRequests.length} join request
-              {pendingRequests.length === 1 ? "" : "s"}
+              {pendingRequests.length === 1
+                ? t("myPodPanel.joinRequestCount", { count: pendingRequests.length })
+                : t("myPodPanel.joinRequestCountPlural", { count: pendingRequests.length })}
             </span>
           )}
         </div>
         <div className="flex items-center gap-3">
           <span className="text-sm text-zinc-400">
-            {acceptedMembers.length + 1}/{pod.max_players} players
+            {t("myPodPanel.playersCount", {
+              count: acceptedMembers.length + 1,
+              max: pod.max_players,
+            })}
           </span>
           <ChevronDown
             className={`h-4 w-4 shrink-0 text-zinc-500 transition-transform ${
@@ -136,18 +141,26 @@ export function MyPodPanel({ pod, onChanged }: MyPodPanelProps) {
       {pendingRequests.length > 0 ? (
         <div className="flex flex-col gap-2">
           <span className="text-sm font-medium text-zinc-400">
-            Join Requests
+            {t("myPodPanel.joinRequests")}
           </span>
           {pendingRequests.map((join) => (
             <div
               key={join.id}
               className="flex items-center justify-between rounded-lg border border-zinc-800 px-3 py-2"
             >
-              <div className="flex flex-col">
-                <span className="text-zinc-50">{join.profiles.username}</span>
-                <span className="text-xs text-zinc-500">
-                  {join.profiles.discord_handle}
-                </span>
+              <div className="flex items-center gap-2">
+                <Avatar
+                  src={join.profiles.avatar_url ?? undefined}
+                  sx={{ width: 32, height: 32 }}
+                >
+                  {join.profiles.username[0]?.toUpperCase()}
+                </Avatar>
+                <div className="flex flex-col">
+                  <span className="text-zinc-50">{join.profiles.username}</span>
+                  <span className="text-xs text-zinc-500">
+                    {join.profiles.discord_handle}
+                  </span>
+                </div>
               </div>
               <div className="flex gap-2">
                 <Button
@@ -159,11 +172,13 @@ export function MyPodPanel({ pod, onChanged }: MyPodPanelProps) {
                   sx={{
                     bgcolor: "rgba(16, 185, 129, 0.1)",
                     color: "#34d399",
+                    minWidth: "auto",
+                    px: 1.5,
                     "&:hover": { bgcolor: "rgba(16, 185, 129, 0.2)" },
                     "&.Mui-disabled": { color: "#34d399", opacity: 0.4 },
                   }}
                 >
-                  Accept
+                  {t("myPodPanel.accept")}
                 </Button>
                 <Button
                   type="button"
@@ -174,11 +189,13 @@ export function MyPodPanel({ pod, onChanged }: MyPodPanelProps) {
                   sx={{
                     bgcolor: "rgba(239, 68, 68, 0.1)",
                     color: "#f87171",
+                    minWidth: "auto",
+                    px: 1.5,
                     "&:hover": { bgcolor: "rgba(239, 68, 68, 0.2)" },
                     "&.Mui-disabled": { color: "#f87171", opacity: 0.4 },
                   }}
                 >
-                  Reject
+                  {t("myPodPanel.reject")}
                 </Button>
               </div>
             </div>
@@ -186,7 +203,7 @@ export function MyPodPanel({ pod, onChanged }: MyPodPanelProps) {
         </div>
       ) : (
         <p className="text-sm text-zinc-500">
-          No one has requested to join yet. Your pod is live in the match feed.
+          {t("myPodPanel.noRequests")}
         </p>
       )}
 
@@ -196,34 +213,40 @@ export function MyPodPanel({ pod, onChanged }: MyPodPanelProps) {
         <>
           <div className="flex flex-col gap-2 text-sm text-zinc-300">
             <div className="flex justify-between">
-              <span className="text-zinc-500">Game</span>
+              <span className="text-zinc-500">{t("myPodPanel.game")}</span>
               <span>{game?.name ?? pod.game_key}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-zinc-500">Format</span>
-              <span>{pod.format_key}</span>
+              <span className="text-zinc-500">{t("myPodPanel.format")}</span>
+              <span>{t(`format.${pod.format_key}` as TranslationKey)}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-zinc-500">Playstyle</span>
-              <span className="capitalize">{pod.playstyle_key}</span>
+              <span className="text-zinc-500">{t("myPodPanel.playstyle")}</span>
+              <span className="capitalize">
+                {t(`playstyle.${pod.playstyle_key}` as TranslationKey)}
+              </span>
             </div>
             <div className="flex justify-between">
-              <span className="text-zinc-500">Match Type</span>
-              <span>{pod.type}</span>
+              <span className="text-zinc-500">{t("myPodPanel.matchType")}</span>
+              <span>
+                {pod.type === "IRL"
+                  ? t("podFilters.matchTypeIrl")
+                  : t("podFilters.matchTypeOnline")}
+              </span>
             </div>
             <div className="flex justify-between">
-              <span className="text-zinc-500">When</span>
+              <span className="text-zinc-500">{t("myPodPanel.when")}</span>
               <span>{scheduledLabel}</span>
             </div>
             {pod.location_name && (
               <div className="flex justify-between">
-                <span className="text-zinc-500">Location</span>
+                <span className="text-zinc-500">{t("myPodPanel.location")}</span>
                 <span>{pod.location_name}</span>
               </div>
             )}
             {pod.power_tiers && pod.power_tiers.length > 0 && (
               <div className="flex justify-between">
-                <span className="text-zinc-500">Power Bracket</span>
+                <span className="text-zinc-500">{t("myPodPanel.powerBracket")}</span>
                 <span>{pod.power_tiers.join(", ")}</span>
               </div>
             )}
@@ -232,20 +255,28 @@ export function MyPodPanel({ pod, onChanged }: MyPodPanelProps) {
           {acceptedMembers.length > 0 && (
             <div className="flex flex-col gap-2">
               <span className="text-sm font-medium text-zinc-400">
-                Group Members
+                {t("myPodPanel.groupMembers")}
               </span>
               {acceptedMembers.map((join) => (
                 <div
                   key={join.id}
                   className="flex items-center justify-between gap-2 rounded-lg border border-zinc-800 px-3 py-2"
                 >
-                  <div className="flex flex-col">
-                    <span className="text-zinc-50">
-                      {join.profiles.username}
-                    </span>
-                    <span className="text-sm text-zinc-400">
-                      {join.profiles.discord_handle}
-                    </span>
+                  <div className="flex items-center gap-2">
+                    <Avatar
+                      src={join.profiles.avatar_url ?? undefined}
+                      sx={{ width: 32, height: 32 }}
+                    >
+                      {join.profiles.username[0]?.toUpperCase()}
+                    </Avatar>
+                    <div className="flex flex-col">
+                      <span className="text-zinc-50">
+                        {join.profiles.username}
+                      </span>
+                      <span className="text-sm text-zinc-400">
+                        {join.profiles.discord_handle}
+                      </span>
+                    </div>
                   </div>
                   <div className="flex shrink-0 gap-2">
                     <Button
@@ -255,11 +286,22 @@ export function MyPodPanel({ pod, onChanged }: MyPodPanelProps) {
                       }
                       size="small"
                       startIcon={
-                        copied === join.id ? (
-                          <Check className="h-3.5 w-3.5" />
-                        ) : (
-                          <Copy className="h-3.5 w-3.5" />
-                        )
+                        <AnimatePresence mode="wait" initial={false}>
+                          <motion.span
+                            key={copied === join.id ? "check" : "copy"}
+                            initial={{ scale: 0.5, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0.5, opacity: 0 }}
+                            transition={{ duration: 0.15, ease: "easeOut" }}
+                            className="inline-flex"
+                          >
+                            {copied === join.id ? (
+                              <Check className="h-3.5 w-3.5" />
+                            ) : (
+                              <Copy className="h-3.5 w-3.5" />
+                            )}
+                          </motion.span>
+                        </AnimatePresence>
                       }
                       sx={{
                         flexShrink: 0,
@@ -271,7 +313,7 @@ export function MyPodPanel({ pod, onChanged }: MyPodPanelProps) {
                         "&:hover": { bgcolor: "rgba(99, 102, 241, 0.2)" },
                       }}
                     >
-                      {copied === join.id ? "Copied" : "Copy Handle"}
+                      {copied === join.id ? t("myPodPanel.copied") : t("myPodPanel.copyHandle")}
                     </Button>
                     <Button
                       type="button"
@@ -291,7 +333,7 @@ export function MyPodPanel({ pod, onChanged }: MyPodPanelProps) {
                         "&:hover": { bgcolor: "rgba(239, 68, 68, 0.2)" },
                       }}
                     >
-                      Remove
+                      {t("myPodPanel.remove")}
                     </Button>
                   </div>
                 </div>
@@ -308,15 +350,26 @@ export function MyPodPanel({ pod, onChanged }: MyPodPanelProps) {
                 }
                 variant="outlined"
                 startIcon={
-                  copied === "__all__" ? (
-                    <Check className="h-4 w-4" />
-                  ) : (
-                    <Copy className="h-4 w-4" />
-                  )
+                  <AnimatePresence mode="wait" initial={false}>
+                    <motion.span
+                      key={copied === "__all__" ? "check" : "copy"}
+                      initial={{ scale: 0.5, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      exit={{ scale: 0.5, opacity: 0 }}
+                      transition={{ duration: 0.15, ease: "easeOut" }}
+                      className="inline-flex"
+                    >
+                      {copied === "__all__" ? (
+                        <Check className="h-4 w-4" />
+                      ) : (
+                        <Copy className="h-4 w-4" />
+                      )}
+                    </motion.span>
+                  </AnimatePresence>
                 }
                 sx={{ borderColor: "#27272a", color: "#d4d4d8" }}
               >
-                {copied === "__all__" ? "Copied" : "Copy All Handles"}
+                {copied === "__all__" ? t("myPodPanel.copied") : t("myPodPanel.copyAllHandles")}
               </Button>
             </div>
           )}
@@ -324,7 +377,7 @@ export function MyPodPanel({ pod, onChanged }: MyPodPanelProps) {
           {pod.notes && (
             <div className="flex flex-col gap-1">
               <span className="text-sm font-medium text-zinc-400">
-                Your Notes
+                {t("myPodPanel.yourNotes")}
               </span>
               <p className="whitespace-pre-wrap text-sm text-zinc-300">
                 {pod.notes}
@@ -340,7 +393,7 @@ export function MyPodPanel({ pod, onChanged }: MyPodPanelProps) {
               size="small"
               sx={{ borderColor: "#27272a", color: "#d4d4d8" }}
             >
-              Edit Pod
+              {t("myPodPanel.editPod")}
             </Button>
             <Button
               type="button"
@@ -349,7 +402,7 @@ export function MyPodPanel({ pod, onChanged }: MyPodPanelProps) {
               variant="contained"
               size="small"
             >
-              Mark as Matched
+              {t("myPodPanel.markAsMatched")}
             </Button>
           </div>
         </>
@@ -375,7 +428,10 @@ export function MyPodPanel({ pod, onChanged }: MyPodPanelProps) {
       <LfgDialog
         open={editOpen}
         onClose={() => setEditOpen(false)}
-        onSuccess={() => setEditOpen(false)}
+        onSuccess={() => {
+          setEditOpen(false);
+          onChanged?.();
+        }}
         profile={pod.profiles}
         editPod={pod}
       />

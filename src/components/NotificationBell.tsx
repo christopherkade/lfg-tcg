@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { formatDistanceToNowStrict } from "date-fns";
+import { fr } from "date-fns/locale";
 import {
   Badge,
   ButtonBase,
@@ -28,6 +29,8 @@ import {
   deleteNotification,
   markAllNotificationsRead,
 } from "@/app/actions/notifications";
+import { useTranslation } from "@/lib/i18n/LocaleContext";
+import type { TranslationKey } from "@/lib/i18n";
 import type {
   NotificationType,
   NotificationWithRelations,
@@ -59,22 +62,25 @@ const TYPE_ICON: Record<NotificationType, LucideIcon> = {
   POD_UPDATED: PencilLine,
 };
 
-function describeNotification(notification: NotificationWithRelations): string {
-  const actorName = notification.actor?.username ?? "Someone";
+function describeNotification(
+  notification: NotificationWithRelations,
+  t: (key: TranslationKey, vars?: Record<string, string | number>) => string,
+): string {
+  const actorName = notification.actor?.username ?? t("notification.someone");
 
   switch (notification.type) {
     case "JOIN_REQUEST":
-      return `${actorName} wants to join your pod`;
+      return t("notification.joinRequest", { actor: actorName });
     case "JOIN_ACCEPTED":
-      return `You've been accepted into ${actorName}'s pod!`;
+      return t("notification.joinAccepted", { actor: actorName });
     case "JOIN_REJECTED":
-      return `${actorName} declined your request to join their pod`;
+      return t("notification.joinRejected", { actor: actorName });
     case "MEMBER_LEFT":
-      return `${actorName} left your pod`;
+      return t("notification.memberLeft", { actor: actorName });
     case "REMOVED_FROM_POD":
-      return `${actorName} removed you from their pod`;
+      return t("notification.removedFromPod", { actor: actorName });
     case "POD_UPDATED":
-      return `${actorName} updated the details of a pod you joined`;
+      return t("notification.podUpdated", { actor: actorName });
   }
 }
 
@@ -96,6 +102,8 @@ function describeNotification(notification: NotificationWithRelations): string {
  */
 export function NotificationBell({ currentUserId }: NotificationBellProps) {
   const router = useRouter();
+  const { t, locale } = useTranslation();
+  const dateFnsLocale = locale === "fr" ? fr : undefined;
   // `TabBar` mounts two `NotificationBell` instances at once (one in the
   // mobile top header, one in the desktop navbar — only one is ever visible,
   // toggled purely via CSS `sm:` classes so both stay mounted in the DOM).
@@ -129,7 +137,7 @@ export function NotificationBell({ currentUserId }: NotificationBellProps) {
       );
       setUnreadCount((count) => count + 1);
 
-      const message = describeNotification(notification);
+      const message = describeNotification(notification, t);
       setToast({ id: notification.id, message });
 
       if (
@@ -137,7 +145,7 @@ export function NotificationBell({ currentUserId }: NotificationBellProps) {
         "Notification" in window &&
         Notification.permission === "granted"
       ) {
-        const osNotification = new Notification("PodMaker", {
+        const osNotification = new Notification(t("notificationBell.osTitle"), {
           body: message,
         });
         osNotification.onclick = () => {
@@ -147,7 +155,7 @@ export function NotificationBell({ currentUserId }: NotificationBellProps) {
         };
       }
     },
-    [router],
+    [router, t],
   );
 
   // Routed through a ref rather than listed as an effect dependency — see
@@ -358,7 +366,7 @@ export function NotificationBell({ currentUserId }: NotificationBellProps) {
               color: "#fafafa",
             }}
           >
-            Notifications
+            {t("notificationBell.title")}
           </Typography>
           {notifications !== null && notifications.length > 0 && (
             <ButtonBase
@@ -373,7 +381,7 @@ export function NotificationBell({ currentUserId }: NotificationBellProps) {
                 "&:hover": { color: "#e4e4e7" },
               }}
             >
-              Clear all
+              {t("notificationBell.clearAll")}
             </ButtonBase>
           )}
         </div>
@@ -382,7 +390,7 @@ export function NotificationBell({ currentUserId }: NotificationBellProps) {
         {notifications === null && (
           <div className="flex min-h-40 items-center justify-center px-4 py-6">
             <Typography sx={{ fontSize: "0.875rem", color: "#71717a" }}>
-              Loading…
+              {t("notificationBell.loading")}
             </Typography>
           </div>
         )}
@@ -390,7 +398,7 @@ export function NotificationBell({ currentUserId }: NotificationBellProps) {
         {notifications !== null && notifications.length === 0 && (
           <div className="flex min-h-40 items-center justify-center px-4 py-6">
             <Typography sx={{ fontSize: "0.875rem", color: "#71717a" }}>
-              No notifications yet.
+              {t("notificationBell.empty")}
             </Typography>
           </div>
         )}
@@ -414,19 +422,19 @@ export function NotificationBell({ currentUserId }: NotificationBellProps) {
               <Icon className="mt-0.5 h-4 w-4 shrink-0 text-amber-400" />
               <div className="flex flex-1 flex-col gap-0.5">
                 <Typography sx={{ fontSize: "0.8125rem", color: "#e4e4e7" }}>
-                  {describeNotification(notification)}
+                  {describeNotification(notification, t)}
                 </Typography>
                 <Typography sx={{ fontSize: "0.6875rem", color: "#71717a" }}>
                   {formatDistanceToNowStrict(
                     new Date(notification.created_at),
-                    { addSuffix: true },
+                    { addSuffix: true, locale: dateFnsLocale },
                   )}
                 </Typography>
               </div>
               <IconButton
                 component="span"
                 size="small"
-                aria-label="Delete notification"
+                aria-label={t("notificationBell.deleteAria")}
                 onClick={(event) => handleDelete(event, notification)}
                 sx={{
                   mt: -0.5,

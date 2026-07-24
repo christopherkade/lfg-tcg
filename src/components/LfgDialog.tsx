@@ -3,9 +3,11 @@
 import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { format } from "date-fns";
+import { CalendarClock, Sparkles, Swords, X } from "lucide-react";
 import {
   Alert,
   Button,
+  IconButton,
   TextField,
   ToggleButton,
   ToggleButtonGroup,
@@ -17,6 +19,8 @@ import { GameSelector } from "@/components/GameSelector";
 import { PlaystyleToggle } from "@/components/PlaystyleToggle";
 import { PowerBracketPicker } from "@/components/PowerBracketPicker";
 import { createPod, updatePod } from "@/app/actions/pods";
+import { useTranslation } from "@/lib/i18n/LocaleContext";
+import type { TranslationKey } from "@/lib/i18n";
 import type { Pod, Profile, PlaystyleKey, MatchType } from "@/types/database";
 
 interface LfgDialogProps {
@@ -88,6 +92,7 @@ export function LfgDialog({
   profile,
   editPod,
 }: LfgDialogProps) {
+  const { t } = useTranslation();
   const [selectedGame, setSelectedGame] = useState<string>(
     profile.preferred_game,
   );
@@ -237,36 +242,49 @@ export function LfgDialog({
             exit={{ y: 40, opacity: 0 }}
             transition={{ duration: 0.2, ease: "easeOut" }}
             onClick={(event) => event.stopPropagation()}
-            className="flex h-full w-full flex-col gap-6 overflow-y-auto rounded-2xl border border-zinc-800 bg-zinc-950 p-6 sm:max-w-2xl sm:p-8"
+            className="flex max-h-[calc(100vh-2rem)] w-full flex-col overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-950 sm:max-w-lg"
           >
-            <h2 className="text-lg font-semibold text-zinc-50">
-              {editPod ? "Edit Pod" : "Search Settings"}
-            </h2>
-
-            <div className="flex flex-col gap-6 sm:grid sm:grid-cols-2 sm:gap-x-8 sm:gap-y-6">
-              <div className="flex flex-col gap-2 sm:col-span-2">
-                <span className="text-sm font-medium text-zinc-400">Game</span>
-                <GameSelector
-                  value={selectedGame}
-                  onChange={handleGameChange}
-                />
+            <div className="flex shrink-0 items-start justify-between gap-3 border-b border-zinc-900 px-4 py-3 sm:px-6 sm:py-4">
+              <div className="flex flex-col gap-0.5">
+                <h2 className="text-base font-semibold text-zinc-50">
+                  {editPod ? t("lfgDialog.title.edit") : t("lfgDialog.title.create")}
+                </h2>
+                <p className="text-xs text-zinc-400">
+                  {editPod
+                    ? t("lfgDialog.subtitle.edit")
+                    : t("lfgDialog.subtitle.create")}
+                </p>
               </div>
+              <IconButton
+                aria-label={t("lfgDialog.close")}
+                size="small"
+                onClick={onClose}
+                sx={{ color: "#a1a1aa", mt: "-4px", mr: "-8px" }}
+              >
+                <X className="h-4 w-4" />
+              </IconButton>
+            </div>
 
-              {game && game.formats.length > 1 && (
-                <div className="flex flex-col gap-2">
-                  <span className="text-sm font-medium text-zinc-400">
-                    Format
-                  </span>
+            <div className="flex flex-col gap-3 overflow-y-auto px-4 py-3 sm:gap-4 sm:px-6 sm:py-4">
+              <section className="flex flex-col gap-2 rounded-xl border border-zinc-900 bg-zinc-900/40 p-3 sm:gap-2.5 sm:p-3.5">
+                <div className="flex items-center gap-1.5 text-[11px] font-semibold tracking-wide text-zinc-400 uppercase">
+                  <Swords className="h-3.5 w-3.5" />
+                  {t("lfgDialog.section.game")}
+                </div>
+                <GameSelector value={selectedGame} onChange={handleGameChange} />
+
+                {game && game.formats.length > 1 && (
                   <ToggleButtonGroup
                     value={selectedFormat}
                     exclusive
+                    fullWidth
+                    size="small"
                     onChange={(_event, next) => {
                       if (next !== null) {
                         setSelectedFormat(next);
                       }
                     }}
                     sx={{
-                      flexWrap: "wrap",
                       bgcolor: "transparent",
                       border: 0,
                       p: 0,
@@ -278,25 +296,24 @@ export function LfgDialog({
                         key={formatOption.key}
                         value={formatOption.key}
                       >
-                        {formatOption.label}
+                        {t(`format.${formatOption.key}` as TranslationKey)}
                       </ToggleButton>
                     ))}
                   </ToggleButtonGroup>
-                </div>
-              )}
+                )}
+              </section>
 
-              <div
-                className={`flex flex-col gap-2 ${
-                  game && game.formats.length > 1 ? "" : "sm:col-span-2"
-                }`}
-              >
-                <span className="text-sm font-medium text-zinc-400">
-                  Match Type
-                </span>
+              <section className="flex flex-col gap-2.5 rounded-xl border border-zinc-900 bg-zinc-900/40 p-3 sm:gap-3 sm:p-3.5">
+                <div className="flex items-center gap-1.5 text-[11px] font-semibold tracking-wide text-zinc-400 uppercase">
+                  <CalendarClock className="h-3.5 w-3.5" />
+                  {t("lfgDialog.section.whenWhere")}
+                </div>
+
                 <ToggleButtonGroup
                   value={selectedMatchType}
                   exclusive
                   fullWidth
+                  size="small"
                   onChange={(_event, next: MatchType | null) => {
                     if (next !== null) {
                       setSelectedMatchType(next);
@@ -305,133 +322,137 @@ export function LfgDialog({
                 >
                   {MATCH_TYPES.map((matchType) => (
                     <ToggleButton key={matchType} value={matchType}>
-                      {matchType}
+                      {matchType === "IRL"
+                        ? t("podFilters.matchTypeIrl")
+                        : t("podFilters.matchTypeOnline")}
                     </ToggleButton>
                   ))}
                 </ToggleButtonGroup>
-              </div>
 
-              {selectedMatchType === "IRL" && (
-                <div className="flex flex-col gap-2 sm:col-span-2">
-                  <TextField
-                    id="dialog_location_name"
-                    label="Location"
-                    value={locationName}
-                    onChange={(event) => setLocationName(event.target.value)}
-                    placeholder="Where will you be playing?"
-                    fullWidth
-                    size="small"
-                  />
+                {selectedMatchType === "IRL" && (
+                  <div className="flex flex-col gap-2.5 sm:gap-3">
+                    <TextField
+                      id="dialog_location_name"
+                      label={t("lfgDialog.locationLabel")}
+                      value={locationName}
+                      onChange={(event) =>
+                        setLocationName(event.target.value)
+                      }
+                      placeholder={t("lfgDialog.locationPlaceholder")}
+                      fullWidth
+                      size="small"
+                    />
+                    <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
+                      <DatePicker
+                        label={t("lfgDialog.dateLabel")}
+                        value={scheduledDate}
+                        onChange={(next) => setScheduledDate(next)}
+                        slotProps={{
+                          textField: { fullWidth: true, size: "small" },
+                        }}
+                      />
+                      <TimePicker
+                        label={t("lfgDialog.timeLabel")}
+                        value={scheduledTime}
+                        onChange={(next) => setScheduledTime(next)}
+                        ampm={false}
+                        slotProps={{
+                          textField: { fullWidth: true, size: "small" },
+                        }}
+                      />
+                    </div>
+                  </div>
+                )}
+              </section>
+
+              <section className="flex flex-col gap-2.5 rounded-xl border border-zinc-900 bg-zinc-900/40 p-3 sm:gap-3 sm:p-3.5">
+                <div className="flex items-center gap-1.5 text-[11px] font-semibold tracking-wide text-zinc-400 uppercase">
+                  <Sparkles className="h-3.5 w-3.5" />
+                  {t("lfgDialog.section.preferences")}
                 </div>
-              )}
 
-              {selectedMatchType === "IRL" && (
-                <div className="flex flex-col gap-2">
-                  <DatePicker
-                    label="Date"
-                    value={scheduledDate}
-                    onChange={(next) => setScheduledDate(next)}
-                    slotProps={{
-                      textField: { fullWidth: true, size: "small" },
-                    }}
-                  />
-                </div>
-              )}
+                <div className="flex flex-col gap-2.5 sm:gap-3">
+                  <div className="flex flex-col gap-1.5">
+                    <span className="text-xs font-medium text-zinc-300">
+                      {t("lfgDialog.playstyleLabel")}
+                    </span>
+                    <PlaystyleToggle
+                      value={selectedPlaystyle}
+                      onChange={setSelectedPlaystyle}
+                    />
+                  </div>
 
-              {selectedMatchType === "IRL" && (
-                <div className="flex flex-col gap-2">
-                  <TimePicker
-                    label="Time"
-                    value={scheduledTime}
-                    onChange={(next) => setScheduledTime(next)}
-                    ampm={false}
-                    slotProps={{
-                      textField: { fullWidth: true, size: "small" },
-                    }}
-                  />
-                </div>
-              )}
-
-              <div className="flex flex-col gap-2">
-                <span className="text-sm font-medium text-zinc-400">
-                  Playstyle
-                </span>
-                <PlaystyleToggle
-                  value={selectedPlaystyle}
-                  onChange={setSelectedPlaystyle}
-                />
-              </div>
-
-              <div className="flex flex-col gap-2">
-                <span className="text-sm font-medium text-zinc-400">
-                  Total players Needed
-                </span>
-                <ToggleButtonGroup
-                  value={maxPlayers}
-                  exclusive
-                  onChange={(_event, next: number | null) => {
-                    if (next !== null) {
-                      setMaxPlayers(next);
-                    }
-                  }}
-                  sx={{ bgcolor: "transparent", border: 0, p: 0, gap: 1 }}
-                >
-                  {PLAYER_COUNTS.map((count) => (
-                    <ToggleButton
-                      key={count}
-                      value={count}
-                      sx={{
-                        height: 40,
-                        width: 40,
-                        borderRadius: "9999px !important",
-                        border: "1px solid #27272a !important",
-                        marginLeft: "0px !important",
-                        bgcolor: "#18181b",
+                  <div className="flex flex-col gap-1.5">
+                    <span className="text-xs font-medium text-zinc-300">
+                      {t("lfgDialog.playersLabel")}
+                    </span>
+                    <ToggleButtonGroup
+                      value={maxPlayers}
+                      exclusive
+                      fullWidth
+                      size="small"
+                      onChange={(_event, next: number | null) => {
+                        if (next !== null) {
+                          setMaxPlayers(next);
+                        }
                       }}
+                      sx={{ bgcolor: "transparent", border: 0, p: 0, gap: 1 }}
                     >
-                      {count}
-                    </ToggleButton>
-                  ))}
-                </ToggleButtonGroup>
-              </div>
+                      {PLAYER_COUNTS.map((count) => (
+                        <ToggleButton
+                          key={count}
+                          value={count}
+                          sx={{
+                            fontSize: "0.75rem",
+                            px: 0,
+                            borderRadius: "8px !important",
+                            border: "1px solid #27272a !important",
+                            marginLeft: "0px !important",
+                            bgcolor: "#18181b",
+                          }}
+                        >
+                          {count}
+                        </ToggleButton>
+                      ))}
+                    </ToggleButtonGroup>
+                  </div>
+                </div>
 
-              <div className="sm:col-span-2">
                 <PowerBracketPicker
                   visible={hasPowerTiers}
                   value={selectedBrackets}
                   onChange={setSelectedBrackets}
                   maxTier={game?.maxTier}
-                  label={game?.tierLabel}
+                  label={game?.tierLabel ? t("tier.powerBracket") : undefined}
                 />
-              </div>
 
-              <div className="flex flex-col gap-2 sm:col-span-2">
                 <TextField
                   id="dialog_notes"
-                  label="Notes (optional)"
+                  label={t("lfgDialog.notesLabel")}
                   value={notes}
                   onChange={(event) => setNotes(event.target.value)}
-                  placeholder="Anything else players should know? e.g. deck theme, house rules..."
+                  placeholder={t("lfgDialog.notesPlaceholder")}
                   slotProps={{ htmlInput: { maxLength: 300 } }}
                   multiline
-                  rows={3}
+                  rows={2}
                   fullWidth
+                  size="small"
                   helperText={`${notes.length}/300`}
                 />
-              </div>
+              </section>
+
+              {error && <Alert severity="error">{error}</Alert>}
             </div>
 
-            {error && <Alert severity="error">{error}</Alert>}
-
-            <div className="mt-auto flex gap-3">
+            <div className="flex shrink-0 gap-3 border-t border-zinc-900 px-4 py-3 sm:px-6 sm:py-4">
               <Button
                 type="button"
                 onClick={onClose}
                 variant="outlined"
                 fullWidth
-                sx={{ py: 1.5, borderColor: "#27272a", color: "#a1a1aa" }}
+                sx={{ py: 1, borderColor: "#3f3f46", color: "#e4e4e7" }}
               >
-                Cancel
+                {t("lfgDialog.cancel")}
               </Button>
               <Button
                 type="button"
@@ -439,15 +460,15 @@ export function LfgDialog({
                 disabled={!canSubmit || pending}
                 variant="contained"
                 fullWidth
-                sx={{ py: 1.5 }}
+                sx={{ py: 1 }}
               >
                 {editPod
                   ? pending
-                    ? "Saving..."
-                    : "Save Changes"
+                    ? t("lfgDialog.save.pending")
+                    : t("lfgDialog.save.idle")
                   : pending
-                    ? "Starting..."
-                    : "Search"}
+                    ? t("lfgDialog.search.pending")
+                    : t("lfgDialog.search.idle")}
               </Button>
             </div>
           </motion.div>

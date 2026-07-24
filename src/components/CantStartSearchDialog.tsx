@@ -3,6 +3,7 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { Ban } from "lucide-react";
 import { Button } from "@mui/material";
+import { useTranslation } from "@/lib/i18n/LocaleContext";
 
 interface CantStartSearchDialogProps {
   open: boolean;
@@ -21,6 +22,7 @@ export function CantStartSearchDialog({
   open,
   onClose,
 }: CantStartSearchDialogProps) {
+  const { t } = useTranslation();
   return (
     <AnimatePresence>
       {open && (
@@ -45,13 +47,10 @@ export function CantStartSearchDialog({
               </div>
               <div className="flex flex-col gap-1">
                 <h2 className="text-lg font-semibold text-zinc-50">
-                  You&apos;re already in a group
+                  {t("cantStartSearchDialog.title")}
                 </h2>
                 <p className="text-sm text-zinc-500">
-                  You can&apos;t start a new search while you have a pending
-                  request on (or have joined) someone else&apos;s pod. Leave
-                  that pod first — from its card in the match feed — if you want
-                  to search for a different group.
+                  {t("cantStartSearchDialog.body")}
                 </p>
               </div>
             </div>
@@ -63,7 +62,7 @@ export function CantStartSearchDialog({
               fullWidth
               sx={{ py: 1.5 }}
             >
-              Got It
+              {t("cantStartSearchDialog.gotIt")}
             </Button>
           </motion.div>
         </motion.div>

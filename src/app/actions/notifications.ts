@@ -1,6 +1,8 @@
 "use server";
 
 import { requireUser } from "@/lib/session";
+import { getServerLocale } from "@/lib/i18n/server";
+import { translate } from "@/lib/i18n";
 
 export interface NotificationActionResult {
   error?: string;
@@ -15,6 +17,7 @@ export async function markNotificationRead(
   notificationId: string,
 ): Promise<NotificationActionResult> {
   const { supabase, user } = await requireUser();
+  const locale = await getServerLocale();
 
   const { error } = await supabase
     .from("notifications")
@@ -25,7 +28,11 @@ export async function markNotificationRead(
 
   if (error) {
     console.error("markNotificationRead failed:", error);
-    return { error: `Could not update notification: ${error.message}` };
+    return {
+      error: translate(locale, "errors.notificationUpdateFailed", {
+        reason: error.message,
+      }),
+    };
   }
 
   return {};
@@ -37,6 +44,7 @@ export async function markNotificationRead(
  */
 export async function markAllNotificationsRead(): Promise<NotificationActionResult> {
   const { supabase, user } = await requireUser();
+  const locale = await getServerLocale();
 
   const { error } = await supabase
     .from("notifications")
@@ -46,7 +54,11 @@ export async function markAllNotificationsRead(): Promise<NotificationActionResu
 
   if (error) {
     console.error("markAllNotificationsRead failed:", error);
-    return { error: `Could not update notifications: ${error.message}` };
+    return {
+      error: translate(locale, "errors.notificationsUpdateFailed", {
+        reason: error.message,
+      }),
+    };
   }
 
   return {};
@@ -61,6 +73,7 @@ export async function deleteNotification(
   notificationId: string,
 ): Promise<NotificationActionResult> {
   const { supabase, user } = await requireUser();
+  const locale = await getServerLocale();
 
   const { error } = await supabase
     .from("notifications")
@@ -70,7 +83,11 @@ export async function deleteNotification(
 
   if (error) {
     console.error("deleteNotification failed:", error);
-    return { error: `Could not delete notification: ${error.message}` };
+    return {
+      error: translate(locale, "errors.notificationDeleteFailed", {
+        reason: error.message,
+      }),
+    };
   }
 
   return {};
@@ -81,6 +98,7 @@ export async function deleteNotification(
  */
 export async function deleteAllNotifications(): Promise<NotificationActionResult> {
   const { supabase, user } = await requireUser();
+  const locale = await getServerLocale();
 
   const { error } = await supabase
     .from("notifications")
@@ -89,7 +107,11 @@ export async function deleteAllNotifications(): Promise<NotificationActionResult
 
   if (error) {
     console.error("deleteAllNotifications failed:", error);
-    return { error: `Could not delete notifications: ${error.message}` };
+    return {
+      error: translate(locale, "errors.notificationsDeleteFailed", {
+        reason: error.message,
+      }),
+    };
   }
 
   return {};

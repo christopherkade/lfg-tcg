@@ -3,6 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { requireProfile } from "@/lib/session";
 import { GAMES_CONFIG } from "@/constants/gamesConfig";
+import { getServerLocale } from "@/lib/i18n/server";
+import { translate, type Locale } from "@/lib/i18n";
 import type { MatchType, PlaystyleKey } from "@/types/database";
 
 export interface PodActionResult {
@@ -37,42 +39,43 @@ interface NormalizedPodInput {
  */
 function validateStartSearchInput(
   input: StartSearchInput,
+  locale: Locale,
 ): { error: string } | { data: NormalizedPodInput } {
   const game = GAMES_CONFIG[input.gameKey];
   if (!game) {
-    return { error: "Please select a valid game." };
+    return { error: translate(locale, "errors.invalidGame") };
   }
   if (!game.formats.some((format) => format.key === input.formatKey)) {
-    return { error: "Please select a valid format." };
+    return { error: translate(locale, "errors.invalidFormat") };
   }
   if (game.hasPowerTiers && input.brackets.length === 0) {
-    return { error: "Please select at least one power bracket for this game." };
+    return { error: translate(locale, "errors.powerBracketRequired") };
   }
   if (
     game.hasPowerTiers &&
     input.brackets.some((tier) => tier < 1 || tier > 5)
   ) {
-    return { error: "Power brackets must be between 1 and 5." };
+    return { error: translate(locale, "errors.powerBracketRange") };
   }
   if (input.matchType === "IRL" && !input.locationName.trim()) {
-    return { error: "Please provide a location name for in-person matches." };
+    return { error: translate(locale, "errors.locationRequired") };
   }
   let scheduledAt: string | null = null;
   if (input.matchType === "IRL") {
     if (!input.scheduledDate || !input.scheduledTime) {
-      return { error: "Please provide a date and time for in-person matches." };
+      return { error: translate(locale, "errors.dateTimeRequired") };
     }
     const parsed = new Date(`${input.scheduledDate}T${input.scheduledTime}`);
     if (Number.isNaN(parsed.getTime())) {
-      return { error: "Please provide a valid date and time." };
+      return { error: translate(locale, "errors.dateTimeInvalid") };
     }
     scheduledAt = parsed.toISOString();
   }
   if (input.maxPlayers < 2 || input.maxPlayers > 6) {
-    return { error: "Players needed must be between 2 and 6." };
+    return { error: translate(locale, "errors.maxPlayersRange") };
   }
   if (input.notes.trim().length > 300) {
-    return { error: "Notes must be 300 characters or fewer." };
+    return { error: translate(locale, "errors.notesTooLong") };
   }
 
   return {
@@ -96,8 +99,9 @@ export async function createPod(
   input: StartSearchInput,
 ): Promise<PodActionResult> {
   const { supabase, user, profile } = await requireProfile();
+  const locale = await getServerLocale();
 
-  const validated = validateStartSearchInput(input);
+  const validated = validateStartSearchInput(input, locale);
   if ("error" in validated) {
     return { error: validated.error };
   }
@@ -118,8 +122,7 @@ export async function createPod(
 
   if (activeJoin) {
     return {
-      error:
-        "You can't start a new search while you have a pending request on (or have joined) another pod. Leave it first.",
+      error: translate(locale, "errors.alreadyInGroup"),
     };
   }
 
@@ -153,7 +156,9 @@ export async function createPod(
       expireError,
     );
     return {
-      error: `Something went wrong starting your search: ${expireError.message}`,
+      error: translate(locale, "errors.startSearchFailed", {
+        reason: expireError.message,
+      }),
     };
   }
 
@@ -177,7 +182,9 @@ export async function createPod(
   if (error) {
     console.error("createPod: failed to insert pod:", error);
     return {
-      error: `Something went wrong starting your search: ${error.message}`,
+      error: translate(locale, "errors.startSearchFailed", {
+        reason: error.message,
+      }),
     };
   }
 
@@ -200,8 +207,9 @@ export async function updatePod(
   input: StartSearchInput,
 ): Promise<PodActionResult> {
   const { supabase, user, profile } = await requireProfile();
+  const locale = await getServerLocale();
 
-  const validated = validateStartSearchInput(input);
+  const validated = validateStartSearchInput(input, locale);
   if ("error" in validated) {
     return { error: validated.error };
   }
@@ -223,14 +231,16 @@ export async function updatePod(
       countError,
     );
     return {
-      error: "Could not verify your current group size. Please try again.",
+      error: translate(locale, "errors.groupSizeCheckFailed"),
     };
   }
 
   const currentGroupSize = (acceptedCount ?? 0) + 1; // + host
   if (input.maxPlayers < currentGroupSize) {
     return {
-      error: `Players needed can't be lower than your current group size (${currentGroupSize}).`,
+      error: translate(locale, "errors.maxPlayersBelowGroupSize", {
+        count: currentGroupSize,
+      }),
     };
   }
 
@@ -256,7 +266,11 @@ export async function updatePod(
 
   if (error) {
     console.error("updatePod failed:", error);
-    return { error: `Could not update your pod: ${error.message}` };
+    return {
+      error: translate(locale, "errors.podUpdateFailed", {
+        reason: error.message,
+      }),
+    };
   }
 
   revalidatePath("/");
@@ -268,6 +282,7 @@ export async function cancelPod(
   podId: string,
 ): Promise<PodActionResult> {
   const { supabase, user } = await requireProfile();
+  const locale = await getServerLocale();
 
   const { error } = await supabase
     .from("pods")
@@ -278,7 +293,11 @@ export async function cancelPod(
 
   if (error) {
     console.error("cancelPod failed:", error);
-    return { error: `Could not cancel your search: ${error.message}` };
+    return {
+      error: translate(locale, "errors.podCancelFailed", {
+        reason: error.message,
+      }),
+    };
   }
 
   revalidatePath("/");
@@ -290,17 +309,20 @@ export async function markPodMatched(
   podId: string,
 ): Promise<PodActionResult> {
   const { supabase, user } = await requireProfile();
+  const locale = await getServerLocale();
 
   const { error } = await supabase
     .from("pods")
-    .update({ status: "MATCHED" })
+    .update({ status: "MATCHED", matched_at: new Date().toISOString() })
     .eq("id", podId)
     .eq("user_id", user.id);
 
   if (error) {
     console.error("markPodMatched failed:", error);
     return {
-      error: `Could not mark this pod as matched: ${error.message}`,
+      error: translate(locale, "errors.podMarkMatchedFailed", {
+        reason: error.message,
+      }),
     };
   }
 

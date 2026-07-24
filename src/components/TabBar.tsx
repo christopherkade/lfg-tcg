@@ -5,10 +5,13 @@ import { usePathname } from "next/navigation";
 import { Users, Zap, UserCircle, type LucideIcon } from "lucide-react";
 import { Box, Button, Typography } from "@mui/material";
 import { NotificationBell } from "@/components/NotificationBell";
+import { TutorialDialog } from "@/components/TutorialDialog";
+import { useTranslation } from "@/lib/i18n/LocaleContext";
+import type { TranslationKey } from "@/lib/i18n";
 
 interface Tab {
   href: string;
-  label: string;
+  labelKey: TranslationKey;
   icon: LucideIcon;
 }
 
@@ -17,13 +20,14 @@ interface TabBarProps {
 }
 
 const TABS: Tab[] = [
-  { href: "/pods", label: "Pods", icon: Users },
-  { href: "/", label: "LFG", icon: Zap },
-  { href: "/profile", label: "Profile", icon: UserCircle },
+  { href: "/pods", labelKey: "tabBar.pods", icon: Users },
+  { href: "/", labelKey: "tabBar.lfg", icon: Zap },
+  { href: "/profile", labelKey: "tabBar.profile", icon: UserCircle },
 ];
 
 export function TabBar({ currentUserId }: TabBarProps) {
   const pathname = usePathname();
+  const { t } = useTranslation();
 
   return (
     <>
@@ -33,18 +37,21 @@ export function TabBar({ currentUserId }: TabBarProps) {
           header" on desktop). */}
       <header className="flex items-center justify-between border-b border-zinc-800 bg-zinc-950 px-4 py-3 sm:hidden">
         <Typography
-          sx={{ fontSize: "1rem", fontWeight: 700, color: "#fafafa" }}
+          sx={{ fontSize: "1rem", fontWeight: 700, color: "#F2762E" }}
         >
           PodMaker
         </Typography>
-        <NotificationBell currentUserId={currentUserId} />
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+          <TutorialDialog />
+          <NotificationBell currentUserId={currentUserId} />
+        </Box>
       </header>
 
       {/* Desktop top navbar */}
       <nav className="hidden border-b border-zinc-800 bg-zinc-950 sm:block">
         <div className="mx-auto flex max-w-3xl items-center justify-between px-6 py-4">
           <Typography
-            sx={{ fontSize: "1.125rem", fontWeight: 700, color: "#fafafa" }}
+            sx={{ fontSize: "1.125rem", fontWeight: 700, color: "#F2762E" }}
           >
             PodMaker
           </Typography>
@@ -62,20 +69,23 @@ export function TabBar({ currentUserId }: TabBarProps) {
                     sx={{
                       px: 2,
                       py: 1,
-                      bgcolor: isActive ? "#fafafa" : "transparent",
-                      color: isActive ? "#09090b" : "#a1a1aa",
+                      bgcolor: isActive ? "#F2762E" : "transparent",
+                      color: isActive ? "#ffffff" : "#a1a1aa",
                       "&:hover": {
-                        bgcolor: isActive ? "#e4e4e7" : "#18181b",
-                        color: isActive ? "#09090b" : "#e4e4e7",
+                        bgcolor: isActive ? "#F79A5D" : "#18181b",
+                        color: isActive ? "#ffffff" : "#e4e4e7",
                       },
                     }}
                   >
-                    {tab.label}
+                    {t(tab.labelKey)}
                   </Button>
                 );
               })}
             </Box>
-            <NotificationBell currentUserId={currentUserId} />
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+              <TutorialDialog />
+              <NotificationBell currentUserId={currentUserId} />
+            </Box>
           </Box>
         </div>
       </nav>
@@ -90,11 +100,11 @@ export function TabBar({ currentUserId }: TabBarProps) {
               key={tab.href}
               href={tab.href}
               className={`flex flex-1 flex-col items-center gap-1 py-3 text-xs font-medium transition-colors ${
-                isActive ? "text-zinc-50" : "text-zinc-500"
+                isActive ? "text-ember" : "text-zinc-500"
               }`}
             >
               <Icon className="h-5 w-5" />
-              {tab.label}
+              {t(tab.labelKey)}
             </Link>
           );
         })}

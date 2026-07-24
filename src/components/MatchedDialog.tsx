@@ -3,6 +3,7 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { PartyPopper } from "lucide-react";
 import { Button } from "@mui/material";
+import { useTranslation } from "@/lib/i18n/LocaleContext";
 
 interface MatchedDialogProps {
   open: boolean;
@@ -21,6 +22,7 @@ interface MatchedDialogProps {
  * a blocking dialog rather than a dismissable snackbar.
  */
 export function MatchedDialog({ open, onClose }: MatchedDialogProps) {
+  const { t } = useTranslation();
   return (
     <AnimatePresence>
       {open && (
@@ -45,14 +47,10 @@ export function MatchedDialog({ open, onClose }: MatchedDialogProps) {
               </div>
               <div className="flex flex-col gap-1">
                 <h2 className="text-lg font-semibold text-zinc-50">
-                  You&apos;re Matched!
+                  {t("matchedDialog.title")}
                 </h2>
                 <p className="text-sm text-zinc-500">
-                  The host marked this pod as matched. Check your Discord DMs —
-                  the host should be reaching out (or sending a friend request)
-                  shortly. Also don&apos;t be surprised when its card disappears
-                  from the match feed — it&apos;s been removed now that the
-                  group is set.
+                  {t("matchedDialog.body")}
                 </p>
               </div>
             </div>
@@ -64,7 +62,7 @@ export function MatchedDialog({ open, onClose }: MatchedDialogProps) {
               fullWidth
               sx={{ py: 1.5 }}
             >
-              Got It
+              {t("matchedDialog.gotIt")}
             </Button>
           </motion.div>
         </motion.div>

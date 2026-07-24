@@ -4,6 +4,8 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { requireUser } from "@/lib/session";
 import { CITY_MAP } from "@/constants/citiesConfig";
+import { getServerLocale } from "@/lib/i18n/server";
+import { translate } from "@/lib/i18n";
 
 export interface ProfileFormState {
   error?: string;
@@ -23,19 +25,22 @@ export async function upsertProfile(
   formData: FormData,
 ): Promise<ProfileFormState> {
   const { supabase, user } = await requireUser();
+  const locale = await getServerLocale();
 
   const username = String(formData.get("username") ?? "").trim();
   const discordHandle = String(formData.get("discord_handle") ?? "").trim();
   const cityInput = String(formData.get("city") ?? "").trim();
+  const avatarUrl =
+    (user.user_metadata?.avatar_url as string | undefined) ?? null;
 
   if (!username) {
-    return { error: "Username is required." };
+    return { error: translate(locale, "errors.usernameRequired") };
   }
   if (!discordHandle) {
-    return { error: "Discord handle is required." };
+    return { error: translate(locale, "errors.discordHandleRequired") };
   }
   if (cityInput && !CITY_MAP[cityInput]) {
-    return { error: "Please select a valid city." };
+    return { error: translate(locale, "errors.invalidCity") };
   }
 
   const { error } = await supabase.from("profiles").upsert(
@@ -43,6 +48,7 @@ export async function upsertProfile(
       id: user.id,
       username,
       discord_handle: discordHandle,
+      avatar_url: avatarUrl,
       city: cityInput || null,
       updated_at: new Date().toISOString(),
     },
@@ -52,10 +58,12 @@ export async function upsertProfile(
   if (error) {
     console.error("upsertProfile failed:", error);
     if (error.code === "23505") {
-      return { error: "That username is already taken." };
+      return { error: translate(locale, "errors.usernameTaken") };
     }
     return {
-      error: `Something went wrong saving your profile: ${error.message}`,
+      error: translate(locale, "errors.profileSaveFailed", {
+        reason: error.message,
+      }),
     };
   }
 

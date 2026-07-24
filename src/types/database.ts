@@ -43,6 +43,7 @@ export interface Pod {
   status: PodStatus;
   created_at: string;
   expires_at: string;
+  matched_at: string | null; // set when status transitions to MATCHED; drives the retention sweep (SPECS.md Section 3)
 }
 
 export interface PodJoin {

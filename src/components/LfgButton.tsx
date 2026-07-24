@@ -4,11 +4,13 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { Radio, X } from "lucide-react";
 import { Fab, Alert } from "@mui/material";
-import { GAMES_CONFIG } from "@/constants/gamesConfig";
+import { DEFAULT_GLOW_COLOR, GAMES_CONFIG } from "@/constants/gamesConfig";
 import { cancelPod } from "@/app/actions/pods";
 import { createClient } from "@/lib/supabase/client";
 import { LfgDialog } from "@/components/LfgDialog";
 import { CantStartSearchDialog } from "@/components/CantStartSearchDialog";
+import { useTranslation } from "@/lib/i18n/LocaleContext";
+import type { TranslationKey } from "@/lib/i18n";
 import type { Pod, Profile } from "@/types/database";
 
 const MotionFab = motion.create(Fab);
@@ -24,6 +26,7 @@ export function LfgButton({
   ownPod: initialOwnPod,
   hasActiveJoin: initialHasActiveJoin,
 }: LfgButtonProps) {
+  const { t } = useTranslation();
   const [ownPod, setOwnPod] = useState(initialOwnPod);
   const [hasActiveJoin, setHasActiveJoin] = useState(initialHasActiveJoin);
   const [pending, setPending] = useState(false);
@@ -115,14 +118,35 @@ export function LfgButton({
     };
   }, [profile.id]);
 
-  const game = GAMES_CONFIG[profile.preferred_game];
-  const glowColor = game?.glowColor ?? "rgba(255,255,255,0.4)";
+  const game = profile.preferred_game
+    ? GAMES_CONFIG[profile.preferred_game]
+    : null;
+  const glowColor = game?.glowColor ?? DEFAULT_GLOW_COLOR;
   const isSearching = ownPod?.status === "ACTIVE";
-  const formatLabel = game?.formats.find(
+  const formatKey = game?.formats.find(
     (format) => format.key === profile.preferred_format,
-  )?.label;
+  )?.key;
+  const formatLabel = formatKey
+    ? t(`format.${formatKey}` as TranslationKey)
+    : undefined;
+
+  // Real sample (Kenney UI Audio, CC0) instead of a synthesized tone —
+  // cloning the element per play lets rapid presses overlap cleanly.
+  const clickAudioRef = useRef<HTMLAudioElement | null>(null);
+  useEffect(() => {
+    clickAudioRef.current = new Audio("/sounds/button-click.wav");
+  }, []);
+  const playClickSound = useCallback(() => {
+    const base = clickAudioRef.current;
+    if (!base) return;
+    const sound = base.cloneNode(true) as HTMLAudioElement;
+    sound.volume = 0.5;
+    void sound.play().catch(() => {});
+  }, []);
 
   async function handleClick() {
+    playClickSound();
+
     if (!isSearching) {
       if (hasActiveJoin) {
         setBlockedDialogOpen(true);
@@ -137,6 +161,9 @@ export function LfgButton({
     const result = await cancelPod(ownPod!.id);
     if (result.error) {
       setError(result.error);
+    } else {
+      await fetchOwnPodRef.current();
+      await fetchHasActiveJoinRef.current();
     }
     setPending(false);
   }
@@ -145,32 +172,47 @@ export function LfgButton({
     <div className="flex flex-col items-center gap-6">
       <div className="flex flex-col items-center gap-1 text-center">
         <span className="text-sm font-medium text-zinc-400">
-          {isSearching ? "Searching for" : "Last search"}
+          {isSearching ? t("lfgButton.searchingFor") : t("lfgButton.lastSearch")}
         </span>
         <span className="text-lg font-semibold text-zinc-50">
           {game?.name} &middot; {formatLabel} &middot;{" "}
-          {profile.preferred_match_type}
+          {profile.preferred_match_type === "IRL"
+            ? t("podFilters.matchTypeIrl")
+            : t("podFilters.matchTypeOnline")}
         </span>
       </div>
       <MotionFab
         type="button"
         onClick={handleClick}
         disabled={pending}
+        whileHover={pending ? undefined : { y: -2 }}
+        whileTap={
+          pending
+            ? undefined
+            : { y: 4, boxShadow: `0 2px 0 0 #3f3f46, 0 0 16px 6px ${glowColor}` }
+        }
         animate={
           isSearching
             ? {
+                y: 0,
                 boxShadow: [
-                  `0 0 0px 0px ${glowColor}`,
-                  `0 0 40px 20px ${glowColor}`,
-                  `0 0 0px 0px ${glowColor}`,
+                  `0 6px 0 0 #3f3f46, 0 0 16px 6px ${glowColor}`,
+                  `0 6px 0 0 #3f3f46, 0 0 40px 20px ${glowColor}`,
+                  `0 6px 0 0 #3f3f46, 0 0 16px 6px ${glowColor}`,
                 ],
               }
-            : { boxShadow: `0 0 0px 0px ${glowColor}` }
+            : { y: 0, boxShadow: `0 6px 0 0 #3f3f46, 0 0 16px 6px ${glowColor}` }
         }
         transition={
           isSearching
-            ? { duration: 2, repeat: Infinity, ease: "easeInOut" }
-            : { duration: 0.3 }
+            ? {
+                boxShadow: { duration: 2, repeat: Infinity, ease: "easeInOut" },
+                y: { type: "spring", stiffness: 500, damping: 30 },
+              }
+            : {
+                boxShadow: { duration: 0.3 },
+                y: { type: "spring", stiffness: 500, damping: 30 },
+              }
         }
         sx={{
           height: 128,
@@ -187,7 +229,11 @@ export function LfgButton({
           color: "#fafafa",
           fontSize: "1.125rem",
           fontWeight: 700,
+          // Let framer-motion own transform/box-shadow (the 3D press
+          // effect below) instead of racing MUI's own CSS transition.
+          transition: "background-color 150ms ease",
           "&:hover": { bgcolor: "#27272a" },
+          "&:active": { bgcolor: "#09090b" },
           "&.Mui-disabled": {
             bgcolor: "#18181b",
             opacity: 0.6,
@@ -200,14 +246,18 @@ export function LfgButton({
         ) : (
           <Radio className="h-6 w-6" />
         )}
-        {isSearching ? "CANCEL" : "LFG"}
+        {isSearching ? t("lfgButton.cancel") : t("lfgButton.lfg")}
       </MotionFab>
       {error && <Alert severity="error">{error}</Alert>}
 
       <LfgDialog
         open={dialogOpen}
         onClose={() => setDialogOpen(false)}
-        onSuccess={() => setDialogOpen(false)}
+        onSuccess={() => {
+          setDialogOpen(false);
+          void fetchOwnPodRef.current();
+          void fetchHasActiveJoinRef.current();
+        }}
         profile={profile}
       />
 

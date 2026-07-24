@@ -2,12 +2,15 @@
 
 import { revalidatePath } from "next/cache";
 import { requireUser } from "@/lib/session";
+import { getServerLocale } from "@/lib/i18n/server";
+import { translate } from "@/lib/i18n";
 import type { PodActionResult } from "@/app/actions/pods";
 
 export async function requestJoin(
   podId: string,
 ): Promise<PodActionResult> {
   const { supabase, user } = await requireUser();
+  const locale = await getServerLocale();
 
   const { data: pod } = await supabase
     .from("pods")
@@ -16,17 +19,17 @@ export async function requestJoin(
     .maybeSingle();
 
   if (!pod || pod.status !== "ACTIVE") {
-    return { error: "This pod is no longer active." };
+    return { error: translate(locale, "errors.podNotActive") };
   }
   if (pod.user_id === user.id) {
-    return { error: "You can't join your own pod." };
+    return { error: translate(locale, "errors.cantJoinOwnPod") };
   }
 
   const acceptedCount = pod.pod_joins.filter(
     (join) => join.status === "ACCEPTED",
   ).length;
   if (acceptedCount + 1 >= pod.max_players) {
-    return { error: "This group is already full." };
+    return { error: translate(locale, "errors.groupFull") };
   }
 
   const { error } = await supabase.from("pod_joins").insert({
@@ -37,9 +40,9 @@ export async function requestJoin(
 
   if (error) {
     if (error.code === "23505") {
-      return { error: "You already requested to join this pod." };
+      return { error: translate(locale, "errors.alreadyRequested") };
     }
-    return { error: "Could not send join request. Please try again." };
+    return { error: translate(locale, "errors.joinRequestFailed") };
   }
 
   revalidatePath("/");
@@ -57,6 +60,7 @@ export async function leavePod(
   podId: string,
 ): Promise<PodActionResult> {
   const { supabase, user } = await requireUser();
+  const locale = await getServerLocale();
 
   const { error } = await supabase
     .from("pod_joins")
@@ -66,7 +70,11 @@ export async function leavePod(
 
   if (error) {
     console.error("leavePod failed:", error);
-    return { error: `Could not leave this pod: ${error.message}` };
+    return {
+      error: translate(locale, "errors.leavePodFailed", {
+        reason: error.message,
+      }),
+    };
   }
 
   revalidatePath("/");
@@ -85,6 +93,7 @@ export async function removeMember(
   joinId: string,
 ): Promise<PodActionResult> {
   const { supabase, user } = await requireUser();
+  const locale = await getServerLocale();
 
   const { data: join } = await supabase
     .from("pod_joins")
@@ -93,17 +102,17 @@ export async function removeMember(
     .maybeSingle();
 
   if (!join || !join.pods) {
-    return { error: "This member no longer exists." };
+    return { error: translate(locale, "errors.memberNotFound") };
   }
 
   const hostPod = Array.isArray(join.pods)
     ? join.pods[0]
     : join.pods;
   if (!hostPod || hostPod.user_id !== user.id) {
-    return { error: "Only the host can remove a member." };
+    return { error: translate(locale, "errors.onlyHostCanRemove") };
   }
   if (join.status !== "ACCEPTED") {
-    return { error: "Only accepted members can be removed." };
+    return { error: translate(locale, "errors.onlyAcceptedCanBeRemoved") };
   }
 
   const { error } = await supabase
@@ -113,7 +122,11 @@ export async function removeMember(
 
   if (error) {
     console.error("removeMember failed:", error);
-    return { error: `Could not remove this member: ${error.message}` };
+    return {
+      error: translate(locale, "errors.removeMemberFailed", {
+        reason: error.message,
+      }),
+    };
   }
 
   revalidatePath("/");
@@ -125,6 +138,7 @@ export async function respondToJoin(
   decision: "ACCEPTED" | "REJECTED",
 ): Promise<PodActionResult> {
   const { supabase, user } = await requireUser();
+  const locale = await getServerLocale();
 
   const { data: join } = await supabase
     .from("pod_joins")
@@ -135,17 +149,17 @@ export async function respondToJoin(
     .maybeSingle();
 
   if (!join || !join.pods) {
-    return { error: "This join request no longer exists." };
+    return { error: translate(locale, "errors.joinRequestNotFound") };
   }
 
   const hostPod = Array.isArray(join.pods)
     ? join.pods[0]
     : join.pods;
   if (!hostPod) {
-    return { error: "This join request no longer exists." };
+    return { error: translate(locale, "errors.joinRequestNotFound") };
   }
   if (hostPod.user_id !== user.id) {
-    return { error: "Only the host can respond to join requests." };
+    return { error: translate(locale, "errors.onlyHostCanRespond") };
   }
 
   if (decision === "ACCEPTED") {
@@ -153,7 +167,7 @@ export async function respondToJoin(
       (j: { status: string }) => j.status === "ACCEPTED",
     ).length;
     if (acceptedCount + 1 >= hostPod.max_players) {
-      return { error: "This group is already full." };
+      return { error: translate(locale, "errors.groupFull") };
     }
   }
 
@@ -165,7 +179,9 @@ export async function respondToJoin(
   if (error) {
     console.error("respondToJoin failed:", error);
     return {
-      error: `Could not update the join request: ${error.message}`,
+      error: translate(locale, "errors.respondToJoinFailed", {
+        reason: error.message,
+      }),
     };
   }
 

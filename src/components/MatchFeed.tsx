@@ -1,13 +1,18 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { format, isSameDay, isToday } from "date-fns";
-import { Alert } from "@mui/material";
+import { isSameDay } from "date-fns";
+import { AnimatePresence, motion } from "framer-motion";
+import { SearchX } from "lucide-react";
+import { Alert, Avatar } from "@mui/material";
 import { createClient } from "@/lib/supabase/client";
 import { requestJoin, leavePod } from "@/app/actions/joins";
 import { PodDetailDialog } from "@/components/PodDetailDialog";
 import { PodFilters, type PodFiltersValue } from "@/components/PodFilters";
 import { CITY_MAP } from "@/constants/citiesConfig";
+import { formatPodWhen } from "@/lib/date";
+import { useTranslation } from "@/lib/i18n/LocaleContext";
+import type { TranslationKey } from "@/lib/i18n";
 import type { PodWithRelations, Profile } from "@/types/database";
 
 interface MatchFeedProps {
@@ -47,6 +52,7 @@ function getInitialFilters(profile: Profile): PodFiltersValue {
 }
 
 export function MatchFeed({ profile, currentUserId }: MatchFeedProps) {
+  const { t, locale } = useTranslation();
   const [pods, setPods] = useState<PodWithRelations[] | null>(null);
   const [pendingPodId, setPendingPodId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -125,7 +131,7 @@ export function MatchFeed({ profile, currentUserId }: MatchFeedProps) {
 
         // Date filtering isn't a plain column match (ONLINE pods have no
         // scheduled_at, so cards fall back to created_at — see
-        // formatScheduledAt below), so it's applied client-side against the
+        // formatPodWhen), so it's applied client-side against the
         // same effective date shown on each card rather than via the query.
         if (activeFilters.date) {
           const targetDate = activeFilters.date;
@@ -229,6 +235,8 @@ export function MatchFeed({ profile, currentUserId }: MatchFeedProps) {
     const result = await requestJoin(podId);
     if (result.error) {
       setError(result.error);
+    } else {
+      await fetchActivePodsRef.current(filtersRef.current);
     }
     setPendingPodId(null);
   }
@@ -239,20 +247,13 @@ export function MatchFeed({ profile, currentUserId }: MatchFeedProps) {
     const result = await leavePod(podId);
     if (result.error) {
       setError(result.error);
+    } else {
+      await fetchActivePodsRef.current(filtersRef.current);
     }
     setPendingPodId(null);
   }
 
   const selectedPod = pods?.find((pod) => pod.id === selectedPodId) ?? null;
-
-  function formatScheduledAt(pod: PodWithRelations) {
-    const date = pod.scheduled_at
-      ? new Date(pod.scheduled_at)
-      : new Date(pod.created_at);
-    return isToday(date)
-      ? `Today, ${format(date, "p")}`
-      : format(date, "MMM d, p");
-  }
 
   return (
     <>
@@ -261,119 +262,153 @@ export function MatchFeed({ profile, currentUserId }: MatchFeedProps) {
           <PodFilters value={filters} onChange={handleFiltersChange} />
         </div>
         <div className="flex w-full max-w-md flex-col gap-3">
-          <h2 className="text-lg font-semibold text-zinc-50">Match Feed</h2>
+          <h2 className="text-lg font-semibold text-zinc-50">{t("matchFeed.title")}</h2>
           {!profile.city && (
             <p className="text-xs text-zinc-500">
-              Set your city on your Profile to see in-person pods near you —
-              Online pods always show regardless of city.
+              {t("matchFeed.noCityHint")}
             </p>
           )}
           {error && <Alert severity="error">{error}</Alert>}
           {pods === null ? (
-            <p className="text-sm text-zinc-500">Loading match feed...</p>
+            <p className="text-sm text-zinc-500">{t("matchFeed.loading")}</p>
           ) : pods.length === 0 ? (
-            <p className="text-sm text-zinc-500">
-              No active pods match your filters yet.
-            </p>
+            <div className="flex flex-col items-center gap-2 py-8 text-center">
+              <SearchX className="h-8 w-8 text-zinc-700" />
+              <p className="text-sm font-medium text-zinc-400">
+                {t("matchFeed.empty.title")}
+              </p>
+              <p className="text-xs text-zinc-500">
+                {t("matchFeed.empty.subtitle")}
+              </p>
+            </div>
           ) : (
-            pods.map((pod) => {
-              const acceptedMembers = pod.pod_joins.filter(
-                (j) => j.status === "ACCEPTED",
-              );
-              const ownJoin = pod.pod_joins.find(
-                (j) => j.user_id === currentUserId,
-              );
-              const isJoined = ownJoin?.status === "ACCEPTED";
+            <AnimatePresence mode="popLayout">
+              {pods.map((pod) => {
+                const acceptedMembers = pod.pod_joins.filter(
+                  (j) => j.status === "ACCEPTED",
+                );
+                const ownJoin = pod.pod_joins.find(
+                  (j) => j.user_id === currentUserId,
+                );
+                const isJoined = ownJoin?.status === "ACCEPTED";
 
-              return (
-                <div
-                  key={pod.id}
-                  onClick={() => setSelectedPodId(pod.id)}
-                  className={`flex cursor-pointer flex-col gap-2 rounded-2xl border bg-zinc-900 p-4 transition-colors ${
-                    isJoined
-                      ? "border-green-500/50 hover:border-green-500/70"
-                      : "border-zinc-800 hover:border-zinc-700"
-                  }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium text-zinc-50">
-                        {pod.profiles.username}
-                      </span>
-                      {isJoined && (
-                        <span className="rounded-full bg-green-500/10 px-2 py-0.5 text-[10px] font-semibold tracking-wide text-green-400">
-                          JOINED
-                        </span>
-                      )}
-                    </div>
-                    <span className="text-xs text-zinc-500">
-                      {acceptedMembers.length + 1}/{pod.max_players}
-                    </span>
-                  </div>
-                  <div className="flex flex-wrap gap-2 text-xs text-zinc-400">
-                    <span>{pod.format_key}</span>
-                    <span>&middot;</span>
-                    <span>{pod.type}</span>
-                    {pod.power_tiers && pod.power_tiers.length > 0 && (
-                      <>
-                        <span>&middot;</span>
-                        <span>Bracket {pod.power_tiers.join(", ")}</span>
-                      </>
-                    )}
-                    {pod.location_name && (
-                      <>
-                        <span>&middot;</span>
-                        <span>
-                          {pod.location_name}
-                          {pod.city && CITY_MAP[pod.city]
-                            ? ` (${CITY_MAP[pod.city].label})`
-                            : ""}
-                        </span>
-                      </>
-                    )}
-                    <span>&middot;</span>
-                    <span>{formatScheduledAt(pod)}</span>
-                  </div>
-
-                  {acceptedMembers.length > 0 && (
-                    <div className="flex flex-col gap-1 border-t border-zinc-800 pt-2">
-                      {acceptedMembers.map((join) => (
-                        <div
-                          key={join.id}
-                          className="flex justify-between text-xs text-zinc-400"
+                return (
+                  <motion.div
+                    key={pod.id}
+                    layout
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.98 }}
+                    transition={{ duration: 0.2, ease: "easeOut" }}
+                    onClick={() => setSelectedPodId(pod.id)}
+                    className={`flex cursor-pointer flex-col gap-2 rounded-2xl border bg-zinc-900 p-4 transition-colors ${
+                      isJoined
+                        ? "border-green-500/50 hover:border-green-500/70"
+                        : "border-zinc-800 hover:border-zinc-700"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Avatar
+                          src={pod.profiles.avatar_url ?? undefined}
+                          sx={{ width: 24, height: 24, fontSize: "0.75rem" }}
                         >
-                          <span>{join.profiles.username}</span>
-                          <span>{join.profiles.discord_handle}</span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                  {ownJoin &&
-                    (ownJoin.status === "REJECTED" ? (
-                      <span className="self-start rounded-full bg-zinc-800 px-3 py-1 text-xs font-medium text-zinc-400">
-                        Request Rejected
+                          {pod.profiles.username[0]?.toUpperCase()}
+                        </Avatar>
+                        <span className="font-medium text-zinc-50">
+                          {pod.profiles.username}
+                        </span>
+                        {isJoined && (
+                          <span className="rounded-full bg-green-500/10 px-2 py-0.5 text-[10px] font-semibold tracking-wide text-green-400">
+                            {t("matchFeed.joined")}
+                          </span>
+                        )}
+                      </div>
+                      <span className="text-xs text-zinc-500">
+                        {acceptedMembers.length + 1}/{pod.max_players}
                       </span>
-                    ) : (
-                      <button
-                        type="button"
-                        disabled={pendingPodId === pod.id}
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          handleLeave(pod.id);
-                        }}
-                        className="self-start rounded-lg border border-red-500/40 bg-red-500/10 px-3 py-1.5 text-xs font-semibold text-red-400 transition-colors hover:border-red-500/60 hover:bg-red-500/20 disabled:opacity-50"
-                      >
-                        {pendingPodId === pod.id
-                          ? "..."
-                          : ownJoin.status === "PENDING"
-                            ? "Cancel Request"
-                            : "Leave"}
-                      </button>
-                    ))}
-                </div>
-              );
-            })
+                    </div>
+                    <div className="flex flex-wrap gap-2 text-xs text-zinc-400">
+                      <span>{t(`format.${pod.format_key}` as TranslationKey)}</span>
+                      <span>&middot;</span>
+                      <span>
+                        {pod.type === "IRL"
+                          ? t("podFilters.matchTypeIrl")
+                          : t("podFilters.matchTypeOnline")}
+                      </span>
+                      {pod.power_tiers && pod.power_tiers.length > 0 && (
+                        <>
+                          <span>&middot;</span>
+                          <span>
+                            {t("matchFeed.bracket", {
+                              brackets: pod.power_tiers.join(", "),
+                            })}
+                          </span>
+                        </>
+                      )}
+                      {pod.location_name && (
+                        <>
+                          <span>&middot;</span>
+                          <span>
+                            {pod.location_name}
+                            {pod.city && CITY_MAP[pod.city]
+                              ? ` (${CITY_MAP[pod.city].label})`
+                              : ""}
+                          </span>
+                        </>
+                      )}
+                      <span>&middot;</span>
+                      <span>{formatPodWhen(pod, locale, t)}</span>
+                    </div>
+
+                    {acceptedMembers.length > 0 && (
+                      <div className="flex flex-col gap-1 border-t border-zinc-800 pt-2">
+                        {acceptedMembers.map((join) => (
+                          <div
+                            key={join.id}
+                            className="flex items-center justify-between text-xs text-zinc-400"
+                          >
+                            <div className="flex items-center gap-1.5">
+                              <Avatar
+                                src={join.profiles.avatar_url ?? undefined}
+                                sx={{ width: 18, height: 18, fontSize: "0.625rem" }}
+                              >
+                                {join.profiles.username[0]?.toUpperCase()}
+                              </Avatar>
+                              <span>{join.profiles.username}</span>
+                            </div>
+                            <span>{join.profiles.discord_handle}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {ownJoin &&
+                      (ownJoin.status === "REJECTED" ? (
+                        <span className="self-start rounded-full bg-zinc-800 px-3 py-1 text-xs font-medium text-zinc-400">
+                          {t("matchFeed.requestRejected")}
+                        </span>
+                      ) : (
+                        <button
+                          type="button"
+                          disabled={pendingPodId === pod.id}
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            handleLeave(pod.id);
+                          }}
+                          className="self-start rounded-lg border border-red-500/40 bg-red-500/10 px-3 py-1.5 text-xs font-semibold text-red-400 transition-colors hover:border-red-500/60 hover:bg-red-500/20 disabled:opacity-50"
+                        >
+                          {pendingPodId === pod.id
+                            ? t("matchFeed.leaving")
+                            : ownJoin.status === "PENDING"
+                              ? t("matchFeed.cancelRequest")
+                              : t("matchFeed.leave")}
+                        </button>
+                      ))}
+                  </motion.div>
+                );
+              })}
+            </AnimatePresence>
           )}
         </div>
       </div>

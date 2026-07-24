@@ -1,10 +1,12 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { format, isToday } from "date-fns";
-import { Alert, Button, Chip } from "@mui/material";
+import { Alert, Avatar, Button, Chip } from "@mui/material";
 import { GAMES_CONFIG } from "@/constants/gamesConfig";
 import { CITY_MAP } from "@/constants/citiesConfig";
+import { formatPodWhen } from "@/lib/date";
+import { useTranslation } from "@/lib/i18n/LocaleContext";
+import type { TranslationKey } from "@/lib/i18n";
 import type { PodWithRelations } from "@/types/database";
 
 interface PodDetailDialogProps {
@@ -26,6 +28,7 @@ export function PodDetailDialog({
   pending,
   error,
 }: PodDetailDialogProps) {
+  const { t, locale } = useTranslation();
   const acceptedMembers = pod?.pod_joins.filter(
     (join) => join.status === "ACCEPTED",
   );
@@ -33,14 +36,7 @@ export function PodDetailDialog({
   const isFull =
     pod != null && (acceptedMembers?.length ?? 0) + 1 >= pod.max_players;
   const game = pod ? GAMES_CONFIG[pod.game_key] : undefined;
-  const scheduledDate = pod
-    ? new Date(pod.scheduled_at ?? pod.created_at)
-    : null;
-  const scheduledLabel = scheduledDate
-    ? isToday(scheduledDate)
-      ? `Today, ${format(scheduledDate, "p")}`
-      : format(scheduledDate, "MMM d, p")
-    : null;
+  const scheduledLabel = pod ? formatPodWhen(pod, locale, t) : null;
 
   return (
     <AnimatePresence>
@@ -61,13 +57,21 @@ export function PodDetailDialog({
             className="flex w-full max-w-md flex-col gap-4 rounded-2xl border border-zinc-800 bg-zinc-950 p-6"
           >
             <div className="flex items-start justify-between gap-4">
-              <div className="flex flex-col">
-                <h2 className="text-lg font-semibold text-zinc-50">
-                  {pod.profiles.username}
-                </h2>
-                <span className="text-sm text-zinc-500">
-                  {pod.profiles.discord_handle}
-                </span>
+              <div className="flex items-center gap-3">
+                <Avatar
+                  src={pod.profiles.avatar_url ?? undefined}
+                  sx={{ width: 40, height: 40 }}
+                >
+                  {pod.profiles.username[0]?.toUpperCase()}
+                </Avatar>
+                <div className="flex flex-col">
+                  <h2 className="text-lg font-semibold text-zinc-50">
+                    {pod.profiles.username}
+                  </h2>
+                  <span className="text-sm text-zinc-500">
+                    {pod.profiles.discord_handle}
+                  </span>
+                </div>
               </div>
               <span className="rounded-full border border-zinc-800 px-3 py-1 text-xs font-medium text-zinc-400">
                 {acceptedMembers ? acceptedMembers.length + 1 : 1}/
@@ -77,30 +81,36 @@ export function PodDetailDialog({
 
             <div className="flex flex-col gap-2 text-sm text-zinc-300">
               <div className="flex justify-between">
-                <span className="text-zinc-500">Game</span>
+                <span className="text-zinc-500">{t("podDetailDialog.game")}</span>
                 <span>{game?.name ?? pod.game_key}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-zinc-500">Format</span>
-                <span>{pod.format_key}</span>
+                <span className="text-zinc-500">{t("podDetailDialog.format")}</span>
+                <span>{t(`format.${pod.format_key}` as TranslationKey)}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-zinc-500">Playstyle</span>
-                <span className="capitalize">{pod.playstyle_key}</span>
+                <span className="text-zinc-500">{t("podDetailDialog.playstyle")}</span>
+                <span className="capitalize">
+                  {t(`playstyle.${pod.playstyle_key}` as TranslationKey)}
+                </span>
               </div>
               <div className="flex justify-between">
-                <span className="text-zinc-500">Match Type</span>
-                <span>{pod.type}</span>
+                <span className="text-zinc-500">{t("podDetailDialog.matchType")}</span>
+                <span>
+                  {pod.type === "IRL"
+                    ? t("podFilters.matchTypeIrl")
+                    : t("podFilters.matchTypeOnline")}
+                </span>
               </div>
               {scheduledLabel && (
                 <div className="flex justify-between">
-                  <span className="text-zinc-500">When</span>
+                  <span className="text-zinc-500">{t("podDetailDialog.when")}</span>
                   <span>{scheduledLabel}</span>
                 </div>
               )}
               {pod.location_name && (
                 <div className="flex justify-between">
-                  <span className="text-zinc-500">Location</span>
+                  <span className="text-zinc-500">{t("podDetailDialog.location")}</span>
                   <span>
                     {pod.location_name}
                     {pod.city && CITY_MAP[pod.city]
@@ -111,7 +121,7 @@ export function PodDetailDialog({
               )}
               {pod.power_tiers && pod.power_tiers.length > 0 && (
                 <div className="flex justify-between">
-                  <span className="text-zinc-500">Power Bracket</span>
+                  <span className="text-zinc-500">{t("podDetailDialog.powerBracket")}</span>
                   <span>{pod.power_tiers.join(", ")}</span>
                 </div>
               )}
@@ -119,7 +129,7 @@ export function PodDetailDialog({
 
             {pod.notes && (
               <div className="flex flex-col gap-1 border-t border-zinc-800 pt-3">
-                <span className="text-sm font-medium text-zinc-400">Notes</span>
+                <span className="text-sm font-medium text-zinc-400">{t("podDetailDialog.notes")}</span>
                 <p className="whitespace-pre-wrap text-sm text-zinc-300">
                   {pod.notes}
                 </p>
@@ -129,14 +139,22 @@ export function PodDetailDialog({
             {acceptedMembers && acceptedMembers.length > 0 && (
               <div className="flex flex-col gap-2 border-t border-zinc-800 pt-3">
                 <span className="text-sm font-medium text-zinc-400">
-                  Group Members
+                  {t("podDetailDialog.groupMembers")}
                 </span>
                 {acceptedMembers.map((join) => (
                   <div
                     key={join.id}
-                    className="flex justify-between text-sm text-zinc-300"
+                    className="flex items-center justify-between text-sm text-zinc-300"
                   >
-                    <span>{join.profiles.username}</span>
+                    <div className="flex items-center gap-2">
+                      <Avatar
+                        src={join.profiles.avatar_url ?? undefined}
+                        sx={{ width: 24, height: 24, fontSize: "0.75rem" }}
+                      >
+                        {join.profiles.username[0]?.toUpperCase()}
+                      </Avatar>
+                      <span>{join.profiles.username}</span>
+                    </div>
                     <span className="text-zinc-500">
                       {join.profiles.discord_handle}
                     </span>
@@ -155,12 +173,12 @@ export function PodDetailDialog({
                 fullWidth
                 sx={{ py: 1.5, borderColor: "#27272a", color: "#a1a1aa" }}
               >
-                Close
+                {t("podDetailDialog.close")}
               </Button>
               {ownJoin ? (
                 ownJoin.status === "REJECTED" ? (
                   <Chip
-                    label="Request Rejected"
+                    label={t("podDetailDialog.requestRejected")}
                     sx={{
                       flex: 1,
                       height: "auto",
@@ -190,10 +208,10 @@ export function PodDetailDialog({
                     }}
                   >
                     {pending
-                      ? "Leaving..."
+                      ? t("podDetailDialog.leaving")
                       : ownJoin.status === "PENDING"
-                        ? "Cancel Request"
-                        : "Leave"}
+                        ? t("podDetailDialog.cancelRequest")
+                        : t("podDetailDialog.leave")}
                   </Button>
                 )
               ) : (
@@ -206,10 +224,10 @@ export function PodDetailDialog({
                   sx={{ py: 1.5 }}
                 >
                   {isFull
-                    ? "Full"
+                    ? t("podDetailDialog.full")
                     : pending
-                      ? "Requesting..."
-                      : "Request to Join"}
+                      ? t("podDetailDialog.requesting")
+                      : t("podDetailDialog.requestToJoin")}
                 </Button>
               )}
             </div>

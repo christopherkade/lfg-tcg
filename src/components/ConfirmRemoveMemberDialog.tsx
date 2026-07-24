@@ -3,6 +3,7 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { UserX } from "lucide-react";
 import { Alert, Button } from "@mui/material";
+import { useTranslation } from "@/lib/i18n/LocaleContext";
 
 interface ConfirmRemoveMemberDialogProps {
   open: boolean;
@@ -27,6 +28,7 @@ export function ConfirmRemoveMemberDialog({
   pending,
   error,
 }: ConfirmRemoveMemberDialogProps) {
+  const { t } = useTranslation();
   return (
     <AnimatePresence>
       {open && (
@@ -51,12 +53,12 @@ export function ConfirmRemoveMemberDialog({
               </div>
               <div className="flex flex-col gap-1">
                 <h2 className="text-lg font-semibold text-zinc-50">
-                  Remove {memberName ?? "this member"}?
+                  {t("confirmRemoveMemberDialog.title", {
+                    name: memberName ?? t("confirmRemoveMemberDialog.titleFallback"),
+                  })}
                 </h2>
                 <p className="text-sm text-zinc-500">
-                  They&apos;ll be dropped from the group and free up a spot.
-                  They can request to join again afterwards if you change your
-                  mind.
+                  {t("confirmRemoveMemberDialog.body")}
                 </p>
               </div>
             </div>
@@ -71,7 +73,7 @@ export function ConfirmRemoveMemberDialog({
                 fullWidth
                 sx={{ py: 1.5, borderColor: "#27272a", color: "#a1a1aa" }}
               >
-                Cancel
+                {t("confirmRemoveMemberDialog.cancel")}
               </Button>
               <Button
                 type="button"
@@ -82,7 +84,9 @@ export function ConfirmRemoveMemberDialog({
                 color="error"
                 sx={{ py: 1.5 }}
               >
-                {pending ? "Removing..." : "Remove"}
+                {pending
+                  ? t("confirmRemoveMemberDialog.removing")
+                  : t("confirmRemoveMemberDialog.remove")}
               </Button>
             </div>
           </motion.div>

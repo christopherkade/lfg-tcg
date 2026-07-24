@@ -2,6 +2,7 @@
 
 import { Autocomplete, TextField } from "@mui/material";
 import { CITIES_CONFIG, CITY_MAP } from "@/constants/citiesConfig";
+import { useTranslation } from "@/lib/i18n/LocaleContext";
 
 interface CitySelectorProps {
   value: string | null;
@@ -15,6 +16,7 @@ interface CitySelectorProps {
  * (Section 6) can rely on exact equality instead of fuzzy text matching.
  */
 export function CitySelector({ value, onChange }: CitySelectorProps) {
+  const { t } = useTranslation();
   return (
     <Autocomplete
       options={CITIES_CONFIG}
@@ -25,9 +27,9 @@ export function CitySelector({ value, onChange }: CitySelectorProps) {
       renderInput={(params) => (
         <TextField
           {...params}
-          label="City"
+          label={t("citySelector.label")}
           size="small"
-          helperText="Used to only show you in-person pods near you. Online pods always show regardless of city."
+          helperText={t("citySelector.helperText")}
         />
       )}
     />
