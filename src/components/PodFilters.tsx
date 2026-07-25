@@ -1,7 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { Box, Popover, ToggleButton, ToggleButtonGroup } from "@mui/material";
+import {
+  Box,
+  Popover,
+  ToggleButton,
+  ToggleButtonGroup,
+  Typography,
+  useTheme,
+} from "@mui/material";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { format as formatDate } from "date-fns";
 import { GAMES_CONFIG } from "@/constants/gamesConfig";
@@ -88,6 +95,9 @@ function FilterChip({
   active: boolean;
   onClick: (event: React.MouseEvent<HTMLButtonElement>) => void;
 }) {
+  const theme = useTheme();
+  const isDark = theme.palette.mode === "dark";
+
   return (
     <button
       type="button"
@@ -95,8 +105,11 @@ function FilterChip({
       className={`flex shrink-0 items-center gap-1 rounded-full border px-3 py-1.5 text-xs font-medium whitespace-nowrap transition-colors ${
         active
           ? "border-ember/30 bg-ember/10 text-ember"
-          : "border-zinc-800 bg-zinc-900 text-white hover:border-zinc-700 hover:text-white"
+          : isDark
+            ? "border-zinc-800 bg-zinc-900 hover:border-zinc-700"
+            : "border-zinc-200 bg-zinc-100 hover:border-zinc-300"
       }`}
+      style={active ? undefined : { color: theme.palette.text.primary }}
     >
       {label}
       <ChevronIcon />
@@ -106,6 +119,7 @@ function FilterChip({
 
 export function PodFilters({ value, onChange }: PodFiltersProps) {
   const { t } = useTranslation();
+  const theme = useTheme();
   const [openFilter, setOpenFilter] = useState<FilterKey | null>(null);
   const [anchorEl, setAnchorEl] = useState<HTMLButtonElement | null>(null);
 
@@ -174,8 +188,7 @@ export function PodFilters({ value, onChange }: PodFiltersProps) {
 
   const popoverSlotProps = {
     paper: {
-      className: "border border-zinc-800",
-      sx: { mt: 1, borderRadius: "16px" },
+      sx: { mt: 1, borderRadius: "16px", border: `1px solid ${theme.palette.divider}` },
     },
   };
 
@@ -220,7 +233,8 @@ export function PodFilters({ value, onChange }: PodFiltersProps) {
         <button
           type="button"
           onClick={() => onChange(NEUTRAL_POD_FILTERS)}
-          className="shrink-0 whitespace-nowrap text-xs font-medium text-white transition-colors hover:text-white"
+          className="shrink-0 whitespace-nowrap text-xs font-medium transition-colors"
+          style={{ color: theme.palette.text.secondary }}
         >
           {t("podFilters.clearAll")}
         </button>
@@ -243,7 +257,9 @@ export function PodFilters({ value, onChange }: PodFiltersProps) {
               width: 260,
             }}
           >
-            <span className="text-xs font-medium text-white">{t("podFilters.gameSectionLabel")}</span>
+            <Typography sx={{ fontSize: "0.75rem", fontWeight: 500, color: "text.primary" }}>
+              {t("podFilters.gameSectionLabel")}
+            </Typography>
             <GameSelector
               value={value.gameKey}
               onChange={handleGameChange}
@@ -263,9 +279,9 @@ export function PodFilters({ value, onChange }: PodFiltersProps) {
           slotProps={popoverSlotProps}
         >
           <Box sx={{ p: 2, display: "flex", flexDirection: "column", gap: 1 }}>
-            <span className="text-xs font-medium text-white">
+            <Typography sx={{ fontSize: "0.75rem", fontWeight: 500, color: "text.primary" }}>
               {t("podFilters.matchTypeLabel")}
-            </span>
+            </Typography>
             <ToggleButtonGroup
               value={value.matchType}
               exclusive
@@ -295,7 +311,9 @@ export function PodFilters({ value, onChange }: PodFiltersProps) {
           slotProps={popoverSlotProps}
         >
           <Box sx={{ p: 2, display: "flex", flexDirection: "column", gap: 1 }}>
-            <span className="text-xs font-medium text-white">{t("podFilters.formatLabel")}</span>
+            <Typography sx={{ fontSize: "0.75rem", fontWeight: 500, color: "text.primary" }}>
+              {t("podFilters.formatLabel")}
+            </Typography>
             <ToggleButtonGroup
               value={value.formatKey}
               exclusive

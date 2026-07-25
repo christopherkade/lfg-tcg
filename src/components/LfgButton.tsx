@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { Radio, X } from "lucide-react";
-import { Fab, Alert } from "@mui/material";
+import { Fab, Alert, Typography } from "@mui/material";
 import { DEFAULT_GLOW_COLOR, GAMES_CONFIG } from "@/constants/gamesConfig";
 import { cancelPod } from "@/app/actions/pods";
 import { createClient } from "@/lib/supabase/client";
@@ -173,15 +173,21 @@ export function LfgButton({
   return (
     <div className="flex flex-col items-center gap-6">
       <div className="flex flex-col items-center gap-1 text-center">
-        <span className="text-sm font-medium text-white">
+        <Typography
+          component="span"
+          sx={{ fontSize: "0.875rem", fontWeight: 500, color: "text.secondary" }}
+        >
           {isSearching ? t("lfgButton.searchingFor") : t("lfgButton.lastSearch")}
-        </span>
-        <span className="text-lg font-semibold text-zinc-50">
+        </Typography>
+        <Typography
+          component="span"
+          sx={{ fontSize: "1.125rem", fontWeight: 600, color: "text.primary" }}
+        >
           {game?.name} &middot; {formatLabel} &middot;{" "}
           {profile.preferred_match_type === "IRL"
             ? t("podFilters.matchTypeIrl")
             : t("podFilters.matchTypeOnline")}
-        </span>
+        </Typography>
       </div>
       <MotionFab
         type="button"

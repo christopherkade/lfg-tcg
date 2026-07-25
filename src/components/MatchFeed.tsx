@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { isSameDay } from "date-fns";
 import { AnimatePresence, motion } from "framer-motion";
 import { SearchX } from "lucide-react";
-import { Alert, Avatar } from "@mui/material";
+import { Alert, Avatar, Typography, useTheme } from "@mui/material";
 import { createClient } from "@/lib/supabase/client";
 import { requestJoin, leavePod } from "@/app/actions/joins";
 import { PodDetailDialog } from "@/components/PodDetailDialog";
@@ -61,6 +61,8 @@ export function MatchFeed({
 }: MatchFeedProps) {
   const { t, locale } = useTranslation();
   const router = useRouter();
+  const theme = useTheme();
+  const isDark = theme.palette.mode === "dark";
   const [pods, setPods] = useState<PodWithRelations[] | null>(null);
   const [pendingPodId, setPendingPodId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -298,24 +300,28 @@ export function MatchFeed({
           <PodFilters value={filters} onChange={handleFiltersChange} />
         </div>
         <div className="flex w-full max-w-md flex-col gap-3">
-          <h2 className="text-lg font-semibold text-white">{t("matchFeed.title")}</h2>
+          <Typography component="h2" sx={{ fontSize: "1.125rem", fontWeight: 600, color: "text.primary" }}>
+            {t("matchFeed.title")}
+          </Typography>
           {!profile.city && (
-            <p className="text-xs text-white">
+            <Typography sx={{ fontSize: "0.75rem", color: "text.secondary" }}>
               {t("matchFeed.noCityHint")}
-            </p>
+            </Typography>
           )}
           {error && <Alert severity="error">{error}</Alert>}
           {pods === null ? (
-            <p className="text-sm text-white">{t("matchFeed.loading")}</p>
+            <Typography sx={{ fontSize: "0.875rem", color: "text.secondary" }}>
+              {t("matchFeed.loading")}
+            </Typography>
           ) : pods.length === 0 ? (
             <div className="flex flex-col items-center gap-2 py-8 text-center">
-              <SearchX className="h-8 w-8 text-white" />
-              <p className="text-sm font-medium text-white">
+              <SearchX className="h-8 w-8" style={{ color: theme.palette.text.secondary }} />
+              <Typography sx={{ fontSize: "0.875rem", fontWeight: 500, color: "text.primary" }}>
                 {t("matchFeed.empty.title")}
-              </p>
-              <p className="text-xs text-white">
+              </Typography>
+              <Typography sx={{ fontSize: "0.75rem", color: "text.secondary" }}>
                 {t("matchFeed.empty.subtitle")}
-              </p>
+              </Typography>
             </div>
           ) : (
             <AnimatePresence mode="popLayout">
@@ -337,11 +343,14 @@ export function MatchFeed({
                     exit={{ opacity: 0, scale: 0.98 }}
                     transition={{ duration: 0.2, ease: "easeOut" }}
                     onClick={() => setSelectedPodId(pod.id)}
-                    className={`flex cursor-pointer flex-col gap-2 rounded-2xl border bg-zinc-900 p-4 transition-colors ${
+                    className={`flex cursor-pointer flex-col gap-2 rounded-2xl border p-4 transition-colors ${
                       isJoined
                         ? "border-green-500/50 hover:border-green-500/70"
-                        : "border-zinc-800 hover:border-zinc-700"
+                        : isDark
+                          ? "border-zinc-800 hover:border-zinc-700"
+                          : "border-zinc-200 hover:border-zinc-300"
                     }`}
+                    style={{ backgroundColor: theme.palette.background.paper }}
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
@@ -351,7 +360,7 @@ export function MatchFeed({
                         >
                           {pod.profiles.username[0]?.toUpperCase()}
                         </Avatar>
-                        <span className="font-medium text-white">
+                        <span className="font-medium" style={{ color: theme.palette.text.primary }}>
                           {pod.profiles.username}
                         </span>
                         {isJoined && (
@@ -360,11 +369,11 @@ export function MatchFeed({
                           </span>
                         )}
                       </div>
-                      <span className="text-xs text-white">
+                      <span className="text-xs" style={{ color: theme.palette.text.secondary }}>
                         {acceptedMembers.length + 1}/{pod.max_players}
                       </span>
                     </div>
-                    <div className="flex flex-wrap gap-2 text-xs text-white">
+                    <div className="flex flex-wrap gap-2 text-xs" style={{ color: theme.palette.text.secondary }}>
                       <span>{t(`format.${pod.format_key}` as TranslationKey)}</span>
                       <span>&middot;</span>
                       <span>
@@ -398,11 +407,15 @@ export function MatchFeed({
                     </div>
 
                     {acceptedMembers.length > 0 && (
-                      <div className="flex flex-col gap-1 border-t border-zinc-800 pt-2">
+                      <div
+                        className="flex flex-col gap-1 pt-2"
+                        style={{ borderTop: `1px solid ${theme.palette.divider}` }}
+                      >
                         {acceptedMembers.map((join) => (
                           <div
                             key={join.id}
-                            className="flex items-center justify-between text-xs text-white"
+                            className="flex items-center justify-between text-xs"
+                            style={{ color: theme.palette.text.secondary }}
                           >
                             <div className="flex items-center gap-1.5">
                               <Avatar
@@ -421,7 +434,13 @@ export function MatchFeed({
 
                     {ownJoin &&
                       (ownJoin.status === "REJECTED" ? (
-                        <span className="self-start rounded-full bg-zinc-800 px-3 py-1 text-xs font-medium text-white">
+                        <span
+                          className="self-start rounded-full px-3 py-1 text-xs font-medium"
+                          style={{
+                            backgroundColor: theme.palette.divider,
+                            color: theme.palette.text.primary,
+                          }}
+                        >
                           {t("matchFeed.requestRejected")}
                         </span>
                       ) : (

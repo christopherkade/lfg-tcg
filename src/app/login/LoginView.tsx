@@ -1,7 +1,7 @@
 "use client";
 
 import { MessageCircle, PlusCircle, Users, Swords } from "lucide-react";
-import { Button } from "@mui/material";
+import { Box, Button, Typography } from "@mui/material";
 import { createClient } from "@/lib/supabase/client";
 import { LocaleSwitcher } from "@/components/LocaleSwitcher";
 import { useTranslation } from "@/lib/i18n/LocaleContext";
@@ -47,26 +47,52 @@ export function LoginView({ next }: LoginViewProps) {
   }
 
   return (
-    <div className="relative flex flex-1 flex-col items-center justify-center gap-10 bg-zinc-950 px-6 text-center">
+    <Box
+      sx={{ bgcolor: "background.default" }}
+      className="relative flex flex-1 flex-col items-center justify-center gap-10 px-6 text-center"
+    >
       <div className="absolute right-4 top-4 w-28">
         <LocaleSwitcher />
       </div>
       <div className="flex flex-col gap-2">
-        <h1 className="text-3xl font-bold text-zinc-50">{t("login.title")}</h1>
-        <p className="text-white">{t("login.subtitle")}</p>
+        <Typography
+          component="h1"
+          sx={{ fontSize: "1.875rem", fontWeight: 700, color: "text.primary" }}
+        >
+          {t("login.title")}
+        </Typography>
+        <Typography sx={{ color: "text.secondary" }}>
+          {t("login.subtitle")}
+        </Typography>
       </div>
 
       <ol className="flex flex-col items-stretch gap-4 sm:flex-row sm:items-start sm:gap-6">
         {STEPS.map(({ icon: Icon, titleKey, descriptionKey }, index) => (
           <li key={titleKey} className="flex items-center gap-3 sm:flex-col sm:items-center sm:gap-2 sm:w-40">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-zinc-900 ring-1 ring-zinc-800">
-              <Icon className="h-5 w-5 text-white" />
-            </div>
+            <Box
+              sx={{
+                bgcolor: "background.paper",
+                borderColor: "divider",
+                borderWidth: 1,
+                borderStyle: "solid",
+              }}
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full"
+            >
+              <Icon className="h-5 w-5" style={{ color: "inherit" }} />
+            </Box>
             <div className="flex flex-col text-left sm:text-center">
-              <span className="text-sm font-medium text-zinc-100">
+              <Typography
+                component="span"
+                sx={{ fontSize: "0.875rem", fontWeight: 500, color: "text.primary" }}
+              >
                 {index + 1}. {t(titleKey)}
-              </span>
-              <span className="text-xs text-white">{t(descriptionKey)}</span>
+              </Typography>
+              <Typography
+                component="span"
+                sx={{ fontSize: "0.75rem", color: "text.secondary" }}
+              >
+                {t(descriptionKey)}
+              </Typography>
             </div>
           </li>
         ))}
@@ -86,6 +112,6 @@ export function LoginView({ next }: LoginViewProps) {
       >
         {t("login.continueWithDiscord")}
       </Button>
-    </div>
+    </Box>
   );
 }

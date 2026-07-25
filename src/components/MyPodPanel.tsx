@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Check, ChevronDown, Copy, UserX, X } from "lucide-react";
-import { Alert, Avatar, Button } from "@mui/material";
+import { Alert, Avatar, Button, useTheme } from "@mui/material";
 import { removeMember, respondToJoin } from "@/app/actions/joins";
 import { markPodMatched } from "@/app/actions/pods";
 import { ConfirmMarkMatchedDialog } from "@/components/ConfirmMarkMatchedDialog";
@@ -24,6 +24,7 @@ interface MyPodPanelProps {
 
 export function MyPodPanel({ pod, onChanged, highlight = false }: MyPodPanelProps) {
   const { t, locale } = useTranslation();
+  const theme = useTheme();
   const [error, setError] = useState<string | null>(null);
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [confirmMatchedOpen, setConfirmMatchedOpen] = useState(false);
@@ -130,7 +131,8 @@ export function MyPodPanel({ pod, onChanged, highlight = false }: MyPodPanelProp
             }
           : { duration: 0.4 }
       }
-      className="flex w-full max-w-md flex-col gap-4 rounded-2xl border border-indigo-500/50 bg-zinc-900 p-5"
+      className="flex w-full max-w-md flex-col gap-4 rounded-2xl border border-indigo-500/50 p-5"
+      style={{ backgroundColor: theme.palette.background.paper }}
     >
       <button
         type="button"
@@ -138,7 +140,9 @@ export function MyPodPanel({ pod, onChanged, highlight = false }: MyPodPanelProp
         className="flex items-center justify-between gap-3 text-left"
       >
         <div className="flex items-center gap-2">
-          <h2 className="text-lg font-semibold text-zinc-50">{t("myPodPanel.title")}</h2>
+          <h2 className="text-lg font-semibold" style={{ color: theme.palette.text.primary }}>
+            {t("myPodPanel.title")}
+          </h2>
           {pendingRequests.length > 0 && (
             <span className="rounded-full bg-indigo-500/10 px-2 py-0.5 text-xs font-medium text-indigo-300">
               {pendingRequests.length === 1
@@ -148,29 +152,31 @@ export function MyPodPanel({ pod, onChanged, highlight = false }: MyPodPanelProp
           )}
         </div>
         <div className="flex items-center gap-3">
-          <span className="text-sm text-zinc-400">
+          <span className="text-sm" style={{ color: theme.palette.text.secondary }}>
             {t("myPodPanel.playersCount", {
               count: acceptedMembers.length + 1,
               max: pod.max_players,
             })}
           </span>
           <ChevronDown
-            className={`h-4 w-4 shrink-0 text-zinc-500 transition-transform ${
+            className={`h-4 w-4 shrink-0 transition-transform ${
               expanded ? "rotate-180" : ""
             }`}
+            style={{ color: theme.palette.text.secondary }}
           />
         </div>
       </button>
 
       {pendingRequests.length > 0 ? (
         <div className="flex flex-col gap-2">
-          <span className="text-sm font-medium text-zinc-400">
+          <span className="text-sm font-medium" style={{ color: theme.palette.text.secondary }}>
             {t("myPodPanel.joinRequests")}
           </span>
           {pendingRequests.map((join) => (
             <div
               key={join.id}
-              className="flex items-center justify-between rounded-lg border border-zinc-800 px-3 py-2"
+              className="flex items-center justify-between rounded-lg px-3 py-2"
+              style={{ border: `1px solid ${theme.palette.divider}` }}
             >
               <div className="flex items-center gap-2">
                 <Avatar
@@ -180,8 +186,10 @@ export function MyPodPanel({ pod, onChanged, highlight = false }: MyPodPanelProp
                   {join.profiles.username[0]?.toUpperCase()}
                 </Avatar>
                 <div className="flex flex-col">
-                  <span className="text-zinc-50">{join.profiles.username}</span>
-                  <span className="text-xs text-zinc-500">
+                  <span style={{ color: theme.palette.text.primary }}>
+                    {join.profiles.username}
+                  </span>
+                  <span className="text-xs" style={{ color: theme.palette.text.secondary }}>
                     {join.profiles.discord_handle}
                   </span>
                 </div>
@@ -226,7 +234,7 @@ export function MyPodPanel({ pod, onChanged, highlight = false }: MyPodPanelProp
           ))}
         </div>
       ) : (
-        <p className="text-sm text-zinc-500">
+        <p className="text-sm" style={{ color: theme.palette.text.secondary }}>
           {t("myPodPanel.noRequests")}
         </p>
       )}
@@ -235,23 +243,23 @@ export function MyPodPanel({ pod, onChanged, highlight = false }: MyPodPanelProp
 
       {expanded && (
         <>
-          <div className="flex flex-col gap-2 text-sm text-zinc-300">
+          <div className="flex flex-col gap-2 text-sm" style={{ color: theme.palette.text.primary }}>
             <div className="flex justify-between">
-              <span className="text-zinc-500">{t("myPodPanel.game")}</span>
+              <span style={{ color: theme.palette.text.secondary }}>{t("myPodPanel.game")}</span>
               <span>{game?.name ?? pod.game_key}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-zinc-500">{t("myPodPanel.format")}</span>
+              <span style={{ color: theme.palette.text.secondary }}>{t("myPodPanel.format")}</span>
               <span>{t(`format.${pod.format_key}` as TranslationKey)}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-zinc-500">{t("myPodPanel.playstyle")}</span>
+              <span style={{ color: theme.palette.text.secondary }}>{t("myPodPanel.playstyle")}</span>
               <span className="capitalize">
                 {t(`playstyle.${pod.playstyle_key}` as TranslationKey)}
               </span>
             </div>
             <div className="flex justify-between">
-              <span className="text-zinc-500">{t("myPodPanel.matchType")}</span>
+              <span style={{ color: theme.palette.text.secondary }}>{t("myPodPanel.matchType")}</span>
               <span>
                 {pod.type === "IRL"
                   ? t("podFilters.matchTypeIrl")
@@ -259,18 +267,18 @@ export function MyPodPanel({ pod, onChanged, highlight = false }: MyPodPanelProp
               </span>
             </div>
             <div className="flex justify-between">
-              <span className="text-zinc-500">{t("myPodPanel.when")}</span>
+              <span style={{ color: theme.palette.text.secondary }}>{t("myPodPanel.when")}</span>
               <span>{scheduledLabel}</span>
             </div>
             {pod.location_name && (
               <div className="flex justify-between">
-                <span className="text-zinc-500">{t("myPodPanel.location")}</span>
+                <span style={{ color: theme.palette.text.secondary }}>{t("myPodPanel.location")}</span>
                 <span>{pod.location_name}</span>
               </div>
             )}
             {pod.power_tiers && pod.power_tiers.length > 0 && (
               <div className="flex justify-between">
-                <span className="text-zinc-500">{t("myPodPanel.powerBracket")}</span>
+                <span style={{ color: theme.palette.text.secondary }}>{t("myPodPanel.powerBracket")}</span>
                 <span>{pod.power_tiers.join(", ")}</span>
               </div>
             )}
@@ -278,13 +286,14 @@ export function MyPodPanel({ pod, onChanged, highlight = false }: MyPodPanelProp
 
           {acceptedMembers.length > 0 && (
             <div className="flex flex-col gap-2">
-              <span className="text-sm font-medium text-zinc-400">
+              <span className="text-sm font-medium" style={{ color: theme.palette.text.secondary }}>
                 {t("myPodPanel.groupMembers")}
               </span>
               {acceptedMembers.map((join) => (
                 <div
                   key={join.id}
-                  className="flex items-center justify-between gap-2 rounded-lg border border-zinc-800 px-3 py-2"
+                  className="flex items-center justify-between gap-2 rounded-lg px-3 py-2"
+                  style={{ border: `1px solid ${theme.palette.divider}` }}
                 >
                   <div className="flex items-center gap-2">
                     <Avatar
@@ -294,10 +303,10 @@ export function MyPodPanel({ pod, onChanged, highlight = false }: MyPodPanelProp
                       {join.profiles.username[0]?.toUpperCase()}
                     </Avatar>
                     <div className="flex flex-col">
-                      <span className="text-zinc-50">
+                      <span style={{ color: theme.palette.text.primary }}>
                         {join.profiles.username}
                       </span>
-                      <span className="text-sm text-zinc-400">
+                      <span className="text-sm" style={{ color: theme.palette.text.secondary }}>
                         {join.profiles.discord_handle}
                       </span>
                     </div>
@@ -391,7 +400,7 @@ export function MyPodPanel({ pod, onChanged, highlight = false }: MyPodPanelProp
                     </motion.span>
                   </AnimatePresence>
                 }
-                sx={{ borderColor: "#27272a", color: "#d4d4d8" }}
+                sx={{ borderColor: "divider", color: "text.secondary" }}
               >
                 {copied === "__all__" ? t("myPodPanel.copied") : t("myPodPanel.copyAllHandles")}
               </Button>
@@ -400,10 +409,10 @@ export function MyPodPanel({ pod, onChanged, highlight = false }: MyPodPanelProp
 
           {pod.notes && (
             <div className="flex flex-col gap-1">
-              <span className="text-sm font-medium text-zinc-400">
+              <span className="text-sm font-medium" style={{ color: theme.palette.text.secondary }}>
                 {t("myPodPanel.yourNotes")}
               </span>
-              <p className="whitespace-pre-wrap text-sm text-zinc-300">
+              <p className="whitespace-pre-wrap text-sm" style={{ color: theme.palette.text.primary }}>
                 {pod.notes}
               </p>
             </div>
@@ -435,7 +444,7 @@ export function MyPodPanel({ pod, onChanged, highlight = false }: MyPodPanelProp
                   </motion.span>
                 </AnimatePresence>
               }
-              sx={{ borderColor: "#27272a", color: "#d4d4d8" }}
+              sx={{ borderColor: "divider", color: "text.secondary" }}
             >
               {copied === "__link__" ? t("myPodPanel.copied") : t("myPodPanel.copyLink")}
             </Button>
@@ -444,7 +453,7 @@ export function MyPodPanel({ pod, onChanged, highlight = false }: MyPodPanelProp
               onClick={() => setEditOpen(true)}
               variant="outlined"
               size="small"
-              sx={{ borderColor: "#27272a", color: "#d4d4d8" }}
+              sx={{ borderColor: "divider", color: "text.secondary" }}
             >
               {t("myPodPanel.editPod")}
             </Button>

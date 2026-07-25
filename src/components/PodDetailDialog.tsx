@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { Alert, Avatar, Button, Chip } from "@mui/material";
+import { Alert, Avatar, Button, Chip, useTheme } from "@mui/material";
 import { GAMES_CONFIG } from "@/constants/gamesConfig";
 import { CITY_MAP } from "@/constants/citiesConfig";
 import { formatPodWhen } from "@/lib/date";
@@ -29,6 +29,7 @@ export function PodDetailDialog({
   error,
 }: PodDetailDialogProps) {
   const { t, locale } = useTranslation();
+  const theme = useTheme();
   const acceptedMembers = pod?.pod_joins.filter(
     (join) => join.status === "ACCEPTED",
   );
@@ -54,7 +55,11 @@ export function PodDetailDialog({
             exit={{ y: 40, opacity: 0 }}
             transition={{ duration: 0.2, ease: "easeOut" }}
             onClick={(event) => event.stopPropagation()}
-            className="flex w-full max-w-md flex-col gap-4 rounded-2xl border border-zinc-800 bg-zinc-950 p-6"
+            className="flex w-full max-w-md flex-col gap-4 rounded-2xl p-6"
+            style={{
+              border: `1px solid ${theme.palette.divider}`,
+              backgroundColor: theme.palette.background.paper,
+            }}
           >
             <div className="flex items-start justify-between gap-4">
               <div className="flex items-center gap-3">
@@ -65,37 +70,43 @@ export function PodDetailDialog({
                   {pod.profiles.username[0]?.toUpperCase()}
                 </Avatar>
                 <div className="flex flex-col">
-                  <h2 className="text-lg font-semibold text-zinc-50">
+                  <h2 className="text-lg font-semibold" style={{ color: theme.palette.text.primary }}>
                     {pod.profiles.username}
                   </h2>
-                  <span className="text-sm text-white">
+                  <span className="text-sm" style={{ color: theme.palette.text.secondary }}>
                     {pod.profiles.discord_handle}
                   </span>
                 </div>
               </div>
-              <span className="rounded-full border border-zinc-800 px-3 py-1 text-xs font-medium text-white">
+              <span
+                className="rounded-full px-3 py-1 text-xs font-medium"
+                style={{
+                  border: `1px solid ${theme.palette.divider}`,
+                  color: theme.palette.text.secondary,
+                }}
+              >
                 {acceptedMembers ? acceptedMembers.length + 1 : 1}/
                 {pod.max_players}
               </span>
             </div>
 
-            <div className="flex flex-col gap-2 text-sm text-white">
+            <div className="flex flex-col gap-2 text-sm" style={{ color: theme.palette.text.primary }}>
               <div className="flex justify-between">
-                <span className="text-white">{t("podDetailDialog.game")}</span>
+                <span style={{ color: theme.palette.text.secondary }}>{t("podDetailDialog.game")}</span>
                 <span>{game?.name ?? pod.game_key}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-white">{t("podDetailDialog.format")}</span>
+                <span style={{ color: theme.palette.text.secondary }}>{t("podDetailDialog.format")}</span>
                 <span>{t(`format.${pod.format_key}` as TranslationKey)}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-white">{t("podDetailDialog.playstyle")}</span>
+                <span style={{ color: theme.palette.text.secondary }}>{t("podDetailDialog.playstyle")}</span>
                 <span className="capitalize">
                   {t(`playstyle.${pod.playstyle_key}` as TranslationKey)}
                 </span>
               </div>
               <div className="flex justify-between">
-                <span className="text-white">{t("podDetailDialog.matchType")}</span>
+                <span style={{ color: theme.palette.text.secondary }}>{t("podDetailDialog.matchType")}</span>
                 <span>
                   {pod.type === "IRL"
                     ? t("podFilters.matchTypeIrl")
@@ -104,13 +115,13 @@ export function PodDetailDialog({
               </div>
               {scheduledLabel && (
                 <div className="flex justify-between">
-                  <span className="text-white">{t("podDetailDialog.when")}</span>
+                  <span style={{ color: theme.palette.text.secondary }}>{t("podDetailDialog.when")}</span>
                   <span>{scheduledLabel}</span>
                 </div>
               )}
               {pod.location_name && (
                 <div className="flex justify-between">
-                  <span className="text-white">{t("podDetailDialog.location")}</span>
+                  <span style={{ color: theme.palette.text.secondary }}>{t("podDetailDialog.location")}</span>
                   <span>
                     {pod.location_name}
                     {pod.city && CITY_MAP[pod.city]
@@ -121,30 +132,33 @@ export function PodDetailDialog({
               )}
               {pod.power_tiers && pod.power_tiers.length > 0 && (
                 <div className="flex justify-between">
-                  <span className="text-white">{t("podDetailDialog.powerBracket")}</span>
+                  <span style={{ color: theme.palette.text.secondary }}>{t("podDetailDialog.powerBracket")}</span>
                   <span>{pod.power_tiers.join(", ")}</span>
                 </div>
               )}
             </div>
 
             {pod.notes && (
-              <div className="flex flex-col gap-1 border-t border-zinc-800 pt-3">
-                <span className="text-sm font-medium text-white">{t("podDetailDialog.notes")}</span>
-                <p className="whitespace-pre-wrap text-sm text-white">
+              <div className="flex flex-col gap-1 pt-3" style={{ borderTop: `1px solid ${theme.palette.divider}` }}>
+                <span className="text-sm font-medium" style={{ color: theme.palette.text.secondary }}>
+                  {t("podDetailDialog.notes")}
+                </span>
+                <p className="whitespace-pre-wrap text-sm" style={{ color: theme.palette.text.primary }}>
                   {pod.notes}
                 </p>
               </div>
             )}
 
             {acceptedMembers && acceptedMembers.length > 0 && (
-              <div className="flex flex-col gap-2 border-t border-zinc-800 pt-3">
-                <span className="text-sm font-medium text-white">
+              <div className="flex flex-col gap-2 pt-3" style={{ borderTop: `1px solid ${theme.palette.divider}` }}>
+                <span className="text-sm font-medium" style={{ color: theme.palette.text.secondary }}>
                   {t("podDetailDialog.groupMembers")}
                 </span>
                 {acceptedMembers.map((join) => (
                   <div
                     key={join.id}
-                    className="flex items-center justify-between text-sm text-white"
+                    className="flex items-center justify-between text-sm"
+                    style={{ color: theme.palette.text.primary }}
                   >
                     <div className="flex items-center gap-2">
                       <Avatar
@@ -155,7 +169,7 @@ export function PodDetailDialog({
                       </Avatar>
                       <span>{join.profiles.username}</span>
                     </div>
-                    <span className="text-white">
+                    <span style={{ color: theme.palette.text.secondary }}>
                       {join.profiles.discord_handle}
                     </span>
                   </div>
@@ -171,7 +185,7 @@ export function PodDetailDialog({
                 onClick={onClose}
                 variant="outlined"
                 fullWidth
-                sx={{ py: 1.5, borderColor: "#52525b", color: "#d4d4d8" }}
+                sx={{ py: 1.5, borderColor: "divider", color: "text.secondary" }}
               >
                 {t("podDetailDialog.close")}
               </Button>
@@ -184,8 +198,8 @@ export function PodDetailDialog({
                       height: "auto",
                       py: 1.5,
                       borderRadius: 9999,
-                      bgcolor: "#27272a",
-                      color: "#a1a1aa",
+                      bgcolor: "divider",
+                      color: "text.secondary",
                       fontSize: "0.875rem",
                       fontWeight: 500,
                     }}

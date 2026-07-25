@@ -1,3 +1,4 @@
+import { Box } from "@mui/material";
 import { requireProfile } from "@/lib/session";
 import { LfgButton } from "@/components/LfgButton";
 import type { Pod } from "@/types/database";
@@ -24,12 +25,15 @@ export default async function LfgPage() {
     .maybeSingle();
 
   return (
-    <div className="flex flex-1 flex-col items-center justify-center gap-6 bg-zinc-950 px-6">
+    <Box
+      sx={{ bgcolor: "background.default" }}
+      className="flex flex-1 flex-col items-center justify-center gap-6 px-6"
+    >
       <LfgButton
         profile={profile}
         ownPod={ownPod as Pod | null}
         hasActiveJoin={activeJoin != null}
       />
-    </div>
+    </Box>
   );
 }

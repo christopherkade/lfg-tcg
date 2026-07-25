@@ -44,7 +44,7 @@ export function TutorialDialog() {
       <IconButton
         onClick={() => setOpen(true)}
         aria-label={t("tutorial.buttonLabel")}
-        sx={{ color: "#ffffff" }}
+        sx={{ color: "text.primary" }}
       >
         <CircleHelp className="h-5 w-5" />
       </IconButton>
@@ -56,10 +56,10 @@ export function TutorialDialog() {
         fullWidth
         slotProps={{
           paper: {
-            sx: {
-              bgcolor: "#18181b",
-              border: "1px solid #27272a",
-            },
+            sx: (theme) => ({
+              bgcolor: theme.palette.background.paper,
+              border: `1px solid ${theme.palette.divider}`,
+            }),
           },
         }}
       >
@@ -70,14 +70,14 @@ export function TutorialDialog() {
             justifyContent: "space-between",
             fontSize: "1rem",
             fontWeight: 700,
-            color: "#fafafa",
+            color: "text.primary",
           }}
         >
           {t("tutorial.title")}
           <IconButton
             onClick={() => setOpen(false)}
             size="small"
-            sx={{ color: "#ffffff", "&:hover": { color: "#d4d4d8" } }}
+            sx={{ color: "text.primary", "&:hover": { color: "text.secondary" } }}
           >
             <X className="h-4 w-4" />
           </IconButton>
@@ -94,13 +94,13 @@ export function TutorialDialog() {
                       sx={{
                         fontSize: "0.8125rem",
                         fontWeight: 700,
-                        color: "#e4e4e7",
+                        color: "text.primary",
                       }}
                     >
                       {t(step.titleKey)}
                     </Typography>
                     <Typography
-                      sx={{ fontSize: "0.8125rem", color: "#ffffff" }}
+                      sx={{ fontSize: "0.8125rem", color: "text.secondary" }}
                     >
                       {t(step.bodyKey)}
                     </Typography>

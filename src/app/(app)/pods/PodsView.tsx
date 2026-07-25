@@ -1,3 +1,4 @@
+import { Box } from "@mui/material";
 import type { createClient } from "@/lib/supabase/server";
 import { OwnPodPanel } from "@/components/OwnPodPanel";
 import { MatchFeed } from "@/components/MatchFeed";
@@ -36,13 +37,16 @@ export async function PodsView({
   }
 
   return (
-    <div className="flex flex-1 flex-col items-center gap-8 bg-zinc-950 px-6 py-10">
+    <Box
+      sx={{ bgcolor: "background.default" }}
+      className="flex flex-1 flex-col items-center gap-8 px-6 py-10"
+    >
       <OwnPodPanel
         currentUserId={userId}
         initialPod={ownPod as PodWithRelations | null}
         initialHighlight={highlightOwn}
       />
       <MatchFeed profile={profile} currentUserId={userId} initialSharedPod={sharedPod} />
-    </div>
+    </Box>
   );
 }

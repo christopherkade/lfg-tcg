@@ -7,7 +7,8 @@ import type { TranslationKey } from "@/lib/i18n";
 import type { PlaystyleKey } from "@/types/database";
 
 interface PlaystyleToggleProps {
-  value: PlaystyleKey;
+  /** Empty string renders the group with nothing selected. */
+  value: PlaystyleKey | "";
   onChange: (playstyle: PlaystyleKey) => void;
 }
 

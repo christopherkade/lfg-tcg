@@ -2,7 +2,7 @@
 
 import { AnimatePresence, motion } from "framer-motion";
 import { AlertTriangle } from "lucide-react";
-import { Alert, Button } from "@mui/material";
+import { Alert, Button, useTheme } from "@mui/material";
 import { useTranslation } from "@/lib/i18n/LocaleContext";
 
 interface ConfirmMarkMatchedDialogProps {
@@ -27,6 +27,7 @@ export function ConfirmMarkMatchedDialog({
   error,
 }: ConfirmMarkMatchedDialogProps) {
   const { t } = useTranslation();
+  const theme = useTheme();
   return (
     <AnimatePresence>
       {open && (
@@ -43,17 +44,21 @@ export function ConfirmMarkMatchedDialog({
             exit={{ y: 40, opacity: 0 }}
             transition={{ duration: 0.2, ease: "easeOut" }}
             onClick={(event) => event.stopPropagation()}
-            className="flex w-full max-w-md flex-col gap-4 rounded-2xl border border-zinc-800 bg-zinc-950 p-6"
+            className="flex w-full max-w-md flex-col gap-4 rounded-2xl p-6"
+            style={{
+              border: `1px solid ${theme.palette.divider}`,
+              backgroundColor: theme.palette.background.paper,
+            }}
           >
             <div className="flex items-start gap-3">
               <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-amber-500/10">
                 <AlertTriangle className="h-5 w-5 text-amber-400" />
               </div>
               <div className="flex flex-col gap-1">
-                <h2 className="text-lg font-semibold text-zinc-50">
+                <h2 className="text-lg font-semibold" style={{ color: theme.palette.text.primary }}>
                   {t("confirmMarkMatchedDialog.title")}
                 </h2>
-                <p className="text-sm text-white">
+                <p className="text-sm" style={{ color: theme.palette.text.secondary }}>
                   {t("confirmMarkMatchedDialog.body")}
                 </p>
               </div>
@@ -67,7 +72,7 @@ export function ConfirmMarkMatchedDialog({
                 onClick={onClose}
                 variant="outlined"
                 fullWidth
-                sx={{ py: 1.5, borderColor: "#52525b", color: "#d4d4d8" }}
+                sx={{ py: 1.5, borderColor: "divider", color: "text.secondary" }}
               >
                 {t("confirmMarkMatchedDialog.notYet")}
               </Button>

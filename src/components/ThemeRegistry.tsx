@@ -1,19 +1,23 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useServerInsertedHTML } from "next/navigation";
 import createCache from "@emotion/cache";
 import { CacheProvider } from "@emotion/react";
 import { ThemeProvider, CssBaseline } from "@mui/material";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
-import { theme } from "@/lib/mui/theme";
+import { createAppTheme } from "@/lib/mui/theme";
+import { useThemeMode } from "@/lib/theme/ThemeModeContext";
 
 // Standard Next.js App Router + Emotion SSR wiring: collects the styles
 // Emotion inserts during the server render for each request and flushes
 // them into the initial HTML, so there's no flash of unstyled MUI
 // components on first paint.
 export function ThemeRegistry({ children }: { children: React.ReactNode }) {
+  const { mode } = useThemeMode();
+  const muiTheme = useMemo(() => createAppTheme(mode), [mode]);
+
   const [{ cache, flush }] = useState(() => {
     const cache = createCache({ key: "mui" });
     cache.compat = true;
@@ -54,7 +58,7 @@ export function ThemeRegistry({ children }: { children: React.ReactNode }) {
 
   return (
     <CacheProvider value={cache}>
-      <ThemeProvider theme={theme}>
+      <ThemeProvider theme={muiTheme}>
         <CssBaseline />
         <LocalizationProvider dateAdapter={AdapterDateFns}>
           {children}

@@ -1,3 +1,4 @@
+import { Box, Typography } from "@mui/material";
 import { requireUser, getProfile } from "@/lib/session";
 import { ProfileForm } from "@/components/ProfileForm";
 import { getServerLocale } from "@/lib/i18n/server";
@@ -17,19 +18,25 @@ export default async function ProfilePage() {
     (user.user_metadata?.avatar_url as string | undefined) ?? null;
 
   return (
-    <div className="flex flex-1 flex-col items-center gap-8 bg-zinc-950 px-6 py-16">
+    <Box
+      sx={{ bgcolor: "background.default" }}
+      className="flex flex-1 flex-col items-center gap-8 px-6 py-16"
+    >
       <div className="flex flex-col items-center gap-2 text-center">
-        <h1 className="text-2xl font-bold text-zinc-50">
+        <Typography
+          component="h1"
+          sx={{ fontSize: "1.5rem", fontWeight: 700, color: "text.primary" }}
+        >
           {profile
             ? translate(locale, "profilePage.editTitle")
             : translate(locale, "profilePage.setupTitle")}
-        </h1>
+        </Typography>
       </div>
       <ProfileForm
         initialProfile={profile}
         defaultDiscordHandle={defaultDiscordHandle}
         defaultAvatarUrl={defaultAvatarUrl}
       />
-    </div>
+    </Box>
   );
 }

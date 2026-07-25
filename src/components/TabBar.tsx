@@ -3,8 +3,9 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Users, Zap, UserCircle, type LucideIcon } from "lucide-react";
-import { Box, Button, Typography } from "@mui/material";
+import { Box, Button, Typography, useTheme } from "@mui/material";
 import { NotificationBell } from "@/components/NotificationBell";
+import { SettingsDialog } from "@/components/SettingsDialog";
 import { TutorialDialog } from "@/components/TutorialDialog";
 import { useTranslation } from "@/lib/i18n/LocaleContext";
 import type { TranslationKey } from "@/lib/i18n";
@@ -28,6 +29,7 @@ const TABS: Tab[] = [
 export function TabBar({ currentUserId }: TabBarProps) {
   const pathname = usePathname();
   const { t } = useTranslation();
+  const theme = useTheme();
 
   return (
     <>
@@ -35,23 +37,32 @@ export function TabBar({ currentUserId }: TabBarProps) {
           below handles navigation, so this bar exists solely to give the
           bell a home on small screens, mirroring "to the right of the
           header" on desktop). */}
-      <header className="flex items-center justify-between border-b border-zinc-800 bg-zinc-950 px-4 py-3 sm:hidden">
+      <Box
+        component="header"
+        sx={{ borderBottom: 1, borderColor: "divider", bgcolor: "background.default" }}
+        className="flex items-center justify-between px-4 py-3 sm:hidden"
+      >
         <Typography
-          sx={{ fontSize: "1rem", fontWeight: 700, color: "#34D399" }}
+          sx={{ fontSize: "1rem", fontWeight: 700, color: "primary.main" }}
         >
           PodMaker
         </Typography>
         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+          <SettingsDialog />
           <TutorialDialog />
           <NotificationBell currentUserId={currentUserId} />
         </Box>
-      </header>
+      </Box>
 
       {/* Desktop top navbar */}
-      <nav className="hidden border-b border-zinc-800 bg-zinc-950 sm:block">
+      <Box
+        component="nav"
+        sx={{ borderBottom: 1, borderColor: "divider", bgcolor: "background.default" }}
+        className="hidden sm:block"
+      >
         <div className="mx-auto flex max-w-3xl items-center justify-between px-6 py-4">
           <Typography
-            sx={{ fontSize: "1.125rem", fontWeight: 700, color: "#34D399" }}
+            sx={{ fontSize: "1.125rem", fontWeight: 700, color: "primary.main" }}
           >
             PodMaker
           </Typography>
@@ -69,11 +80,11 @@ export function TabBar({ currentUserId }: TabBarProps) {
                     sx={{
                       px: 2,
                       py: 1,
-                      bgcolor: isActive ? "#34D399" : "transparent",
-                      color: isActive ? "#09090b" : "#ffffff",
+                      bgcolor: isActive ? "primary.main" : "transparent",
+                      color: isActive ? "primary.contrastText" : "text.primary",
                       "&:hover": {
-                        bgcolor: isActive ? "#6EE7B7" : "#18181b",
-                        color: isActive ? "#09090b" : "#ffffff",
+                        bgcolor: isActive ? "primary.light" : "action.hover",
+                        color: isActive ? "primary.contrastText" : "text.primary",
                       },
                     }}
                   >
@@ -83,15 +94,20 @@ export function TabBar({ currentUserId }: TabBarProps) {
               })}
             </Box>
             <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+              <SettingsDialog />
               <TutorialDialog />
               <NotificationBell currentUserId={currentUserId} />
             </Box>
           </Box>
         </div>
-      </nav>
+      </Box>
 
       {/* Mobile bottom tab bar */}
-      <nav className="fixed inset-x-0 bottom-0 z-10 flex border-t border-zinc-800 bg-zinc-950 sm:hidden">
+      <Box
+        component="nav"
+        sx={{ borderTop: 1, borderColor: "divider", bgcolor: "background.default" }}
+        className="fixed inset-x-0 bottom-0 z-10 flex sm:hidden"
+      >
         {TABS.map((tab) => {
           const isActive = pathname === tab.href;
           const Icon = tab.icon;
@@ -100,15 +116,16 @@ export function TabBar({ currentUserId }: TabBarProps) {
               key={tab.href}
               href={tab.href}
               className={`flex flex-1 flex-col items-center gap-1 py-3 text-xs font-medium transition-colors ${
-                isActive ? "text-ember" : "text-white"
+                isActive ? "text-ember" : ""
               }`}
+              style={isActive ? undefined : { color: theme.palette.text.primary }}
             >
               <Icon className="h-5 w-5" />
               {t(tab.labelKey)}
             </Link>
           );
         })}
-      </nav>
+      </Box>
     </>
   );
 }

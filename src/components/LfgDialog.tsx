@@ -1,16 +1,18 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { format } from "date-fns";
-import { CalendarClock, Sparkles, Swords, X } from "lucide-react";
+import { CalendarClock, ChevronDown, Sparkles, Swords, X } from "lucide-react";
 import {
   Alert,
   Button,
   IconButton,
   TextField,
+  Typography,
   ToggleButton,
   ToggleButtonGroup,
+  useTheme,
 } from "@mui/material";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { TimePicker } from "@mui/x-date-pickers/TimePicker";
@@ -41,12 +43,17 @@ interface LfgDialogProps {
 const MATCH_TYPES: MatchType[] = ["IRL", "ONLINE"];
 const PLAYER_COUNTS = [2, 3, 4, 5, 6];
 
+// Only restore/persist the last-used search settings outside of production,
+// so local testing doesn't require refilling the form every time — real
+// users always start from a blank dialog.
+const IS_PRODUCTION = process.env.NODE_ENV === "production";
+
 /**
  * Search-settings inputs persist across dialog opens (and page reloads) via
- * localStorage, keyed per-profile, so a fresh "Search" dialog starts from
- * whatever the player last used instead of always resetting to the
- * `preferred_*` profile defaults. Only used for brand new searches — the
- * `editPod` flow still seeds fields from the pod being edited.
+ * localStorage in development, keyed per-profile, so a fresh "Search" dialog
+ * starts from whatever the player last used instead of a blank form. Only
+ * used for brand new searches — the `editPod` flow still seeds fields from
+ * the pod being edited.
  */
 interface StoredSearchInput {
   gameKey: string;
@@ -85,6 +92,55 @@ function saveStoredSearchInput(profileId: string, input: StoredSearchInput) {
   }
 }
 
+function DialogSection({
+  icon,
+  title,
+  open,
+  onToggle,
+  children,
+}: {
+  icon: React.ReactNode;
+  title: string;
+  open: boolean;
+  onToggle: () => void;
+  children: React.ReactNode;
+}) {
+  const theme = useTheme();
+
+  return (
+    <section className="flex flex-col gap-2.5">
+      <button
+        type="button"
+        onClick={onToggle}
+        className="flex items-center gap-1.5 pb-1.5 text-[11px] font-semibold tracking-wide uppercase"
+        style={{
+          borderBottom: `1px solid ${theme.palette.divider}`,
+          color: theme.palette.text.secondary,
+        }}
+      >
+        {icon}
+        <span className="flex-1 text-left">{title}</span>
+        <ChevronDown
+          className={`h-3.5 w-3.5 transition-transform ${open ? "" : "-rotate-90"}`}
+        />
+      </button>
+      <AnimatePresence initial={false}>
+        {open && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2, ease: "easeInOut" }}
+            className="overflow-hidden"
+          >
+            <div className="flex flex-col gap-2.5 sm:gap-3">{children}</div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </section>
+  );
+}
+
 export function LfgDialog({
   open,
   onClose,
@@ -93,28 +149,34 @@ export function LfgDialog({
   editPod,
 }: LfgDialogProps) {
   const { t } = useTranslation();
-  const [selectedGame, setSelectedGame] = useState<string>(
-    profile.preferred_game,
-  );
-  const [selectedFormat, setSelectedFormat] = useState(
-    profile.preferred_format,
-  );
-  const [selectedPlaystyle, setSelectedPlaystyle] = useState<PlaystyleKey>(
-    profile.preferred_playstyle,
+  const theme = useTheme();
+  const [selectedGame, setSelectedGame] = useState("");
+  const [selectedFormat, setSelectedFormat] = useState("");
+  const [selectedPlaystyle, setSelectedPlaystyle] = useState<PlaystyleKey | "">(
+    "",
   );
   const [selectedBrackets, setSelectedBrackets] = useState<number[]>([]);
-  const [selectedMatchType, setSelectedMatchType] = useState<MatchType>(
-    profile.preferred_match_type,
+  const [selectedMatchType, setSelectedMatchType] = useState<MatchType | "">(
+    "IRL",
   );
-  const [locationName, setLocationName] = useState(
-    profile.preferred_location_name ?? "",
-  );
+  const [locationName, setLocationName] = useState("");
   const [scheduledDate, setScheduledDate] = useState<Date | null>(null);
   const [scheduledTime, setScheduledTime] = useState<Date | null>(null);
-  const [maxPlayers, setMaxPlayers] = useState(profile.preferred_max_players);
+  const [maxPlayers, setMaxPlayers] = useState(0);
   const [notes, setNotes] = useState("");
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // The dialog opens as a simple wizard: only "Game" starts expanded, and
+  // picking a game or filling in a date + time auto-advances the next
+  // section, while the user can still freely expand/collapse any of them.
+  const [gameSectionOpen, setGameSectionOpen] = useState(true);
+  const [whenWhereSectionOpen, setWhenWhereSectionOpen] = useState(false);
+  const [preferencesSectionOpen, setPreferencesSectionOpen] = useState(false);
+
+  // Focused once a date is picked, so the user can immediately continue
+  // into the time field without an extra click.
+  const timeFieldRef = useRef<HTMLInputElement>(null);
 
   // Re-sync the form with the latest saved settings every time the dialog
   // transitions from closed to open. Adjusted during render (not in an
@@ -137,26 +199,35 @@ export function LfgDialog({
         setScheduledTime(scheduled);
         setMaxPlayers(editPod.max_players);
         setNotes(editPod.notes ?? "");
+        // Editing an existing pod means every field already has a value
+        // worth reviewing, so show all three sections right away.
+        setGameSectionOpen(true);
+        setWhenWhereSectionOpen(true);
+        setPreferencesSectionOpen(true);
       } else {
-        const stored = loadStoredSearchInput(profile.id);
-        setSelectedGame(stored?.gameKey ?? profile.preferred_game);
-        setSelectedFormat(stored?.formatKey ?? profile.preferred_format);
-        setSelectedPlaystyle(
-          stored?.playstyleKey ?? profile.preferred_playstyle,
-        );
+        const stored = IS_PRODUCTION ? null : loadStoredSearchInput(profile.id);
+        setSelectedGame(stored?.gameKey ?? "");
+        setSelectedFormat(stored?.formatKey ?? "");
+        setSelectedPlaystyle(stored?.playstyleKey ?? "");
         setSelectedBrackets(stored?.brackets ?? []);
-        setSelectedMatchType(stored?.matchType ?? profile.preferred_match_type);
-        setLocationName(
-          stored?.locationName ?? profile.preferred_location_name ?? "",
-        );
+        setSelectedMatchType(stored?.matchType ?? "IRL");
+        setLocationName(stored?.locationName ?? "");
         setScheduledDate(
           stored?.scheduledDate ? new Date(stored.scheduledDate) : null,
         );
         setScheduledTime(
           stored?.scheduledTime ? new Date(stored.scheduledTime) : null,
         );
-        setMaxPlayers(stored?.maxPlayers ?? profile.preferred_max_players);
+        setMaxPlayers(stored?.maxPlayers ?? 0);
         setNotes(stored?.notes ?? "");
+        // A brand new search starts with only "Game" expanded; the other
+        // two only auto-open once restored (dev-only) values fill them in.
+        setGameSectionOpen(true);
+        setWhenWhereSectionOpen(Boolean(stored?.gameKey));
+        setPreferencesSectionOpen(
+          stored?.matchType === "ONLINE" ||
+            Boolean(stored?.scheduledDate && stored?.scheduledTime),
+        );
       }
       setError(null);
     }
@@ -171,9 +242,37 @@ export function LfgDialog({
     if (!GAMES_CONFIG[gameKey]?.hasPowerTiers) {
       setSelectedBrackets([]);
     }
+    setWhenWhereSectionOpen(true);
+  }
+
+  function handleScheduledDateChange(next: Date | null) {
+    setScheduledDate(next);
+    if (next && scheduledTime) {
+      setPreferencesSectionOpen(true);
+    }
+    if (next) {
+      // Deferred: picking a date from the calendar popup closes it, and
+      // MUI restores focus to the date field's own button once that
+      // popup's exit transition finishes — which happens after this
+      // handler runs. Queuing the focus call past that transition lets it
+      // win instead of being immediately overridden.
+      setTimeout(() => timeFieldRef.current?.focus(), 300);
+    }
+  }
+
+  function handleScheduledTimeChange(next: Date | null) {
+    setScheduledTime(next);
+    if (scheduledDate && next) {
+      setPreferencesSectionOpen(true);
+    }
   }
 
   const canSubmit =
+    selectedGame !== "" &&
+    selectedFormat !== "" &&
+    selectedPlaystyle !== "" &&
+    selectedMatchType !== "" &&
+    maxPlayers > 0 &&
     (!hasPowerTiers || selectedBrackets.length > 0) &&
     (selectedMatchType !== "IRL" ||
       (locationName.trim().length > 0 &&
@@ -181,15 +280,18 @@ export function LfgDialog({
         scheduledTime !== null));
 
   async function handleSearch() {
+    if (!canSubmit) return;
+
     setPending(true);
     setError(null);
 
     const input = {
       gameKey: selectedGame,
       formatKey: selectedFormat,
-      playstyleKey: selectedPlaystyle,
+      // canSubmit already guarantees both are non-empty by this point.
+      playstyleKey: selectedPlaystyle as PlaystyleKey,
       brackets: selectedBrackets,
-      matchType: selectedMatchType,
+      matchType: selectedMatchType as MatchType,
       locationName,
       scheduledDate: scheduledDate ? format(scheduledDate, "yyyy-MM-dd") : "",
       scheduledTime: scheduledTime ? format(scheduledTime, "HH:mm") : "",
@@ -242,37 +344,55 @@ export function LfgDialog({
             exit={{ y: 40, opacity: 0 }}
             transition={{ duration: 0.2, ease: "easeOut" }}
             onClick={(event) => event.stopPropagation()}
-            className="flex max-h-[calc(100vh-2rem)] w-full flex-col overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-950 sm:max-w-xl"
+            className="flex max-h-[calc(100vh-2rem)] w-full flex-col overflow-hidden rounded-2xl sm:max-w-xl"
+            style={{
+              backgroundColor: theme.palette.background.paper,
+              border: `1px solid ${theme.palette.divider}`,
+            }}
           >
-            <div className="flex shrink-0 items-start justify-between gap-3 border-b border-zinc-900 px-4 py-3 sm:px-6 sm:py-4">
+            <div
+              className="flex shrink-0 items-start justify-between gap-3 px-4 py-3 sm:px-6 sm:py-4"
+              style={{ borderBottom: `1px solid ${theme.palette.divider}` }}
+            >
               <div className="flex flex-col gap-0.5">
-                <h2 className="text-base font-semibold text-zinc-50">
+                <Typography
+                  component="h2"
+                  sx={{
+                    fontSize: "1rem",
+                    fontWeight: 600,
+                    color: "text.primary",
+                  }}
+                >
                   {editPod
                     ? t("lfgDialog.title.edit")
                     : t("lfgDialog.title.create")}
-                </h2>
-                <p className="text-xs text-white">
+                </Typography>
+                <Typography
+                  component="p"
+                  sx={{ fontSize: "0.75rem", color: "text.secondary" }}
+                >
                   {editPod
                     ? t("lfgDialog.subtitle.edit")
                     : t("lfgDialog.subtitle.create")}
-                </p>
+                </Typography>
               </div>
               <IconButton
                 aria-label={t("lfgDialog.close")}
                 size="small"
                 onClick={onClose}
-                sx={{ color: "#a1a1aa", mt: "-4px", mr: "-8px" }}
+                sx={{ color: "text.secondary", mt: "-4px", mr: "-8px" }}
               >
                 <X className="h-4 w-4" />
               </IconButton>
             </div>
 
             <div className="flex flex-col gap-3 overflow-y-auto px-4 py-3 sm:gap-4 sm:px-6 sm:py-4">
-              <section className="flex flex-col gap-2 rounded-xl border border-zinc-900 bg-zinc-900/40 p-3 sm:gap-2.5 sm:p-3.5">
-                <div className="flex items-center gap-1.5 text-[11px] font-semibold tracking-wide text-white uppercase">
-                  <Swords className="h-3.5 w-3.5" />
-                  {t("lfgDialog.section.game")}
-                </div>
+              <DialogSection
+                icon={<Swords className="h-3.5 w-3.5" />}
+                title={t("lfgDialog.section.game")}
+                open={gameSectionOpen}
+                onToggle={() => setGameSectionOpen((prev) => !prev)}
+              >
                 <GameSelector
                   value={selectedGame}
                   onChange={handleGameChange}
@@ -289,12 +409,6 @@ export function LfgDialog({
                         setSelectedFormat(next);
                       }
                     }}
-                    sx={{
-                      bgcolor: "transparent",
-                      border: 0,
-                      p: 0,
-                      gap: 1,
-                    }}
                   >
                     {game.formats.map((formatOption) => (
                       <ToggleButton
@@ -306,14 +420,14 @@ export function LfgDialog({
                     ))}
                   </ToggleButtonGroup>
                 )}
-              </section>
+              </DialogSection>
 
-              <section className="flex flex-col gap-2.5 rounded-xl border border-zinc-900 bg-zinc-900/40 p-3 sm:gap-3 sm:p-3.5">
-                <div className="flex items-center gap-1.5 text-[11px] font-semibold tracking-wide text-white uppercase">
-                  <CalendarClock className="h-3.5 w-3.5" />
-                  {t("lfgDialog.section.whenWhere")}
-                </div>
-
+              <DialogSection
+                icon={<CalendarClock className="h-3.5 w-3.5" />}
+                title={t("lfgDialog.section.whenWhere")}
+                open={whenWhereSectionOpen}
+                onToggle={() => setWhenWhereSectionOpen((prev) => !prev)}
+              >
                 <ToggleButtonGroup
                   value={selectedMatchType}
                   exclusive
@@ -322,6 +436,9 @@ export function LfgDialog({
                   onChange={(_event, next: MatchType | null) => {
                     if (next !== null) {
                       setSelectedMatchType(next);
+                      if (next === "ONLINE") {
+                        setPreferencesSectionOpen(true);
+                      }
                     }
                   }}
                 >
@@ -349,7 +466,7 @@ export function LfgDialog({
                       <DatePicker
                         label={t("lfgDialog.dateLabel")}
                         value={scheduledDate}
-                        onChange={(next) => setScheduledDate(next)}
+                        onChange={handleScheduledDateChange}
                         slotProps={{
                           textField: { fullWidth: true, size: "small" },
                         }}
@@ -357,68 +474,95 @@ export function LfgDialog({
                       <TimePicker
                         label={t("lfgDialog.timeLabel")}
                         value={scheduledTime}
-                        onChange={(next) => setScheduledTime(next)}
+                        onChange={handleScheduledTimeChange}
                         ampm={false}
                         slotProps={{
-                          textField: { fullWidth: true, size: "small" },
+                          textField: {
+                            fullWidth: true,
+                            size: "small",
+                            inputRef: timeFieldRef,
+                          },
+                          // MUI X's PickersLayout grid reserves a column
+                          // for a (hidden, since we don't render one)
+                          // landscape toolbar, which otherwise shows up
+                          // as dead space to the left of the hour list.
+                          layout: {
+                            sx: {
+                              "& .MuiPickersLayout-contentWrapper": {
+                                gridColumn: "1 / -1",
+                              },
+                            },
+                          },
                         }}
                       />
                     </div>
                   </div>
                 )}
-              </section>
+              </DialogSection>
 
-              <section className="flex flex-col gap-2.5 rounded-xl border border-zinc-900 bg-zinc-900/40 p-3 sm:gap-3 sm:p-3.5">
-                <div className="flex items-center gap-1.5 text-[11px] font-semibold tracking-wide text-white uppercase">
-                  <Sparkles className="h-3.5 w-3.5" />
-                  {t("lfgDialog.section.preferences")}
+              <DialogSection
+                icon={<Sparkles className="h-3.5 w-3.5" />}
+                title={t("lfgDialog.section.preferences")}
+                open={preferencesSectionOpen}
+                onToggle={() => setPreferencesSectionOpen((prev) => !prev)}
+              >
+                <div className="flex flex-col gap-1.5">
+                  <Typography
+                    component="span"
+                    sx={{
+                      fontSize: "0.75rem",
+                      fontWeight: 500,
+                      color: "text.secondary",
+                    }}
+                  >
+                    {t("lfgDialog.playstyleLabel")}
+                  </Typography>
+                  <PlaystyleToggle
+                    value={selectedPlaystyle}
+                    onChange={setSelectedPlaystyle}
+                  />
                 </div>
 
-                <div className="flex flex-col gap-2.5 sm:gap-3">
-                  <div className="flex flex-col gap-1.5">
-                    <span className="text-xs font-medium text-white">
-                      {t("lfgDialog.playstyleLabel")}
-                    </span>
-                    <PlaystyleToggle
-                      value={selectedPlaystyle}
-                      onChange={setSelectedPlaystyle}
-                    />
-                  </div>
-
-                  <div className="flex flex-col gap-1.5">
-                    <span className="text-xs font-medium text-white">
-                      {t("lfgDialog.playersLabel")}
-                    </span>
-                    <ToggleButtonGroup
-                      value={maxPlayers}
-                      exclusive
-                      fullWidth
-                      size="small"
-                      onChange={(_event, next: number | null) => {
-                        if (next !== null) {
-                          setMaxPlayers(next);
-                        }
-                      }}
-                      sx={{ bgcolor: "transparent", border: 0, p: 0, gap: 1 }}
-                    >
-                      {PLAYER_COUNTS.map((count) => (
-                        <ToggleButton
-                          key={count}
-                          value={count}
-                          sx={{
-                            fontSize: "0.75rem",
-                            px: 0,
-                            borderRadius: "8px !important",
-                            border: "1px solid #27272a !important",
-                            marginLeft: "0px !important",
-                            bgcolor: "#18181b",
-                          }}
-                        >
-                          {count}
-                        </ToggleButton>
-                      ))}
-                    </ToggleButtonGroup>
-                  </div>
+                <div className="flex flex-col gap-1.5">
+                  <Typography
+                    component="span"
+                    sx={{
+                      fontSize: "0.75rem",
+                      fontWeight: 500,
+                      color: "text.secondary",
+                    }}
+                  >
+                    {t("lfgDialog.playersLabel")}
+                  </Typography>
+                  <ToggleButtonGroup
+                    value={maxPlayers}
+                    exclusive
+                    fullWidth
+                    size="small"
+                    onChange={(_event, next: number | null) => {
+                      if (next !== null) {
+                        setMaxPlayers(next);
+                      }
+                    }}
+                    sx={{ bgcolor: "transparent", border: 0, p: 0, gap: 1 }}
+                  >
+                    {PLAYER_COUNTS.map((count) => (
+                      <ToggleButton
+                        key={count}
+                        value={count}
+                        sx={(theme) => ({
+                          fontSize: "0.75rem",
+                          px: 0,
+                          borderRadius: "8px !important",
+                          border: `1px solid ${theme.palette.divider} !important`,
+                          marginLeft: "0px !important",
+                          bgcolor: theme.palette.background.paper,
+                        })}
+                      >
+                        {count}
+                      </ToggleButton>
+                    ))}
+                  </ToggleButtonGroup>
                 </div>
 
                 <PowerBracketPicker
@@ -443,18 +587,21 @@ export function LfgDialog({
                   helperText={`${notes.length}/300`}
                   sx={{ mt: 1 }}
                 />
-              </section>
+              </DialogSection>
 
               {error && <Alert severity="error">{error}</Alert>}
             </div>
 
-            <div className="flex shrink-0 gap-3 border-t border-zinc-900 px-4 py-3 sm:px-6 sm:py-4">
+            <div
+              className="flex shrink-0 gap-3 px-4 py-3 sm:px-6 sm:py-4"
+              style={{ borderTop: `1px solid ${theme.palette.divider}` }}
+            >
               <Button
                 type="button"
                 onClick={onClose}
                 variant="outlined"
                 fullWidth
-                sx={{ py: 1, borderColor: "#3f3f46", color: "#e4e4e7" }}
+                sx={{ py: 1 }}
               >
                 {t("lfgDialog.cancel")}
               </Button>

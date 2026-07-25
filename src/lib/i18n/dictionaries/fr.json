@@ -19,6 +19,11 @@
   "tabBar.profile": "Profil",
 
   "tutorial.buttonLabel": "Comment fonctionne PodMaker",
+  "settings.buttonLabel": "Paramètres",
+  "settings.title": "Paramètres",
+  "settings.theme.label": "Thème",
+  "settings.theme.light": "Clair",
+  "settings.theme.dark": "Sombre",
   "tutorial.title": "Comment fonctionne PodMaker",
   "tutorial.step1.title": "Configurez votre profil",
   "tutorial.step1.body": "Pseudo, identifiant Discord et ville (facultatif).",

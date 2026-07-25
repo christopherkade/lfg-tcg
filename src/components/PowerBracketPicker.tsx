@@ -1,6 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
+import { Check } from "lucide-react";
 import {
   Box,
   ToggleButton,
@@ -41,10 +42,10 @@ export function PowerBracketPicker({
           <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
             <Typography
               variant="caption"
-              sx={{ color: "#d4d4d8", fontWeight: 500 }}
+              sx={{ color: "text.primary", fontWeight: 500 }}
             >
               {resolvedLabel}{" "}
-              <Box component="span" sx={{ color: "#a1a1aa" }}>
+              <Box component="span" sx={{ color: "text.secondary" }}>
                 {t("powerBracketPicker.hint")}
               </Box>
             </Typography>
@@ -61,15 +62,17 @@ export function PowerBracketPicker({
                 <ToggleButton
                   key={tier}
                   value={tier}
-                  sx={{
+                  sx={(theme) => ({
                     fontSize: "0.75rem",
                     px: 0,
+                    gap: 0.5,
                     borderRadius: "8px !important",
-                    border: "1px solid #27272a !important",
+                    border: `1px solid ${theme.palette.divider} !important`,
                     marginLeft: "0px !important",
-                    bgcolor: "#18181b",
-                  }}
+                    bgcolor: theme.palette.background.paper,
+                  })}
                 >
+                  {value.includes(tier) && <Check className="h-3 w-3" />}
                   {tier}
                 </ToggleButton>
               ))}

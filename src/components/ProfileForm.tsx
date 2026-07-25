@@ -9,7 +9,6 @@ import {
   type ProfileFormState,
 } from "@/app/actions/profile";
 import { CitySelector } from "@/components/CitySelector";
-import { LocaleSwitcher } from "@/components/LocaleSwitcher";
 import { useTranslation } from "@/lib/i18n/LocaleContext";
 import type { Profile } from "@/types/database";
 
@@ -67,8 +66,6 @@ export function ProfileForm({
 
         <input type="hidden" name="city" value={city ?? ""} />
         <CitySelector value={city} onChange={setCity} />
-
-        <LocaleSwitcher />
 
         {state?.error && <Alert severity="error">{state.error}</Alert>}
 

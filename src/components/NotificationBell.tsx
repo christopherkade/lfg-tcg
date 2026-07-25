@@ -334,7 +334,7 @@ export function NotificationBell({ currentUserId }: NotificationBellProps) {
 
   return (
     <>
-      <IconButton onClick={handleOpen} sx={{ color: "#ffffff" }}>
+      <IconButton onClick={handleOpen} sx={{ color: "text.primary" }}>
         <Badge badgeContent={unreadCount} max={9} color="error">
           <Bell className="h-5 w-5" />
         </Badge>
@@ -348,14 +348,14 @@ export function NotificationBell({ currentUserId }: NotificationBellProps) {
         transformOrigin={{ vertical: "top", horizontal: "right" }}
         slotProps={{
           paper: {
-            sx: {
+            sx: (theme) => ({
               width: 340,
               maxWidth: "calc(100vw - 2rem)",
               maxHeight: 420,
-              bgcolor: "#18181b",
-              border: "1px solid #27272a",
+              bgcolor: theme.palette.background.paper,
+              border: `1px solid ${theme.palette.divider}`,
               mt: 1,
-            },
+            }),
           },
           // MenuList adds its own 8px top/bottom padding by default, which
           // sits *outside* the empty/loading states' own centering box below
@@ -371,7 +371,7 @@ export function NotificationBell({ currentUserId }: NotificationBellProps) {
             sx={{
               fontSize: "0.875rem",
               fontWeight: 700,
-              color: "#fafafa",
+              color: "text.primary",
             }}
           >
             {t("notificationBell.title")}
@@ -385,19 +385,19 @@ export function NotificationBell({ currentUserId }: NotificationBellProps) {
                 borderRadius: 1,
                 fontSize: "0.75rem",
                 fontWeight: 600,
-                color: "#ffffff",
-                "&:hover": { color: "#e4e4e7" },
+                color: "text.primary",
+                "&:hover": { color: "text.secondary" },
               }}
             >
               {t("notificationBell.clearAll")}
             </ButtonBase>
           )}
         </div>
-        <Divider sx={{ borderColor: "#27272a" }} />
+        <Divider sx={{ borderColor: "divider" }} />
 
         {notifications === null && (
           <div className="flex min-h-40 items-center justify-center px-4 py-6">
-            <Typography sx={{ fontSize: "0.875rem", color: "#ffffff" }}>
+            <Typography sx={{ fontSize: "0.875rem", color: "text.secondary" }}>
               {t("notificationBell.loading")}
             </Typography>
           </div>
@@ -405,7 +405,7 @@ export function NotificationBell({ currentUserId }: NotificationBellProps) {
 
         {notifications !== null && notifications.length === 0 && (
           <div className="flex min-h-40 items-center justify-center px-4 py-6">
-            <Typography sx={{ fontSize: "0.875rem", color: "#ffffff" }}>
+            <Typography sx={{ fontSize: "0.875rem", color: "text.secondary" }}>
               {t("notificationBell.empty")}
             </Typography>
           </div>
@@ -429,10 +429,10 @@ export function NotificationBell({ currentUserId }: NotificationBellProps) {
             >
               <Icon className="mt-0.5 h-4 w-4 shrink-0 text-amber-400" />
               <div className="flex flex-1 flex-col gap-0.5">
-                <Typography sx={{ fontSize: "0.8125rem", color: "#e4e4e7" }}>
+                <Typography sx={{ fontSize: "0.8125rem", color: "text.primary" }}>
                   {describeNotification(notification, t)}
                 </Typography>
-                <Typography sx={{ fontSize: "0.6875rem", color: "#ffffff" }}>
+                <Typography sx={{ fontSize: "0.6875rem", color: "text.secondary" }}>
                   {formatDistanceToNowStrict(
                     new Date(notification.created_at),
                     { addSuffix: true, locale: dateFnsLocale },
@@ -446,8 +446,8 @@ export function NotificationBell({ currentUserId }: NotificationBellProps) {
                 onClick={(event) => handleDelete(event, notification)}
                 sx={{
                   mt: -0.5,
-                  color: "#ffffff",
-                  "&:hover": { color: "#d4d4d8" },
+                  color: "text.primary",
+                  "&:hover": { color: "text.secondary" },
                 }}
               >
                 <X className="h-3.5 w-3.5" />
@@ -464,22 +464,22 @@ export function NotificationBell({ currentUserId }: NotificationBellProps) {
               setToast(null);
               router.push("/pods");
             }}
-            sx={{
+            sx={(theme) => ({
               display: "flex",
               alignItems: "center",
               gap: 1.5,
               width: "100%",
               borderRadius: 4,
-              border: "1px solid #27272a",
-              bgcolor: "#18181b",
+              border: `1px solid ${theme.palette.divider}`,
+              bgcolor: theme.palette.background.paper,
               px: 2,
               py: 1.5,
               textAlign: "left",
               boxShadow: "0 10px 15px -3px rgba(0,0,0,0.4)",
-            }}
+            })}
           >
             <Bell className="h-5 w-5 shrink-0 text-amber-400" />
-            <span className="flex-1 text-sm text-zinc-100">
+            <span className="flex-1 text-sm" style={{ color: "inherit" }}>
               {toast.message}
             </span>
             <IconButton
@@ -489,7 +489,7 @@ export function NotificationBell({ currentUserId }: NotificationBellProps) {
                 event.stopPropagation();
                 setToast(null);
               }}
-              sx={{ color: "#ffffff", "&:hover": { color: "#d4d4d8" } }}
+              sx={{ color: "text.primary", "&:hover": { color: "text.secondary" } }}
             >
               <X className="h-4 w-4" />
             </IconButton>

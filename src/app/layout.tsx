@@ -3,6 +3,8 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { ThemeRegistry } from "@/components/ThemeRegistry";
 import { LocaleProvider } from "@/lib/i18n/LocaleContext";
 import { getServerLocale } from "@/lib/i18n/server";
+import { ThemeModeProvider } from "@/lib/theme/ThemeModeContext";
+import { getServerThemeMode } from "@/lib/theme/server";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -27,15 +29,18 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   const locale = await getServerLocale();
+  const mode = await getServerThemeMode();
 
   return (
     <html
       lang={locale}
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-zinc-950">
+      <body className="min-h-full flex flex-col">
         <LocaleProvider initialLocale={locale}>
-          <ThemeRegistry>{children}</ThemeRegistry>
+          <ThemeModeProvider initialMode={mode}>
+            <ThemeRegistry>{children}</ThemeRegistry>
+          </ThemeModeProvider>
         </LocaleProvider>
       </body>
     </html>
