@@ -1,7 +1,7 @@
 "use client";
 
 import { MessageCircle, PlusCircle, Users, Swords } from "lucide-react";
-import { Box, Button, Typography } from "@mui/material";
+import { Box, Button, Link, Typography } from "@mui/material";
 import { createClient } from "@/lib/supabase/client";
 import { LocaleSwitcher } from "@/components/LocaleSwitcher";
 import { useTranslation } from "@/lib/i18n/LocaleContext";
@@ -112,6 +112,16 @@ export function LoginView({ next }: LoginViewProps) {
       >
         {t("login.continueWithDiscord")}
       </Button>
+
+      <Typography variant="caption" sx={{ color: "text.secondary" }}>
+        <Link href="/terms" target="_blank" rel="noopener" sx={{ color: "inherit" }}>
+          {t("legal.termsLink")}
+        </Link>
+        {" · "}
+        <Link href="/privacy" target="_blank" rel="noopener" sx={{ color: "inherit" }}>
+          {t("legal.privacyLink")}
+        </Link>
+      </Typography>
     </Box>
   );
 }

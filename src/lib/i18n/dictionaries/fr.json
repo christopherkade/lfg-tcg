@@ -20,6 +20,7 @@
   "tabBar.profile": "Profil",
 
   "historyPage.title": "Tables passées",
+  "historyPage.gamesPlayed": "Parties jouées : {count}",
   "historyPage.empty": "Aucune table passée pour le moment — les groupes formés apparaîtront ici.",
   "historyPage.host": "Hôte",
   "historyPage.members": "Groupe",
@@ -54,7 +55,9 @@
   "lfgDialog.locationLabel": "Lieu",
   "lfgDialog.locationPlaceholder": "Où allez-vous jouer ?",
   "lfgDialog.dateLabel": "Date",
+  "lfgDialog.dateIncomplete": "Saisissez une date complète pour continuer",
   "lfgDialog.timeLabel": "Heure",
+  "lfgDialog.timeIncomplete": "Saisissez une heure complète pour continuer",
   "lfgDialog.playstyleLabel": "Style de jeu",
   "lfgDialog.playersLabel": "Joueurs",
   "lfgDialog.notesLabel": "Notes (facultatif)",
@@ -145,6 +148,7 @@
   "notification.memberLeft": "{actor} a quitté votre table",
   "notification.removedFromPod": "{actor} vous a retiré de sa table",
   "notification.podUpdated": "{actor} a modifié les détails d'une table que vous avez rejointe",
+  "notification.podUpdatedPending": "{actor} a modifié les détails d'une table que vous avez demandé à rejoindre",
   "notification.podDestroyed": "La table de {actor} a été annulée avant qu'un match soit trouvé",
   "notification.podExpiredInactivity": "Une table a expiré après 12 heures d'inactivité et a été supprimée",
   "notification.someone": "Quelqu'un",
@@ -256,5 +260,21 @@
   "errors.notificationsUpdateFailed": "Impossible de mettre à jour les notifications : {reason}",
   "errors.notificationDeleteFailed": "Impossible de supprimer la notification : {reason}",
   "errors.notificationsDeleteFailed": "Impossible de supprimer les notifications : {reason}",
-  "errors.historyDeleteFailed": "Impossible de supprimer cette entrée : {reason}"
+  "errors.historyDeleteFailed": "Impossible de supprimer cette entrée : {reason}",
+
+  "errors.rateLimitedPodCreate": "Vous créez des tables trop rapidement. Merci de patienter un instant avant de réessayer.",
+  "errors.rateLimitedJoinRequest": "Vous envoyez des demandes trop rapidement. Merci de patienter un instant avant de réessayer.",
+  "errors.deleteAccountFailed": "Impossible de supprimer votre compte : {reason}",
+
+  "legal.termsLink": "Conditions d'utilisation",
+  "legal.privacyLink": "Politique de confidentialité",
+  "terms.title": "Conditions d'utilisation",
+  "privacy.title": "Politique de confidentialité",
+
+  "profileForm.deleteAccount": "Supprimer le compte",
+  "deleteAccountDialog.title": "Supprimer votre compte ?",
+  "deleteAccountDialog.body": "Cela supprime définitivement votre profil, les tables actives et passées que vous avez créées, ainsi que votre historique de participation. Cette action est irréversible.",
+  "deleteAccountDialog.cancel": "Annuler",
+  "deleteAccountDialog.confirm": "Supprimer le compte",
+  "deleteAccountDialog.deleting": "Suppression..."
 }

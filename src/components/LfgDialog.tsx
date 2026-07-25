@@ -46,7 +46,8 @@ const PLAYER_COUNTS = [2, 3, 4, 5, 6];
 // Only restore/persist the last-used search settings outside of production,
 // so local testing doesn't require refilling the form every time — real
 // users always start from a blank dialog.
-const IS_PRODUCTION = process.env.NODE_ENV === "production";
+// const IS_PRODUCTION = process.env.NODE_ENV === "production";
+const IS_PRODUCTION = true;
 
 /**
  * Search-settings inputs persist across dialog opens (and page reloads) via
@@ -166,6 +167,13 @@ export function LfgDialog({
   const [notes, setNotes] = useState("");
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // MUI's date/time pickers report `null` for a field that's still
+  // mid-entry (e.g. only the hour typed, minutes left as "mm") — the input
+  // visually looks filled, so without this the Search button just goes
+  // quietly disabled with no clue why. These track that "invalid, not just
+  // empty" state so we can explain it inline instead.
+  const [dateIncomplete, setDateIncomplete] = useState(false);
+  const [timeIncomplete, setTimeIncomplete] = useState(false);
 
   // The dialog opens as a simple wizard: only "Game" starts expanded, and
   // picking a game or filling in a date + time auto-advances the next
@@ -230,6 +238,8 @@ export function LfgDialog({
         );
       }
       setError(null);
+      setDateIncomplete(false);
+      setTimeIncomplete(false);
     }
   }
 
@@ -467,20 +477,37 @@ export function LfgDialog({
                         label={t("lfgDialog.dateLabel")}
                         value={scheduledDate}
                         onChange={handleScheduledDateChange}
+                        onError={(reason) => {
+                          console.log("[LfgDialog] date onError", reason);
+                          setDateIncomplete(reason !== null);
+                        }}
                         slotProps={{
-                          textField: { fullWidth: true, size: "small" },
+                          textField: {
+                            fullWidth: true,
+                            size: "small",
+                            helperText: dateIncomplete
+                              ? t("lfgDialog.dateIncomplete")
+                              : undefined,
+                          },
                         }}
                       />
                       <TimePicker
                         label={t("lfgDialog.timeLabel")}
                         value={scheduledTime}
                         onChange={handleScheduledTimeChange}
+                        onError={(reason) => {
+                          console.log("[LfgDialog] time onError", reason);
+                          setTimeIncomplete(reason !== null);
+                        }}
                         ampm={false}
                         slotProps={{
                           textField: {
                             fullWidth: true,
                             size: "small",
                             inputRef: timeFieldRef,
+                            helperText: timeIncomplete
+                              ? t("lfgDialog.timeIncomplete")
+                              : undefined,
                           },
                           // MUI X's PickersLayout grid reserves a column
                           // for a (hidden, since we don't render one)

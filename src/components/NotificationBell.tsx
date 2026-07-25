@@ -62,6 +62,7 @@ const TYPE_ICON: Record<NotificationType, LucideIcon> = {
   MEMBER_LEFT: UserMinus,
   REMOVED_FROM_POD: UserX,
   POD_UPDATED: PencilLine,
+  POD_UPDATED_PENDING: PencilLine,
   POD_DESTROYED: Trash2,
   POD_EXPIRED_INACTIVITY: Clock,
 };
@@ -85,6 +86,8 @@ function describeNotification(
       return t("notification.removedFromPod", { actor: actorName });
     case "POD_UPDATED":
       return t("notification.podUpdated", { actor: actorName });
+    case "POD_UPDATED_PENDING":
+      return t("notification.podUpdatedPending", { actor: actorName });
     case "POD_DESTROYED":
       return t("notification.podDestroyed", { actor: actorName });
     case "POD_EXPIRED_INACTIVITY":

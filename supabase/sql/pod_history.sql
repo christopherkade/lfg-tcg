@@ -139,3 +139,27 @@ end;
 $$;
 
 grant execute on function hide_pod_history_entry(uuid) to authenticated;
+
+-- 5. RPC: total MATCHED pods a viewer has ever been part of (host or
+--    accepted member), for the Profile screen's "Games Played" stat.
+--    Deliberately ignores hidden_by — deleting an entry from your own
+--    Past Pods list (Screen 4) is a personal declutter action, not an
+--    undo of having actually played it, so this lifetime count shouldn't
+--    shrink when an entry is hidden.
+create or replace function get_games_played_count()
+returns integer
+language sql
+security definer
+set search_path = public
+stable
+as $$
+  select count(*)::integer
+  from pod_history
+  where host_id = auth.uid()
+     or exists (
+       select 1 from jsonb_array_elements(members) as m
+       where (m->>'id')::uuid = auth.uid()
+     );
+$$;
+
+grant execute on function get_games_played_count() to authenticated;

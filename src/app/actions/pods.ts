@@ -180,6 +180,9 @@ export async function createPod(
   });
 
   if (error) {
+    if (error.message?.includes("RATE_LIMITED_POD_CREATE")) {
+      return { error: translate(locale, "errors.rateLimitedPodCreate") };
+    }
     console.error("createPod: failed to insert pod:", error);
     return {
       error: translate(locale, "errors.startSearchFailed", {

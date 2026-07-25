@@ -6,6 +6,7 @@ import {
   DialogContent,
   DialogTitle,
   IconButton,
+  Link,
   Typography,
 } from "@mui/material";
 import { Settings, X } from "lucide-react";
@@ -68,6 +69,26 @@ export function SettingsDialog() {
                 {t("settings.theme.label")}
               </Typography>
               <ThemeToggle />
+            </div>
+            <div className="flex items-center gap-4 pt-2">
+              <Link
+                href="/terms"
+                target="_blank"
+                rel="noopener"
+                variant="caption"
+                sx={{ color: "text.secondary" }}
+              >
+                {t("legal.termsLink")}
+              </Link>
+              <Link
+                href="/privacy"
+                target="_blank"
+                rel="noopener"
+                variant="caption"
+                sx={{ color: "text.secondary" }}
+              >
+                {t("legal.privacyLink")}
+              </Link>
             </div>
           </div>
         </DialogContent>

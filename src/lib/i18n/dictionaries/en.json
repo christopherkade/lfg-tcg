@@ -20,6 +20,7 @@
   "tabBar.profile": "Profile",
 
   "historyPage.title": "Past Pods",
+  "historyPage.gamesPlayed": "Games played: {count}",
   "historyPage.empty": "No past pods yet — matched groups will show up here.",
   "historyPage.host": "Host",
   "historyPage.members": "Group",
@@ -54,7 +55,9 @@
   "lfgDialog.locationLabel": "Location",
   "lfgDialog.locationPlaceholder": "Where will you be playing?",
   "lfgDialog.dateLabel": "Date",
+  "lfgDialog.dateIncomplete": "Enter a complete date to continue",
   "lfgDialog.timeLabel": "Time",
+  "lfgDialog.timeIncomplete": "Enter a complete time to continue",
   "lfgDialog.playstyleLabel": "Playstyle",
   "lfgDialog.playersLabel": "Players",
   "lfgDialog.notesLabel": "Notes (optional)",
@@ -145,6 +148,7 @@
   "notification.memberLeft": "{actor} left your pod",
   "notification.removedFromPod": "{actor} removed you from their pod",
   "notification.podUpdated": "{actor} updated the details of a pod you joined",
+  "notification.podUpdatedPending": "{actor} updated the details of a pod you requested to join",
   "notification.podDestroyed": "{actor}'s pod was cancelled before finding a match",
   "notification.podExpiredInactivity": "A pod expired after 12 hours of inactivity and was removed",
   "notification.someone": "Someone",
@@ -256,5 +260,21 @@
   "errors.notificationsUpdateFailed": "Could not update notifications: {reason}",
   "errors.notificationDeleteFailed": "Could not delete notification: {reason}",
   "errors.notificationsDeleteFailed": "Could not delete notifications: {reason}",
-  "errors.historyDeleteFailed": "Could not delete this entry: {reason}"
+  "errors.historyDeleteFailed": "Could not delete this entry: {reason}",
+
+  "errors.rateLimitedPodCreate": "You're creating pods too quickly. Please wait a moment and try again.",
+  "errors.rateLimitedJoinRequest": "You're sending join requests too quickly. Please wait a moment and try again.",
+  "errors.deleteAccountFailed": "Could not delete your account: {reason}",
+
+  "legal.termsLink": "Terms of Service",
+  "legal.privacyLink": "Privacy Policy",
+  "terms.title": "Terms of Service",
+  "privacy.title": "Privacy Policy",
+
+  "profileForm.deleteAccount": "Delete Account",
+  "deleteAccountDialog.title": "Delete your account?",
+  "deleteAccountDialog.body": "This permanently deletes your profile, active and past pods you hosted, and your join history. This can't be undone.",
+  "deleteAccountDialog.cancel": "Cancel",
+  "deleteAccountDialog.confirm": "Delete Account",
+  "deleteAccountDialog.deleting": "Deleting..."
 }

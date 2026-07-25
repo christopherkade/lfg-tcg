@@ -53,6 +53,9 @@ export async function requestJoin(
     if (error.code === "23505") {
       return { error: translate(locale, "errors.alreadyRequested") };
     }
+    if (error.message?.includes("RATE_LIMITED_JOIN_REQUEST")) {
+      return { error: translate(locale, "errors.rateLimitedJoinRequest") };
+    }
     return { error: translate(locale, "errors.joinRequestFailed") };
   }
 

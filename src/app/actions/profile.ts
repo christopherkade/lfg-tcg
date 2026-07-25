@@ -77,3 +77,29 @@ export async function signOut() {
   await supabase.auth.signOut();
   redirect("/login");
 }
+
+/**
+ * Permanently deletes the caller's account via the `delete_own_account`
+ * SECURITY DEFINER RPC (supabase/sql/account_deletion.sql). That RPC
+ * anonymizes this user's entries in other people's pod_history snapshots,
+ * then deletes the auth.users row — which cascades through profiles to
+ * every other table (pods, pod_joins, notifications, pod_history as host).
+ */
+export async function deleteAccount(): Promise<ProfileFormState> {
+  const { supabase } = await requireUser();
+  const locale = await getServerLocale();
+
+  const { error } = await supabase.rpc("delete_own_account");
+
+  if (error) {
+    console.error("deleteAccount failed:", error);
+    return {
+      error: translate(locale, "errors.deleteAccountFailed", {
+        reason: error.message,
+      }),
+    };
+  }
+
+  await supabase.auth.signOut();
+  redirect("/login");
+}

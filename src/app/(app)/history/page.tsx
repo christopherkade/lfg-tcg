@@ -7,6 +7,9 @@ import { HistoryList, type PodHistoryEntryWithHost } from "@/components/HistoryL
 export default async function HistoryPage() {
   const { supabase } = await requireProfile("/history");
   const locale = await getServerLocale();
+  const { data: gamesPlayedCount } = await supabase.rpc(
+    "get_games_played_count",
+  );
 
   const { data: entries } = await supabase
     .from("pod_history")
@@ -26,6 +29,11 @@ export default async function HistoryPage() {
         sx={{ fontSize: "1.5rem", fontWeight: 700, color: "text.primary" }}
       >
         {translate(locale, "historyPage.title")}
+      </Typography>
+      <Typography sx={{ fontSize: "0.875rem", color: "text.secondary" }}>
+        {translate(locale, "historyPage.gamesPlayed", {
+          count: gamesPlayedCount ?? 0,
+        })}
       </Typography>
 
       <HistoryList

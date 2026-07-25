@@ -10,6 +10,7 @@ export type NotificationType =
   | "MEMBER_LEFT"
   | "REMOVED_FROM_POD"
   | "POD_UPDATED"
+  | "POD_UPDATED_PENDING"
   | "POD_DESTROYED"
   | "POD_EXPIRED_INACTIVITY";
 
