@@ -16,7 +16,14 @@
 
   "tabBar.pods": "Tables",
   "tabBar.lfg": "Recherche",
+  "tabBar.history": "Historique",
   "tabBar.profile": "Profil",
+
+  "historyPage.title": "Tables passées",
+  "historyPage.empty": "Aucune table passée pour le moment — les groupes formés apparaîtront ici.",
+  "historyPage.host": "Hôte",
+  "historyPage.members": "Groupe",
+  "historyPage.delete": "Supprimer",
 
   "tutorial.buttonLabel": "Comment fonctionne PodMaker",
   "settings.buttonLabel": "Paramètres",
@@ -232,6 +239,7 @@
 
   "errors.podNotActive": "Cette table n'est plus active.",
   "errors.cantJoinOwnPod": "Vous ne pouvez pas rejoindre votre propre table.",
+  "errors.alreadyHostingPod": "Vous ne pouvez pas rejoindre une table pendant que vous organisez votre propre recherche active.",
   "errors.groupFull": "Ce groupe est déjà complet.",
   "errors.alreadyRequested": "Vous avez déjà demandé à rejoindre cette table.",
   "errors.joinRequestFailed": "Impossible d'envoyer la demande pour rejoindre. Veuillez réessayer.",
@@ -247,5 +255,6 @@
   "errors.notificationUpdateFailed": "Impossible de mettre à jour la notification : {reason}",
   "errors.notificationsUpdateFailed": "Impossible de mettre à jour les notifications : {reason}",
   "errors.notificationDeleteFailed": "Impossible de supprimer la notification : {reason}",
-  "errors.notificationsDeleteFailed": "Impossible de supprimer les notifications : {reason}"
+  "errors.notificationsDeleteFailed": "Impossible de supprimer les notifications : {reason}",
+  "errors.historyDeleteFailed": "Impossible de supprimer cette entrée : {reason}"
 }

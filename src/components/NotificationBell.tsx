@@ -129,6 +129,20 @@ export function NotificationBell({ currentUserId }: NotificationBellProps) {
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
   const [toast, setToast] = useState<Toast | null>(null);
 
+  // Same clone-per-play pattern as LfgButton's click sound — lets
+  // back-to-back notifications overlap cleanly instead of cutting each other off.
+  const chimeAudioRef = useRef<HTMLAudioElement | null>(null);
+  useEffect(() => {
+    chimeAudioRef.current = new Audio("/sounds/notification.wav");
+  }, []);
+  const playChime = useCallback(() => {
+    const base = chimeAudioRef.current;
+    if (!base) return;
+    const sound = base.cloneNode(true) as HTMLAudioElement;
+    sound.volume = 0.5;
+    void sound.play().catch(() => {});
+  }, []);
+
   useEffect(() => {
     if (typeof window === "undefined" || !("Notification" in window)) {
       return;
@@ -144,6 +158,7 @@ export function NotificationBell({ currentUserId }: NotificationBellProps) {
         [notification, ...(current ?? [])].slice(0, RECENT_LIMIT),
       );
       setUnreadCount((count) => count + 1);
+      playChime();
 
       const message = describeNotification(notification, t);
       setToast({ id: notification.id, message });
@@ -163,7 +178,7 @@ export function NotificationBell({ currentUserId }: NotificationBellProps) {
         };
       }
     },
-    [router, t],
+    [router, t, playChime],
   );
 
   // Routed through a ref rather than listed as an effect dependency — see

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Users, Zap, UserCircle, type LucideIcon } from "lucide-react";
+import { Users, Zap, History, UserCircle, type LucideIcon } from "lucide-react";
 import { Box, Button, Typography, useTheme } from "@mui/material";
 import { NotificationBell } from "@/components/NotificationBell";
 import { SettingsDialog } from "@/components/SettingsDialog";
@@ -23,6 +23,7 @@ interface TabBarProps {
 const TABS: Tab[] = [
   { href: "/pods", labelKey: "tabBar.pods", icon: Users },
   { href: "/", labelKey: "tabBar.lfg", icon: Zap },
+  { href: "/history", labelKey: "tabBar.history", icon: History },
   { href: "/profile", labelKey: "tabBar.profile", icon: UserCircle },
 ];
 

@@ -65,6 +65,31 @@ export interface PodWithRelations extends Pod {
   pod_joins: PodJoinWithProfile[];
 }
 
+export interface PodHistoryMember {
+  id: string;
+  username: string;
+  discord_handle: string;
+  avatar_url: string | null;
+}
+
+export interface PodHistoryEntry {
+  id: string;
+  pod_id: string;
+  host_id: string;
+  game_key: GameKey;
+  format_key: string;
+  playstyle_key: PlaystyleKey;
+  power_tiers: number[] | null;
+  type: MatchType;
+  location_name: string | null;
+  city: string | null;
+  scheduled_at: string | null;
+  pod_created_at: string;
+  matched_at: string;
+  members: PodHistoryMember[];
+  created_at: string;
+}
+
 export interface Notification {
   id: string;
   recipient_id: string;

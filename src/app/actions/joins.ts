@@ -25,6 +25,17 @@ export async function requestJoin(
     return { error: translate(locale, "errors.cantJoinOwnPod") };
   }
 
+  const { data: ownActivePod } = await supabase
+    .from("pods")
+    .select("id")
+    .eq("user_id", user.id)
+    .eq("status", "ACTIVE")
+    .maybeSingle();
+
+  if (ownActivePod) {
+    return { error: translate(locale, "errors.alreadyHostingPod") };
+  }
+
   const acceptedCount = pod.pod_joins.filter(
     (join) => join.status === "ACCEPTED",
   ).length;

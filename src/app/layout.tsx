@@ -36,7 +36,7 @@ export default async function RootLayout({
       lang={locale}
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">
+      <body className="min-h-full flex flex-col" suppressHydrationWarning>
         <LocaleProvider initialLocale={locale}>
           <ThemeModeProvider initialMode={mode}>
             <ThemeRegistry>{children}</ThemeRegistry>

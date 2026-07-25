@@ -16,7 +16,14 @@
 
   "tabBar.pods": "Pods",
   "tabBar.lfg": "LFG",
+  "tabBar.history": "History",
   "tabBar.profile": "Profile",
+
+  "historyPage.title": "Past Pods",
+  "historyPage.empty": "No past pods yet — matched groups will show up here.",
+  "historyPage.host": "Host",
+  "historyPage.members": "Group",
+  "historyPage.delete": "Delete",
 
   "tutorial.buttonLabel": "How PodMaker works",
   "settings.buttonLabel": "Settings",
@@ -232,6 +239,7 @@
 
   "errors.podNotActive": "This pod is no longer active.",
   "errors.cantJoinOwnPod": "You can't join your own pod.",
+  "errors.alreadyHostingPod": "You can't join a pod while hosting your own active search.",
   "errors.groupFull": "This group is already full.",
   "errors.alreadyRequested": "You already requested to join this pod.",
   "errors.joinRequestFailed": "Could not send join request. Please try again.",
@@ -247,5 +255,6 @@
   "errors.notificationUpdateFailed": "Could not update notification: {reason}",
   "errors.notificationsUpdateFailed": "Could not update notifications: {reason}",
   "errors.notificationDeleteFailed": "Could not delete notification: {reason}",
-  "errors.notificationsDeleteFailed": "Could not delete notifications: {reason}"
+  "errors.notificationsDeleteFailed": "Could not delete notifications: {reason}",
+  "errors.historyDeleteFailed": "Could not delete this entry: {reason}"
 }
