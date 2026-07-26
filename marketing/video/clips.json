@@ -1,0 +1,71 @@
+{
+  "canvas": { "width": 1080, "height": 1920, "bg": "0x09090b", "fps": 30 },
+  "clips": [
+    {
+      "id": "01_hero",
+      "file": "frames/shot01_02_login.jpg",
+      "duration": 2.5,
+      "caption": "Trouve ta table."
+    },
+    {
+      "id": "02_steps",
+      "file": "frames/shot01_02_login.jpg",
+      "duration": 3.0,
+      "caption": "Magic, Pokémon, Lorcana, One Piece — connecte-toi avec Discord."
+    },
+    {
+      "id": "03_lfg_idle",
+      "file": "frames/shot04b_lfg_idle.jpg",
+      "duration": 2.2,
+      "caption": "Lance ta recherche en un clic."
+    },
+    {
+      "id": "04_active_search",
+      "file": "frames/shot05_active_search.jpg",
+      "duration": 2.8,
+      "caption": "Ta recherche est en ligne, en temps réel."
+    },
+    {
+      "id": "05_game_select",
+      "file": "frames/shot05_lfg_dialog.jpg",
+      "duration": 3.0,
+      "caption": "Magic, Pokémon, Lorcana ou One Piece — à toi de choisir."
+    },
+    {
+      "id": "06_join_request",
+      "file": "frames/shot06_mypod_request.jpg",
+      "duration": 3.0,
+      "caption": "Reçois des demandes, accepte les joueurs qui te correspondent."
+    },
+    {
+      "id": "07_accepted",
+      "file": "frames/shot07_accepted.jpg",
+      "duration": 2.3,
+      "caption": "Un joueur accepté — la table se remplit."
+    },
+    {
+      "id": "08_notifications",
+      "file": "frames/shot08_notifications.jpg",
+      "duration": 2.8,
+      "caption": "Tu es notifié à chaque étape."
+    },
+    {
+      "id": "09_members",
+      "file": "frames/shot09_members_expanded.jpg",
+      "duration": 3.5,
+      "caption": "Table complète : récupère les Discord de tout le monde en un clic."
+    },
+    {
+      "id": "10_history",
+      "file": "frames/shot10_history.jpg",
+      "duration": 2.8,
+      "caption": "Chaque table jouée compte dans ton historique."
+    },
+    {
+      "id": "11_outro",
+      "file": "../brand/output/podmaker-brand-kit.png",
+      "duration": 2.5,
+      "caption": "PodFinder — trouve ta table."
+    }
+  ]
+}

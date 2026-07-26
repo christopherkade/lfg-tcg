@@ -12,6 +12,7 @@ import { requestJoin, leavePod } from "@/app/actions/joins";
 import { PodDetailDialog } from "@/components/PodDetailDialog";
 import { PodFilters, type PodFiltersValue } from "@/components/PodFilters";
 import { CITY_MAP } from "@/constants/citiesConfig";
+import { DEMO_PODS } from "@/constants/demoPods";
 import { formatPodWhen } from "@/lib/date";
 import { useTranslation } from "@/lib/i18n/LocaleContext";
 import type { TranslationKey } from "@/lib/i18n";
@@ -174,7 +175,10 @@ export function MatchFeed({
         ...filteredRows.filter((pod) => !joinedIds.has(pod.id)),
       ];
 
-      setPods(rows);
+      // Comment out the DEMO_PODS spread below to stop showing fake demo
+      // pods in the feed.
+      // setPods([...rows]);
+      setPods([...DEMO_PODS, ...rows]);
 
       // Keep the shared/pinned pod (opened via /pods/<id>) fresh across every
       // refetch trigger below (realtime events, focus resync, post-join/leave
@@ -295,7 +299,14 @@ export function MatchFeed({
           <PodFilters value={filters} onChange={handleFiltersChange} />
         </div>
         <div className="flex w-full max-w-md flex-col gap-3">
-          <Typography component="h2" sx={{ fontSize: "1.125rem", fontWeight: 600, color: "text.primary" }}>
+          <Typography
+            component="h2"
+            sx={{
+              fontSize: "1.125rem",
+              fontWeight: 600,
+              color: "text.primary",
+            }}
+          >
             {t("matchFeed.title")}
           </Typography>
           {!profile.city && (
@@ -310,8 +321,17 @@ export function MatchFeed({
             </Typography>
           ) : pods.length === 0 ? (
             <div className="flex flex-col items-center gap-2 py-8 text-center">
-              <SearchX className="h-8 w-8" style={{ color: theme.palette.text.secondary }} />
-              <Typography sx={{ fontSize: "0.875rem", fontWeight: 500, color: "text.primary" }}>
+              <SearchX
+                className="h-8 w-8"
+                style={{ color: theme.palette.text.secondary }}
+              />
+              <Typography
+                sx={{
+                  fontSize: "0.875rem",
+                  fontWeight: 500,
+                  color: "text.primary",
+                }}
+              >
                 {t("matchFeed.empty.title")}
               </Typography>
               <Typography sx={{ fontSize: "0.75rem", color: "text.secondary" }}>
@@ -355,7 +375,10 @@ export function MatchFeed({
                         >
                           {pod.profiles.username[0]?.toUpperCase()}
                         </Avatar>
-                        <span className="font-medium" style={{ color: theme.palette.text.primary }}>
+                        <span
+                          className="font-medium"
+                          style={{ color: theme.palette.text.primary }}
+                        >
                           {pod.profiles.username}
                         </span>
                         {isJoined && (
@@ -364,12 +387,20 @@ export function MatchFeed({
                           </span>
                         )}
                       </div>
-                      <span className="text-xs" style={{ color: theme.palette.text.secondary }}>
+                      <span
+                        className="text-xs"
+                        style={{ color: theme.palette.text.secondary }}
+                      >
                         {acceptedMembers.length + 1}/{pod.max_players}
                       </span>
                     </div>
-                    <div className="flex flex-wrap gap-2 text-xs" style={{ color: theme.palette.text.secondary }}>
-                      <span>{t(`format.${pod.format_key}` as TranslationKey)}</span>
+                    <div
+                      className="flex flex-wrap gap-2 text-xs"
+                      style={{ color: theme.palette.text.secondary }}
+                    >
+                      <span>
+                        {t(`format.${pod.format_key}` as TranslationKey)}
+                      </span>
                       <span>&middot;</span>
                       <span>
                         {pod.type === "IRL"
@@ -404,7 +435,9 @@ export function MatchFeed({
                     {acceptedMembers.length > 0 && (
                       <div
                         className="flex flex-col gap-1 pt-2"
-                        style={{ borderTop: `1px solid ${theme.palette.divider}` }}
+                        style={{
+                          borderTop: `1px solid ${theme.palette.divider}`,
+                        }}
                       >
                         {acceptedMembers.map((join) => (
                           <div
@@ -415,7 +448,11 @@ export function MatchFeed({
                             <div className="flex items-center gap-1.5">
                               <Avatar
                                 src={join.profiles.avatar_url ?? undefined}
-                                sx={{ width: 18, height: 18, fontSize: "0.625rem" }}
+                                sx={{
+                                  width: 18,
+                                  height: 18,
+                                  fontSize: "0.625rem",
+                                }}
                               >
                                 {join.profiles.username[0]?.toUpperCase()}
                               </Avatar>

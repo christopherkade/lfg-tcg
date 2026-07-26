@@ -1,6 +1,6 @@
-# PodMaker
+# PodFinder
 
-PodMaker is a mobile-first Progressive Web App for finding people to play trading card games with, both online and in person. Post an LFG (looking for group) request, get matched in real time, and coordinate the game over Discord.
+PodFinder is a mobile-first Progressive Web App for finding people to play trading card games with, both online and in person. Post an LFG (looking for group) request, get matched in real time, and coordinate the game over Discord.
 
 ## Features
 
@@ -13,7 +13,7 @@ PodMaker is a mobile-first Progressive Web App for finding people to play tradin
 - **Pod history** — A "Past Pods" log of every matched pod a player hosted or joined, including a lifetime "games played" stat.
 - **Discord-first identity** — Sign in with Discord OAuth; matched players exchange Discord handles to coordinate and play.
 - **Light/dark theming and English/French localization**, both switchable from an in-app settings dialog.
-- **Installable PWA** — Add PodMaker to your home screen for an app-like experience.
+- **Installable PWA** — Add PodFinder to your home screen for an app-like experience.
 
 ## Tech Stack
 

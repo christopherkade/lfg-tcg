@@ -22,7 +22,7 @@ export default function Icon() {
         borderRadius: 8,
       }}
     >
-      M
+      P
     </div>,
     { ...size },
   );

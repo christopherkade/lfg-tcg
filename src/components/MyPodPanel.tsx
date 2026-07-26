@@ -377,39 +377,6 @@ export function MyPodPanel({ pod, onChanged, highlight = false }: MyPodPanelProp
                   </div>
                 </div>
               ))}
-              <Button
-                type="button"
-                onClick={() =>
-                  copyText(
-                    "__all__",
-                    acceptedMembers
-                      .map((join) => join.profiles.discord_handle)
-                      .join(", "),
-                  )
-                }
-                variant="outlined"
-                startIcon={
-                  <AnimatePresence mode="wait" initial={false}>
-                    <motion.span
-                      key={copied === "__all__" ? "check" : "copy"}
-                      initial={{ scale: 0.5, opacity: 0 }}
-                      animate={{ scale: 1, opacity: 1 }}
-                      exit={{ scale: 0.5, opacity: 0 }}
-                      transition={{ duration: 0.15, ease: "easeOut" }}
-                      className="inline-flex"
-                    >
-                      {copied === "__all__" ? (
-                        <Check className="h-4 w-4" />
-                      ) : (
-                        <Copy className="h-4 w-4" />
-                      )}
-                    </motion.span>
-                  </AnimatePresence>
-                }
-                sx={{ borderColor: "divider", color: "text.secondary" }}
-              >
-                {copied === "__all__" ? t("myPodPanel.copied") : t("myPodPanel.copyAllHandles")}
-              </Button>
             </div>
           )}
 

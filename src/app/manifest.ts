@@ -2,8 +2,8 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "PodMaker",
-    short_name: "PodMaker",
+    name: "PodFinder",
+    short_name: "PodFinder",
     description: "Create your own TCG pods and find your next game, IRL or online.",
     start_url: "/",
     display: "standalone",

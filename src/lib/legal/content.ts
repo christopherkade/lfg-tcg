@@ -15,11 +15,11 @@ export interface LegalSection {
 export const TERMS_EN: LegalSection[] = [
   {
     heading: "1. Acceptance of these Terms",
-    body: "By creating an account or otherwise using PodMaker (the \"Service\"), you agree to these Terms of Service. If you don't agree, please don't use the Service.",
+    body: "By creating an account or otherwise using PodFinder (the \"Service\"), you agree to these Terms of Service. If you don't agree, please don't use the Service.",
   },
   {
-    heading: "2. What PodMaker does",
-    body: "PodMaker helps trading-card-game players find others to play with, in person or online. You sign in with your Discord account, set up a profile, and start or browse \"pods\" (open groups looking to play). When a host accepts you into their pod, your Discord handle and username become visible to the other members of that pod so you can coordinate outside the app — PodMaker itself does not create Discord servers, group chats, or friend connections on your behalf.",
+    heading: "2. What PodFinder does",
+    body: "PodFinder helps trading-card-game players find others to play with, in person or online. You sign in with your Discord account, set up a profile, and start or browse \"pods\" (open groups looking to play). When a host accepts you into their pod, your Discord handle and username become visible to the other members of that pod so you can coordinate outside the app — PodFinder itself does not create Discord servers, group chats, or friend connections on your behalf.",
   },
   {
     heading: "3. Your account",
@@ -27,15 +27,15 @@ export const TERMS_EN: LegalSection[] = [
   },
   {
     heading: "4. Acceptable use",
-    body: "Don't use PodMaker to harass, threaten, or abuse other users; to post spam or misleading pods; to attempt to bypass rate limits or other safeguards; or to violate any applicable law. We may remove content, suspend, or terminate accounts that violate these rules.",
+    body: "Don't use PodFinder to harass, threaten, or abuse other users; to post spam or misleading pods; to attempt to bypass rate limits or other safeguards; or to violate any applicable law. We may remove content, suspend, or terminate accounts that violate these rules.",
   },
   {
     heading: "5. Rate limits and automated safeguards",
-    body: "To keep the match feed useful and prevent spam, PodMaker limits how quickly you can create new pods or send join requests. These limits may change over time without notice.",
+    body: "To keep the match feed useful and prevent spam, PodFinder limits how quickly you can create new pods or send join requests. These limits may change over time without notice.",
   },
   {
     heading: "6. Discord is a separate service",
-    body: "Any coordination that happens on Discord after you're matched is governed by Discord's own terms and policies, not this document. PodMaker isn't responsible for what happens in conversations or games arranged there.",
+    body: "Any coordination that happens on Discord after you're matched is governed by Discord's own terms and policies, not this document. PodFinder isn't responsible for what happens in conversations or games arranged there.",
   },
   {
     heading: "7. No warranty",
@@ -62,7 +62,7 @@ export const PRIVACY_EN: LegalSection[] = [
   },
   {
     heading: "2. How your information is shared with other users",
-    body: "Your username, Discord handle, and avatar are visible to hosts and searchers as part of the normal matching flow: a host sees this information for anyone who requests to join their pod, and once accepted, every member of a pod sees it for every other member. This is the core purpose of the Service — matching you with people you can then reach on Discord — so this sharing can't be turned off while using PodMaker.",
+    body: "Your username, Discord handle, and avatar are visible to hosts and searchers as part of the normal matching flow: a host sees this information for anyone who requests to join their pod, and once accepted, every member of a pod sees it for every other member. This is the core purpose of the Service — matching you with people you can then reach on Discord — so this sharing can't be turned off while using PodFinder.",
   },
   {
     heading: "3. Pod history",
@@ -70,7 +70,7 @@ export const PRIVACY_EN: LegalSection[] = [
   },
   {
     heading: "4. Cookies",
-    body: "PodMaker uses two small, non-tracking cookies to remember your display preferences: one for your chosen language (English/French) and one for light/dark theme. Neither is used for advertising or analytics.",
+    body: "PodFinder uses two small, non-tracking cookies to remember your display preferences: one for your chosen language (English/French) and one for light/dark theme. Neither is used for advertising or analytics.",
   },
   {
     heading: "5. Where your data lives",
@@ -97,11 +97,11 @@ export const PRIVACY_EN: LegalSection[] = [
 export const TERMS_FR: LegalSection[] = [
   {
     heading: "1. Acceptation des présentes conditions",
-    body: "En créant un compte ou en utilisant PodMaker (le « Service »), vous acceptez les présentes Conditions d'utilisation. Si vous n'êtes pas d'accord, merci de ne pas utiliser le Service.",
+    body: "En créant un compte ou en utilisant PodFinder (le « Service »), vous acceptez les présentes Conditions d'utilisation. Si vous n'êtes pas d'accord, merci de ne pas utiliser le Service.",
   },
   {
-    heading: "2. Ce que fait PodMaker",
-    body: "PodMaker aide les joueurs de jeux de cartes à trouver d'autres joueurs, en personne ou en ligne. Vous vous connectez avec votre compte Discord, configurez un profil, puis créez ou parcourez des « tables » (groupes ouverts cherchant à jouer). Lorsqu'un hôte accepte votre demande, votre identifiant Discord et votre pseudo deviennent visibles par les autres membres de cette table afin que vous puissiez vous organiser en dehors de l'application — PodMaker ne crée pas de serveur Discord, de discussion de groupe ni de relation d'amis en votre nom.",
+    heading: "2. Ce que fait PodFinder",
+    body: "PodFinder aide les joueurs de jeux de cartes à trouver d'autres joueurs, en personne ou en ligne. Vous vous connectez avec votre compte Discord, configurez un profil, puis créez ou parcourez des « tables » (groupes ouverts cherchant à jouer). Lorsqu'un hôte accepte votre demande, votre identifiant Discord et votre pseudo deviennent visibles par les autres membres de cette table afin que vous puissiez vous organiser en dehors de l'application — PodFinder ne crée pas de serveur Discord, de discussion de groupe ni de relation d'amis en votre nom.",
   },
   {
     heading: "3. Votre compte",
@@ -109,15 +109,15 @@ export const TERMS_FR: LegalSection[] = [
   },
   {
     heading: "4. Utilisation acceptable",
-    body: "N'utilisez pas PodMaker pour harceler, menacer ou insulter d'autres utilisateurs, publier des tables trompeuses ou du spam, tenter de contourner les limites de fréquence ou d'autres protections, ou enfreindre une loi applicable. Nous pouvons retirer du contenu, suspendre ou résilier les comptes qui enfreignent ces règles.",
+    body: "N'utilisez pas PodFinder pour harceler, menacer ou insulter d'autres utilisateurs, publier des tables trompeuses ou du spam, tenter de contourner les limites de fréquence ou d'autres protections, ou enfreindre une loi applicable. Nous pouvons retirer du contenu, suspendre ou résilier les comptes qui enfreignent ces règles.",
   },
   {
     heading: "5. Limites de fréquence et protections automatiques",
-    body: "Afin de garder le fil de recherche utile et d'éviter le spam, PodMaker limite la fréquence à laquelle vous pouvez créer de nouvelles tables ou envoyer des demandes pour rejoindre un groupe. Ces limites peuvent évoluer sans préavis.",
+    body: "Afin de garder le fil de recherche utile et d'éviter le spam, PodFinder limite la fréquence à laquelle vous pouvez créer de nouvelles tables ou envoyer des demandes pour rejoindre un groupe. Ces limites peuvent évoluer sans préavis.",
   },
   {
     heading: "6. Discord est un service distinct",
-    body: "Toute coordination ayant lieu sur Discord après une mise en relation est régie par les conditions et politiques propres à Discord, et non par le présent document. PodMaker n'est pas responsable de ce qui se passe dans les conversations ou parties organisées à cet endroit.",
+    body: "Toute coordination ayant lieu sur Discord après une mise en relation est régie par les conditions et politiques propres à Discord, et non par le présent document. PodFinder n'est pas responsable de ce qui se passe dans les conversations ou parties organisées à cet endroit.",
   },
   {
     heading: "7. Absence de garantie",
@@ -144,7 +144,7 @@ export const PRIVACY_FR: LegalSection[] = [
   },
   {
     heading: "2. Comment vos informations sont partagées avec les autres utilisateurs",
-    body: "Votre pseudo, votre identifiant Discord et votre avatar sont visibles par les hôtes et les chercheurs de table dans le cadre normal de la mise en relation : un hôte voit ces informations pour toute personne demandant à rejoindre sa table, et une fois acceptés, tous les membres d'une table se voient mutuellement. C'est l'objectif central du Service — vous mettre en relation avec des personnes que vous pourrez ensuite contacter sur Discord — ce partage ne peut donc pas être désactivé tout en utilisant PodMaker.",
+    body: "Votre pseudo, votre identifiant Discord et votre avatar sont visibles par les hôtes et les chercheurs de table dans le cadre normal de la mise en relation : un hôte voit ces informations pour toute personne demandant à rejoindre sa table, et une fois acceptés, tous les membres d'une table se voient mutuellement. C'est l'objectif central du Service — vous mettre en relation avec des personnes que vous pourrez ensuite contacter sur Discord — ce partage ne peut donc pas être désactivé tout en utilisant PodFinder.",
   },
   {
     heading: "3. Historique des tables",
@@ -152,7 +152,7 @@ export const PRIVACY_FR: LegalSection[] = [
   },
   {
     heading: "4. Cookies",
-    body: "PodMaker utilise deux petits cookies non traceurs pour mémoriser vos préférences d'affichage : un pour la langue choisie (français/anglais) et un pour le thème clair/sombre. Aucun n'est utilisé à des fins publicitaires ou d'analyse.",
+    body: "PodFinder utilise deux petits cookies non traceurs pour mémoriser vos préférences d'affichage : un pour la langue choisie (français/anglais) et un pour le thème clair/sombre. Aucun n'est utilisé à des fins publicitaires ou d'analyse.",
   },
   {
     heading: "5. Où se trouvent vos données",

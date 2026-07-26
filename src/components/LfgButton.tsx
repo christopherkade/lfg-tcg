@@ -174,76 +174,22 @@ export function LfgButton({
     ? t(`format.${formatKey}` as TranslationKey)
     : undefined;
 
-  // Synthesized instead of sampled: a tiny oscillator "tap" (pitch-drop
-  // triangle wave + a sliver of filtered noise for transient bite) reads as
-  // a more modern UI sound than a fixed recorded sample, and lets every tap
-  // be pitch-jittered so rapid presses don't sound identical. One shared
-  // AudioContext, created lazily on first interaction (autoplay policies
-  // block audio nodes started before a user gesture) and resumed if a
-  // browser suspends it.
-  const audioCtxRef = useRef<AudioContext | null>(null);
-  const getAudioContext = useCallback(() => {
-    if (typeof window === "undefined") return null;
-    if (!audioCtxRef.current) {
-      const AudioContextCtor =
-        window.AudioContext ||
-        (window as unknown as { webkitAudioContext: typeof AudioContext })
-          .webkitAudioContext;
-      audioCtxRef.current = new AudioContextCtor();
-    }
-    const ctx = audioCtxRef.current;
-    if (ctx.state === "suspended") {
-      void ctx.resume();
-    }
-    return ctx;
+  // Real sample (Kenney UI Audio, CC0) — cloning the element per play lets
+  // rapid presses overlap cleanly, and playbackRate is jittered so repeated
+  // taps don't sound identical.
+  const clickAudioRef = useRef<HTMLAudioElement | null>(null);
+  useEffect(() => {
+    clickAudioRef.current = new Audio("/sounds/button-click.wav");
   }, []);
-
-  const playSynthClick = useCallback(
-    (pitchMultiplier = 1) => {
-      const ctx = getAudioContext();
-      if (!ctx) return;
-      const now = ctx.currentTime;
-      const jitter = 0.97 + Math.random() * 0.06;
-      const startFreq = 1200 * pitchMultiplier * jitter;
-
-      const osc = ctx.createOscillator();
-      osc.type = "triangle";
-      osc.frequency.setValueAtTime(startFreq, now);
-      osc.frequency.exponentialRampToValueAtTime(
-        Math.max(startFreq * 0.35, 40),
-        now + 0.08,
-      );
-      const oscGain = ctx.createGain();
-      oscGain.gain.setValueAtTime(0.25, now);
-      oscGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.09);
-      osc.connect(oscGain).connect(ctx.destination);
-      osc.start(now);
-      osc.stop(now + 0.1);
-
-      const noiseBufferSize = Math.floor(ctx.sampleRate * 0.02);
-      const noiseBuffer = ctx.createBuffer(
-        1,
-        noiseBufferSize,
-        ctx.sampleRate,
-      );
-      const noiseData = noiseBuffer.getChannelData(0);
-      for (let i = 0; i < noiseBufferSize; i++) {
-        noiseData[i] = (Math.random() * 2 - 1) * (1 - i / noiseBufferSize);
-      }
-      const noise = ctx.createBufferSource();
-      noise.buffer = noiseBuffer;
-      const noiseFilter = ctx.createBiquadFilter();
-      noiseFilter.type = "highpass";
-      noiseFilter.frequency.value = 2500;
-      const noiseGain = ctx.createGain();
-      noiseGain.gain.setValueAtTime(0.15, now);
-      noiseGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.03);
-      noise.connect(noiseFilter).connect(noiseGain).connect(ctx.destination);
-      noise.start(now);
-      noise.stop(now + 0.03);
-    },
-    [getAudioContext],
-  );
+  const playClickSound = useCallback((pitchMultiplier = 1) => {
+    const base = clickAudioRef.current;
+    if (!base) return;
+    const jitter = 0.97 + Math.random() * 0.06;
+    const sound = base.cloneNode(true) as HTMLAudioElement;
+    sound.volume = 0.3;
+    sound.playbackRate = pitchMultiplier * jitter;
+    void sound.play().catch(() => {});
+  }, []);
 
   // Bright chime for "search started" — reused from the notification bell
   // rather than another synthesized sound, since it already reads as a
@@ -271,14 +217,14 @@ export function LfgButton({
       if (isSearching) {
         playChimeSound(1.15);
       } else {
-        playSynthClick(0.6);
+        playClickSound(0.8);
       }
       prevIsSearchingRef.current = isSearching;
     }
-  }, [isSearching, playChimeSound, playSynthClick]);
+  }, [isSearching, playChimeSound, playClickSound]);
 
   async function handleClick() {
-    playSynthClick();
+    playClickSound();
     setBurstKey((key) => key + 1);
     if (typeof navigator !== "undefined" && navigator.vibrate) {
       navigator.vibrate(18);

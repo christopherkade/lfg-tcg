@@ -1,0 +1,103 @@
+{
+  "meta": {
+    "project": "PodFinder — vidéo de présentation",
+    "format": "1080x1920 (vertical, Reels / TikTok)",
+    "language": "fr",
+    "notes": "Chaque plan = un état réel de l'app, capturé en écran plein, affiché statique (pas de zoom/pan). La durée totale du montage doit pouvoir être coupée à 15s / 30s / 60s en gardant les beats 1,3,5,7,9 pour la version courte."
+  },
+  "cuts": {
+    "15s": [1, 3, 5, 7, 9],
+    "30s": [1, 2, 3, 4, 5, 6, 7, 8, 9],
+    "60s": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
+  },
+  "shots": [
+    {
+      "id": 1,
+      "screen": "login",
+      "route": "/login",
+      "action": "État initial de l'app, avant connexion.",
+      "caption_fr": "Trouve ta table.",
+      "duration_s": 2.5
+    },
+    {
+      "id": 2,
+      "screen": "login",
+      "route": "/login",
+      "action": "Scroll sur les 3 étapes (Créez une table / Trouvez de nouveaux joueurs / Jouez facilement).",
+      "caption_fr": "Magic, Pokémon, Lorcana, One Piece — connecte-toi avec Discord.",
+      "duration_s": 3
+    },
+    {
+      "id": 3,
+      "screen": "pods (fil des tables)",
+      "route": "/pods",
+      "action": "Vue du fil des tables ouvertes, filtres visibles en haut.",
+      "caption_fr": "Parcours les tables ouvertes près de toi, ou en ligne.",
+      "duration_s": 3
+    },
+    {
+      "id": 4,
+      "screen": "pods (fil des tables)",
+      "route": "/pods",
+      "action": "Une carte de table individuelle dans le fil (badge palier, joueurs, lieu, heure).",
+      "caption_fr": "Chaque table affiche le jeu, le format et le palier de puissance.",
+      "duration_s": 3
+    },
+    {
+      "id": 5,
+      "screen": "lfgDialog",
+      "route": "/pods (dialog Recherche)",
+      "action": "Ouverture du bouton LFG, remplissage des critères (jeu, quand/où, préférences).",
+      "caption_fr": "Tu ne trouves pas de table ? Lance ta propre recherche en quelques secondes.",
+      "duration_s": 3.5
+    },
+    {
+      "id": 6,
+      "screen": "myPodPanel",
+      "route": "/pods (Votre table)",
+      "action": "Vue \"Votre table\" avec une demande entrante affichée.",
+      "caption_fr": "Reçois des demandes, accepte les joueurs qui te correspondent.",
+      "duration_s": 3
+    },
+    {
+      "id": 7,
+      "screen": "myPodPanel",
+      "route": "/pods (Votre table)",
+      "action": "Clic sur \"Accepter\" — le socket visuel (motif ember/spark) apparaît en overlay au moment du clic.",
+      "caption_fr": "Un joueur accepté — la table se remplit.",
+      "duration_s": 2.5
+    },
+    {
+      "id": 8,
+      "screen": "notificationBell",
+      "route": "toute page",
+      "action": "Clic sur la cloche de notifications, panneau déroulé.",
+      "caption_fr": "Tu es notifié à chaque étape — plus besoin de rafraîchir.",
+      "duration_s": 3
+    },
+    {
+      "id": 9,
+      "screen": "myPodPanel — table complète",
+      "route": "/pods (Votre table)",
+      "action": "Table marquée comme complète, membres du groupe visibles avec identifiants Discord + bouton \"Copier tous les identifiants\".",
+      "caption_fr": "Une fois complète, récupère les Discord de toute la table en un clic.",
+      "duration_s": 3.5
+    },
+    {
+      "id": 10,
+      "screen": "history",
+      "route": "/history",
+      "action": "Vue Historique — liste des tables passées + compteur de parties jouées.",
+      "caption_fr": "Chaque table jouée compte dans ton historique.",
+      "duration_s": 3
+    },
+    {
+      "id": 11,
+      "screen": "wordmark outro",
+      "route": "n/a — image brand kit",
+      "action": "Plan fixe sur le wordmark PodFinder + tagline (asset généré en Phase A: podmaker-brand-kit.png, crop sur le hero).",
+      "caption_fr": "PodFinder — trouve ta table.",
+      "duration_s": 2.5
+    }
+  ]
+}

@@ -46,7 +46,11 @@ export async function PodsView({
         initialPod={ownPod as PodWithRelations | null}
         initialHighlight={highlightOwn}
       />
-      <MatchFeed profile={profile} currentUserId={userId} initialSharedPod={sharedPod} />
+      <MatchFeed
+        profile={profile}
+        currentUserId={userId}
+        initialSharedPod={sharedPod}
+      />
     </Box>
   );
 }

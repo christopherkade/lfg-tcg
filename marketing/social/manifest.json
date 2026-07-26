@@ -1,0 +1,101 @@
+[
+  {
+    "out": "01_intro_post.png",
+    "size": "square",
+    "params": {
+      "eyebrow": "Nouveau",
+      "title": "Trouve <em>ta table</em>.",
+      "subtitle": "Magic, Pokémon, Lorcana, One Piece — connecte-toi avec Discord et joue avec de vrais joueurs, en ligne ou en personne.",
+      "logos": "mtg.png,pokemon.png,lorcana.png,op-tcg.png",
+      "footer": "PodFinder"
+    }
+  },
+  {
+    "out": "02_game_mtg.png",
+    "size": "portrait",
+    "params": {
+      "eyebrow": "Jeu 1 / 4",
+      "logo": "mtg.png",
+      "title": "Magic: The Gathering",
+      "subtitle": "Commander, Standard, et plus — filtre par palier de puissance.",
+      "footer": "Disponible sur PodFinder"
+    }
+  },
+  {
+    "out": "02_game_pokemon.png",
+    "size": "portrait",
+    "params": {
+      "eyebrow": "Jeu 2 / 4",
+      "logo": "pokemon.png",
+      "title": "Pokémon TCG",
+      "subtitle": "Trouve un adversaire près de chez toi ou en ligne.",
+      "footer": "Disponible sur PodFinder"
+    }
+  },
+  {
+    "out": "02_game_lorcana.png",
+    "size": "portrait",
+    "params": {
+      "eyebrow": "Jeu 3 / 4",
+      "logo": "lorcana.png",
+      "title": "Disney Lorcana",
+      "subtitle": "Rejoins une table Lorcana en quelques secondes.",
+      "footer": "Disponible sur PodFinder"
+    }
+  },
+  {
+    "out": "02_game_onepiece.png",
+    "size": "portrait",
+    "params": {
+      "eyebrow": "Jeu 4 / 4",
+      "logo": "op-tcg.png",
+      "title": "One Piece TCG",
+      "subtitle": "Une table ouverte t'attend peut-être déjà.",
+      "footer": "Disponible sur PodFinder"
+    }
+  },
+  {
+    "out": "03_howto_1.png",
+    "size": "portrait",
+    "params": {
+      "step": "1",
+      "eyebrow": "Comment ça marche",
+      "title": "Créez une table",
+      "subtitle": "Choisissez un jeu et créez votre table en quelques secondes.",
+      "footer": "PodFinder"
+    }
+  },
+  {
+    "out": "03_howto_2.png",
+    "size": "portrait",
+    "params": {
+      "step": "2",
+      "eyebrow": "Comment ça marche",
+      "title": "Trouvez de nouveaux joueurs",
+      "subtitle": "Rencontrez des joueurs à la recherche d'une partie en personne ou en ligne.",
+      "footer": "PodFinder"
+    }
+  },
+  {
+    "out": "03_howto_3.png",
+    "size": "portrait",
+    "params": {
+      "step": "3",
+      "eyebrow": "Comment ça marche",
+      "title": "Jouez facilement",
+      "subtitle": "Coordonnez-vous sur Discord et c'est parti !",
+      "footer": "PodFinder"
+    }
+  },
+  {
+    "out": "04_launch_story.png",
+    "size": "story",
+    "params": {
+      "eyebrow": "Bientôt disponible",
+      "title": "Trouve <em>ta table</em>.",
+      "subtitle": "Magic, Pokémon, Lorcana, One Piece — connecte-toi avec Discord et joue avec de vrais joueurs.",
+      "logos": "mtg.png,pokemon.png,lorcana.png,op-tcg.png",
+      "footer": "PodFinder"
+    }
+  }
+]

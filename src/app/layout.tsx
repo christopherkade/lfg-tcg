@@ -18,7 +18,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "PodMaker",
+  title: "PodFinder",
   description:
     "Create your own TCG pods and find your next game, IRL or online.",
 };

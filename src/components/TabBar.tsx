@@ -46,7 +46,7 @@ export function TabBar({ currentUserId }: TabBarProps) {
         <Typography
           sx={{ fontSize: "1rem", fontWeight: 700, color: "primary.main" }}
         >
-          PodMaker
+          PodFinder
         </Typography>
         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
           <SettingsDialog />
@@ -65,7 +65,7 @@ export function TabBar({ currentUserId }: TabBarProps) {
           <Typography
             sx={{ fontSize: "1.125rem", fontWeight: 700, color: "primary.main" }}
           >
-            PodMaker
+            PodFinder
           </Typography>
           <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
             <Box sx={{ display: "flex", gap: 1 }}>

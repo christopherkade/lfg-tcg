@@ -1,6 +1,6 @@
 # Product Requirement Document (PRD) & Technical Specification
 
-**Project:** Cross-TCG LFG Matchmaker (PodMaker PWA)
+**Project:** Cross-TCG LFG Matchmaker (PodFinder PWA)
 **Stack:** Next.js (App Router), Supabase (Auth, Database, Realtime), Tailwind CSS, Framer Motion.
 **Approach:** Mobile-first Progressive Web App (PWA) focusing on real-time LFG matchmaking for IRL and Online play, initializing from a robust user profile preference system.
 

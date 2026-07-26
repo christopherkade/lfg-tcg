@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<title>PodFinder — Social</title>
+<style>
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0;
+    width: 1080px; height: 1080px;
+    background: #09090b;
+    color: #f5f5f4;
+    font-family: -apple-system, "Helvetica Neue", Arial, sans-serif;
+    overflow: hidden;
+  }
+  body[data-size="story"] { width: 1080px; height: 1920px; }
+  body[data-size="portrait"] { width: 1080px; height: 1350px; }
+
+  .canvas {
+    position: relative;
+    width: 100%; height: 100%;
+    display: flex;
+    flex-direction: column;
+    background:
+      radial-gradient(circle at 15% 8%, rgba(52,211,153,0.16), transparent 45%),
+      radial-gradient(circle at 85% 92%, rgba(245,158,11,0.10), transparent 40%),
+      #09090b;
+  }
+
+  .brand-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 56px 64px 0;
+  }
+  .brand-row .socket {
+    width: 40px; height: 40px; border-radius: 12px;
+    background: linear-gradient(155deg, #34D399 0%, #059669 100%);
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 8px 20px -6px rgba(52,211,153,0.5);
+  }
+  .brand-row .socket::after { content: ""; width: 10px; height: 10px; border-radius: 50%; background: #F59E0B; }
+  .brand-row .wordmark { font-size: 30px; font-weight: 800; letter-spacing: -0.02em; }
+
+  .body-area {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 40px 90px;
+    gap: 28px;
+  }
+
+  .eyebrow {
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: #34D399;
+    font-family: "SF Mono", monospace;
+  }
+  .title {
+    font-size: 76px;
+    font-weight: 800;
+    line-height: 1.08;
+    letter-spacing: -0.02em;
+  }
+  .title em { font-style: normal; color: #34D399; }
+  .subtitle {
+    font-size: 32px;
+    line-height: 1.45;
+    color: #a1a1aa;
+    max-width: 820px;
+    font-weight: 500;
+  }
+
+  .logo-hero {
+    width: 280px; height: 280px;
+    border-radius: 48px;
+    background: #f5f5f4;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 30px 70px -20px rgba(0,0,0,0.6);
+  }
+  .logo-hero img { width: 200px; height: 200px; object-fit: contain; }
+
+  .logo-row {
+    display: flex;
+    gap: 20px;
+    justify-content: center;
+  }
+  .logo-row .chip {
+    width: 150px; height: 150px;
+    border-radius: 28px;
+    background: #f5f5f4;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 16px 36px -14px rgba(0,0,0,0.5);
+  }
+  .logo-row .chip img { width: 108px; height: 108px; object-fit: contain; }
+
+  .step-badge {
+    width: 96px; height: 96px;
+    border-radius: 26px;
+    background: linear-gradient(155deg, #34D399 0%, #059669 100%);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 44px; font-weight: 800; color: #09090b;
+    box-shadow: 0 20px 44px -14px rgba(52,211,153,0.55);
+  }
+
+  .footer {
+    padding: 0 64px 56px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .footer .cta {
+    font-size: 24px;
+    font-weight: 700;
+    color: #09090b;
+    background: #34D399;
+    padding: 20px 44px;
+    border-radius: 999px;
+    letter-spacing: -0.01em;
+  }
+  .footer .tagline {
+    font-size: 24px;
+    color: #71717a;
+    font-weight: 600;
+  }
+</style>
+</head>
+<body>
+  <div class="canvas">
+    <div class="brand-row">
+      <div class="socket"></div>
+      <div class="wordmark">PodFinder</div>
+    </div>
+    <div class="body-area" id="body-area"></div>
+    <div class="footer" id="footer"></div>
+  </div>
+
+  <script>
+    const p = new URLSearchParams(location.search);
+    document.body.dataset.size = p.get("size") || "square";
+
+    const bodyArea = document.getElementById("body-area");
+    const footer = document.getElementById("footer");
+
+    const eyebrow = p.get("eyebrow");
+    const title = p.get("title");
+    const subtitle = p.get("subtitle");
+    const logo = p.get("logo");
+    const step = p.get("step");
+    const logos = p.get("logos"); // comma-separated filenames for a row
+    const footerText = p.get("footer");
+    const footerCta = p.get("cta");
+
+    let html = "";
+    if (step) {
+      html += `<div class="step-badge">${step}</div>`;
+    }
+    if (logo) {
+      html += `<div class="logo-hero"><img src="assets/${logo}" /></div>`;
+    }
+    if (eyebrow) {
+      html += `<div class="eyebrow">${eyebrow}</div>`;
+    }
+    if (title) {
+      html += `<div class="title">${title}</div>`;
+    }
+    if (subtitle) {
+      html += `<div class="subtitle">${subtitle}</div>`;
+    }
+    if (logos) {
+      const items = logos.split(",").map(f => `<div class="chip"><img src="assets/${f}" /></div>`).join("");
+      html += `<div class="logo-row">${items}</div>`;
+    }
+    bodyArea.innerHTML = html;
+
+    let footerHtml = "";
+    if (footerCta) footerHtml += `<div class="cta">${footerCta}</div>`;
+    else if (footerText) footerHtml += `<div class="tagline">${footerText}</div>`;
+    footer.innerHTML = footerHtml;
+  </script>
+</body>
+</html>

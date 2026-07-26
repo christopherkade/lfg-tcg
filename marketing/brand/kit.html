@@ -1,0 +1,230 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<title>PodFinder — Brand Kit</title>
+<style>
+  @font-face {
+    font-family: "Geist Fallback";
+    src: local("Helvetica Neue"), local("Arial");
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: #09090b;
+    color: #f5f5f4;
+    font-family: -apple-system, "Geist Fallback", Arial, sans-serif;
+    width: 1200px;
+  }
+  .page {
+    padding: 72px 64px 88px;
+  }
+
+  /* ---------- Hero / wordmark ---------- */
+  .hero {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 20px;
+    padding-bottom: 64px;
+    border-bottom: 1px solid #232326;
+    margin-bottom: 56px;
+  }
+  .wordmark {
+    font-size: 96px;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+  }
+  .socket-o {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 74px;
+    height: 74px;
+    margin: 0 2px;
+    border-radius: 22px;
+    background: linear-gradient(155deg, #34D399 0%, #059669 100%);
+    box-shadow: 0 0 0 1px rgba(52,211,153,0.25), 0 18px 40px -12px rgba(52,211,153,0.45);
+  }
+  .socket-o::after {
+    content: "";
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: #F59E0B;
+    box-shadow: 0 0 16px 2px rgba(245,158,11,0.75);
+  }
+  .tagline {
+    font-size: 24px;
+    color: #a1a1aa;
+    font-weight: 500;
+    letter-spacing: -0.01em;
+  }
+  .tagline em {
+    font-style: normal;
+    color: #34D399;
+  }
+
+  /* ---------- Section headings ---------- */
+  h2.section {
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    color: #71717a;
+    font-weight: 600;
+    margin: 0 0 24px;
+    font-family: "SF Mono", "Geist Mono", monospace;
+  }
+
+  /* ---------- Color swatches ---------- */
+  .swatches {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 16px;
+    margin-bottom: 56px;
+  }
+  .swatch {
+    border-radius: 16px;
+    overflow: hidden;
+    border: 1px solid #232326;
+    background: #111113;
+  }
+  .swatch .chip { height: 110px; }
+  .swatch .meta { padding: 14px 16px; }
+  .swatch .name { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+  .swatch .hex { font-size: 12px; color: #71717a; font-family: "SF Mono", "Geist Mono", monospace; }
+
+  /* ---------- Type specimen ---------- */
+  .type-block { margin-bottom: 56px; }
+  .type-row {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    padding: 20px 0;
+    border-bottom: 1px solid #1c1c1f;
+  }
+  .type-row:last-child { border-bottom: none; }
+  .type-sample-display { font-size: 40px; font-weight: 800; letter-spacing: -0.02em; }
+  .type-sample-body { font-size: 20px; font-weight: 400; color: #d4d4d8; }
+  .type-sample-mono { font-size: 16px; font-family: "SF Mono", "Geist Mono", monospace; color: #34D399; }
+  .type-label { font-size: 12px; color: #71717a; font-family: "SF Mono", "Geist Mono", monospace; width: 220px; flex-shrink: 0; }
+
+  /* ---------- Games row ---------- */
+  .games {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 56px;
+  }
+  .game-chip {
+    flex: 1;
+    background: #111113;
+    border: 1px solid #232326;
+    border-radius: 16px;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+  }
+  .game-chip img { width: 64px; height: 64px; object-fit: contain; }
+  .game-chip span { font-size: 13px; color: #a1a1aa; font-weight: 500; }
+
+  /* ---------- Signature ---------- */
+  .signature {
+    background: radial-gradient(circle at 30% 20%, rgba(52,211,153,0.14), transparent 60%), #0d0d0f;
+    border: 1px solid #232326;
+    border-radius: 24px;
+    padding: 48px;
+    display: flex;
+    align-items: center;
+    gap: 40px;
+  }
+  .sig-mark {
+    width: 120px;
+    height: 120px;
+    flex-shrink: 0;
+    border-radius: 32px;
+    background: linear-gradient(155deg, #34D399 0%, #059669 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 24px 60px -18px rgba(52,211,153,0.5);
+  }
+  .sig-mark .dot { width: 26px; height: 26px; border-radius: 50%; background: #F59E0B; box-shadow: 0 0 20px 3px rgba(245,158,11,0.7); }
+  .sig-copy h3 { margin: 0 0 8px; font-size: 20px; font-weight: 700; }
+  .sig-copy p { margin: 0; font-size: 15px; color: #a1a1aa; line-height: 1.6; max-width: 560px; }
+</style>
+</head>
+<body>
+  <div class="page">
+
+    <div class="hero">
+      <div class="wordmark">Pod<span class="socket-o"></span>Finder</div>
+      <div class="tagline">Trouve <em>ta table</em>, pas juste des joueurs.</div>
+    </div>
+
+    <h2 class="section">Palette</h2>
+    <div class="swatches">
+      <div class="swatch">
+        <div class="chip" style="background:#09090b"></div>
+        <div class="meta"><div class="name">Obsidian</div><div class="hex">#09090B — fond</div></div>
+      </div>
+      <div class="swatch">
+        <div class="chip" style="background:#34D399"></div>
+        <div class="meta"><div class="name">Ember</div><div class="hex">#34D399 — accent principal</div></div>
+      </div>
+      <div class="swatch">
+        <div class="chip" style="background:#059669"></div>
+        <div class="meta"><div class="name">Ember Dark</div><div class="hex">#059669 — profondeur</div></div>
+      </div>
+      <div class="swatch">
+        <div class="chip" style="background:#F59E0B"></div>
+        <div class="meta"><div class="name">Spark</div><div class="hex">#F59E0B — étincelle, match</div></div>
+      </div>
+      <div class="swatch">
+        <div class="chip" style="background:#F5F5F4"></div>
+        <div class="meta" style="background:#f5f5f4"><div class="name" style="color:#09090b">Paper</div><div class="hex" style="color:#52525b">#F5F5F4 — texte clair</div></div>
+      </div>
+    </div>
+
+    <h2 class="section">Typographie</h2>
+    <div class="type-block">
+      <div class="type-row">
+        <div class="type-label">Display / Geist Sans 800</div>
+        <div class="type-sample-display">On se retrouve ce soir ?</div>
+      </div>
+      <div class="type-row">
+        <div class="type-label">Body / Geist Sans 400</div>
+        <div class="type-sample-body">Commander, Standard, EN LIGNE ou en personne — trouve un pod en quelques secondes.</div>
+      </div>
+      <div class="type-row">
+        <div class="type-label">Data / Geist Mono 500</div>
+        <div class="type-sample-mono">3/4 JOUEURS · PARIS · CE SOIR 20H</div>
+      </div>
+    </div>
+
+    <h2 class="section">Jeux supportés</h2>
+    <div class="games">
+      <div class="game-chip"><img src="assets/mtg.png" /><span>Magic: The Gathering</span></div>
+      <div class="game-chip"><img src="assets/pokemon.png" /><span>Pokémon TCG</span></div>
+      <div class="game-chip"><img src="assets/lorcana.png" /><span>Disney Lorcana</span></div>
+      <div class="game-chip"><img src="assets/op-tcg.png" /><span>One Piece TCG</span></div>
+    </div>
+
+    <h2 class="section">Signature</h2>
+    <div class="signature">
+      <div class="sig-mark"><div class="dot"></div></div>
+      <div class="sig-copy">
+        <h3>Le socket</h3>
+        <p>Le "o" de Pod devient une prise arrondie — le geste de deux joueurs qui s'emboîtent. Le point ambre au centre marque l'instant du match : la seule étincelle sur un fond sombre et discret. Cette forme sert de repère visuel dans la vidéo (zoom sur les moments de match) et sur les visuels sociaux (couverture, badge "complet").</p>
+      </div>
+    </div>
+
+  </div>
+</body>
+</html>
