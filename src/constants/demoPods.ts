@@ -47,6 +47,7 @@ export const DEMO_PODS: PodWithRelations[] = [
         user_id: "demo-user-2",
         status: "ACCEPTED",
         joined_at: "2026-07-26T14:10:00.000Z",
+        matched_notified_at: null,
         profiles: {
           id: "demo-user-2",
           updated_at: "2026-07-26T14:10:00.000Z",

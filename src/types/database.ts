@@ -55,6 +55,7 @@ export interface PodJoin {
   user_id: string;
   status: JoinStatus;
   joined_at: string;
+  matched_notified_at: string | null; // set once the joiner has been shown MatchedDialog for this pod
 }
 
 export interface PodJoinWithProfile extends PodJoin {

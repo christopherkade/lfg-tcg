@@ -9,43 +9,9 @@ interface MatchedPodWatcherProps {
 }
 
 /**
- * Pod ids the user has already been shown the MatchedDialog for,
- * persisted per-user in localStorage (mirroring LfgDialog's stored-search
- * pattern) so a page reload doesn't re-surface the dialog for a pod
- * matched long ago — the in-memory `notifiedPodIdsRef` alone only
- * guards against re-showing it within the same mount.
- */
-function storageKey(userId: string) {
-  return `lfg-tcg:seen-matched-pods:${userId}`;
-}
-
-function loadSeenPodIds(userId: string): string[] {
-  if (typeof window === "undefined") return [];
-  try {
-    const raw = window.localStorage.getItem(storageKey(userId));
-    return raw ? (JSON.parse(raw) as string[]) : [];
-  } catch {
-    return [];
-  }
-}
-
-function saveSeenPodIds(userId: string, podIds: Iterable<string>) {
-  if (typeof window === "undefined") return;
-  try {
-    window.localStorage.setItem(
-      storageKey(userId),
-      JSON.stringify(Array.from(podIds)),
-    );
-  } catch {
-    // Ignore quota/serialization errors — persistence is a convenience,
-    // not a requirement (worst case, the dialog re-surfaces once).
-  }
-}
-
-/**
  * Watches for the current user's own accepted pod transitioning to
  * MATCHED, surfacing a blocking `MatchedDialog` (see that component for why
- * this is a dialog rather than a dismissable toast — it's the only cue an
+ * this is a dialog rather than a dismissable snackbar — it's the only cue an
  * accepted member gets before the card vanishes from every match-feed
  * query). Deliberately separate from `NotificationBell`: a MATCHED
  * transition isn't one of the persisted notification types (join request /
@@ -58,6 +24,15 @@ function saveSeenPodIds(userId: string, podIds: Iterable<string>) {
  * table instead of listening to `pods`/`pod_joins` directly — avoids
  * two independent realtime listeners racing to announce the same event.
  *
+ * "Already shown" state is tracked server-side via
+ * `pod_joins.matched_notified_at` (see supabase/sql/matched_notification_seen.sql),
+ * set through the `mark_matched_notification_seen` RPC rather than a
+ * client-facing UPDATE policy. This used to be tracked in localStorage,
+ * which is per-device — on a new device the set started empty, and the
+ * on-mount poll below has no time bound (it just checks "am I ACCEPTED on a
+ * pod that is currently MATCHED"), so any pod matched long ago looked brand
+ * new and re-triggered the dialog on first login on a new device.
+ *
  * Single long-lived subscription for the component's lifetime (mounted
  * once in the (app) layout), mirroring the "no server-side filter +
  * client-side match" realtime pattern used elsewhere in this codebase.
@@ -68,13 +43,11 @@ function saveSeenPodIds(userId: string, podIds: Iterable<string>) {
  */
 export function MatchedPodWatcher({ currentUserId }: MatchedPodWatcherProps) {
   const [matchedDialogOpen, setMatchedDialogOpen] = useState(false);
-  // Guards against re-showing the dialog for a pod already surfaced —
-  // seeded from localStorage (see storageKey above) so this also holds
-  // across page reloads, not just within the current mount.
-  const notifiedPodIdsRef = useRef<Set<string> | null>(null);
-  if (notifiedPodIdsRef.current === null) {
-    notifiedPodIdsRef.current = new Set(loadSeenPodIds(currentUserId));
-  }
+  // In-flight guard only: prevents the poll and the realtime handler from
+  // both firing the RPC + dialog for the same pod_joins row before the
+  // server-side matched_notified_at write lands. The server column (not
+  // this ref) is the source of truth across mounts/devices.
+  const notifyingPodJoinIdsRef = useRef<Set<string>>(new Set());
 
   // Resilience fallback: Supabase Realtime's postgres_changes delivery has
   // been observed to be unreliable in this project (channel stays
@@ -89,15 +62,16 @@ export function MatchedPodWatcher({ currentUserId }: MatchedPodWatcherProps) {
   // instead of requiring a manual reload.
   useEffect(() => {
     const supabase = createClient();
-    const notifiedPodIds = notifiedPodIdsRef.current as Set<string>;
+    const notifying = notifyingPodJoinIdsRef.current;
 
     async function checkForMatchedPods() {
       const { data, error } = await supabase
         .from("pod_joins")
-        .select("pod_id, pods!inner(status)")
+        .select("id, pods!inner(status)")
         .eq("user_id", currentUserId)
         .eq("status", "ACCEPTED")
-        .eq("pods.status", "MATCHED");
+        .eq("pods.status", "MATCHED")
+        .is("matched_notified_at", null);
 
       if (error) {
         console.error(
@@ -107,18 +81,25 @@ export function MatchedPodWatcher({ currentUserId }: MatchedPodWatcherProps) {
         return;
       }
 
-      let newlyMatched = false;
-      for (const join of (data ?? []) as { pod_id: string }[]) {
-        if (!notifiedPodIds.has(join.pod_id)) {
-          notifiedPodIds.add(join.pod_id);
-          newlyMatched = true;
-        }
+      const newlyMatched = ((data ?? []) as { id: string }[]).filter(
+        (join) => !notifying.has(join.id),
+      );
+
+      if (newlyMatched.length === 0) return;
+
+      for (const join of newlyMatched) {
+        notifying.add(join.id);
       }
 
-      if (newlyMatched) {
-        saveSeenPodIds(currentUserId, notifiedPodIds);
-        setMatchedDialogOpen(true);
-      }
+      await Promise.all(
+        newlyMatched.map((join) =>
+          supabase.rpc("mark_matched_notification_seen", {
+            p_pod_join_id: join.id,
+          }),
+        ),
+      );
+
+      setMatchedDialogOpen(true);
     }
 
     function handleFocusOrVisible() {
@@ -158,17 +139,13 @@ export function MatchedPodWatcher({ currentUserId }: MatchedPodWatcherProps) {
           };
           // The host already knows — they're the one who marked it
           // matched. This dialog is for the people who joined them.
-          if (
-            row.status !== "MATCHED" ||
-            row.user_id === currentUserId ||
-            (notifiedPodIdsRef.current as Set<string>).has(row.id)
-          ) {
+          if (row.status !== "MATCHED" || row.user_id === currentUserId) {
             return;
           }
 
           const { data: ownJoin, error: ownJoinError } = await supabase
             .from("pod_joins")
-            .select("id")
+            .select("id, matched_notified_at")
             .eq("pod_id", row.id)
             .eq("user_id", currentUserId)
             .eq("status", "ACCEPTED")
@@ -181,12 +158,15 @@ export function MatchedPodWatcher({ currentUserId }: MatchedPodWatcherProps) {
             );
           }
 
-          if (ownJoin) {
-            (notifiedPodIdsRef.current as Set<string>).add(row.id);
-            saveSeenPodIds(
-              currentUserId,
-              notifiedPodIdsRef.current as Set<string>,
-            );
+          if (
+            ownJoin &&
+            !ownJoin.matched_notified_at &&
+            !notifyingPodJoinIdsRef.current.has(ownJoin.id)
+          ) {
+            notifyingPodJoinIdsRef.current.add(ownJoin.id);
+            await supabase.rpc("mark_matched_notification_seen", {
+              p_pod_join_id: ownJoin.id,
+            });
             setMatchedDialogOpen(true);
           }
         },

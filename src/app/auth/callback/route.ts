@@ -1,5 +1,5 @@
 import { createServerClient } from "@supabase/ssr";
-import { NextResponse, type NextRequest } from "next/server";
+import { NextResponse, after, type NextRequest } from "next/server";
 
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url);
@@ -29,30 +29,34 @@ export async function GET(request: NextRequest) {
     const { error } = await supabase.auth.exchangeCodeForSession(code);
 
     if (!error) {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+      // Deferred until after the redirect is sent so it doesn't add extra
+      // sequential network round-trips to the login critical path.
+      after(async () => {
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
 
-      if (user) {
-        const discordHandle =
-          (user.user_metadata?.full_name as string | undefined) ??
-          (user.user_metadata?.name as string | undefined) ??
-          (user.user_metadata?.preferred_username as string | undefined) ??
-          "";
-        const avatarUrl =
-          (user.user_metadata?.avatar_url as string | undefined) ?? null;
+        if (user) {
+          const discordHandle =
+            (user.user_metadata?.full_name as string | undefined) ??
+            (user.user_metadata?.name as string | undefined) ??
+            (user.user_metadata?.preferred_username as string | undefined) ??
+            "";
+          const avatarUrl =
+            (user.user_metadata?.avatar_url as string | undefined) ?? null;
 
-        if (discordHandle) {
-          // Only updates an existing profile row — onboarding (upsertProfile)
-          // is what creates the row for first-time users. This keeps an
-          // already-onboarded user's Discord identity fresh on every login
-          // without requiring them to revisit /profile.
-          await supabase
-            .from("profiles")
-            .update({ discord_handle: discordHandle, avatar_url: avatarUrl })
-            .eq("id", user.id);
+          if (discordHandle) {
+            // Only updates an existing profile row — onboarding (upsertProfile)
+            // is what creates the row for first-time users. This keeps an
+            // already-onboarded user's Discord identity fresh on every login
+            // without requiring them to revisit /profile.
+            await supabase
+              .from("profiles")
+              .update({ discord_handle: discordHandle, avatar_url: avatarUrl })
+              .eq("id", user.id);
+          }
         }
-      }
+      });
 
       return response;
     }

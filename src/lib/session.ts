@@ -1,6 +1,20 @@
+import { cache } from "react";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import type { Profile } from "@/types/database";
+
+// `auth.getUser()` round-trips to the Supabase Auth server. The layout and
+// every page/action beneath it call requireUser()/requireProfile() within
+// the same request, so without this they'd each pay that network cost
+// sequentially. React's cache() dedupes calls made during the same render
+// pass (it resets per request), collapsing them into a single lookup.
+const getCachedAuthUser = cache(async () => {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  return user;
+});
 
 /**
  * Returns the authenticated Supabase user for the current request,
@@ -13,9 +27,7 @@ import type { Profile } from "@/types/database";
  */
 export async function requireUser(path?: string) {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getCachedAuthUser();
 
   if (!user) {
     redirect(path ? `/login?next=${encodeURIComponent(path)}` : "/login");
