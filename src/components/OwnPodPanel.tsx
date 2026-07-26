@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { usePodRealtime } from "@/components/PodRealtimeProvider";
 import { MyPodPanel } from "@/components/MyPodPanel";
 import type { PodWithRelations } from "@/types/database";
 
@@ -35,6 +36,7 @@ export function OwnPodPanel({
   initialHighlight = false,
 }: OwnPodPanelProps) {
   const router = useRouter();
+  const { subscribePods, subscribePodJoins } = usePodRealtime();
   const [pod, setPod] = useState<PodWithRelations | null>(initialPod);
 
   // A freshly created pod arrives here via ?highlight=own (see LfgButton).
@@ -85,27 +87,20 @@ export function OwnPodPanel({
     };
   }, []);
 
+  // Registers with the shared pods/pod_joins channel (PodRealtimeProvider,
+  // mounted once in the (app) layout) instead of opening its own channel —
+  // see that file's docstring for why the three components that used to
+  // each open an identical unfiltered channel now share one.
   useEffect(() => {
-    const supabase = createClient();
-
-    const channel = supabase
-      .channel(`own-pod-panel-${currentUserId}`)
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "pods" },
-        () => fetchOwnPodRef.current(),
-      )
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "pod_joins" },
-        () => fetchOwnPodRef.current(),
-      )
-      .subscribe();
-
+    const unsubscribePods = subscribePods(() => fetchOwnPodRef.current());
+    const unsubscribePodJoins = subscribePodJoins(() =>
+      fetchOwnPodRef.current(),
+    );
     return () => {
-      supabase.removeChannel(channel);
+      unsubscribePods();
+      unsubscribePodJoins();
     };
-  }, [currentUserId]);
+  }, [subscribePods, subscribePodJoins]);
 
   if (!pod) {
     return null;

@@ -7,6 +7,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { SearchX } from "lucide-react";
 import { Alert, Avatar, Typography, useTheme } from "@mui/material";
 import { createClient } from "@/lib/supabase/client";
+import { usePodRealtime } from "@/components/PodRealtimeProvider";
 import { requestJoin, leavePod } from "@/app/actions/joins";
 import { PodDetailDialog } from "@/components/PodDetailDialog";
 import { PodFilters, type PodFiltersValue } from "@/components/PodFilters";
@@ -60,6 +61,7 @@ export function MatchFeed({
   initialSharedPod = null,
 }: MatchFeedProps) {
   const { t, locale } = useTranslation();
+  const { subscribePods, subscribePodJoins } = usePodRealtime();
   const router = useRouter();
   const theme = useTheme();
   const isDark = theme.palette.mode === "dark";
@@ -240,30 +242,23 @@ export function MatchFeed({
     };
   }, []);
 
+  // Registers with the shared pods/pod_joins channel (PodRealtimeProvider,
+  // mounted once in the (app) layout) instead of opening its own channel —
+  // see that file's docstring for why the three components that used to
+  // each open an identical unfiltered channel now share one.
   useEffect(() => {
-    const supabase = createClient();
-    const channel = supabase
-      .channel("match-feed")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "pods" },
-        () => fetchActivePodsRef.current(filtersRef.current),
-      )
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "pod_joins" },
-        () => fetchActivePodsRef.current(filtersRef.current),
-      )
-      .subscribe((status) => {
-        if (status === "SUBSCRIBED") {
-          fetchActivePodsRef.current(filtersRef.current);
-        }
-      });
-
+    fetchActivePodsRef.current(filtersRef.current);
+    const unsubscribePods = subscribePods(() =>
+      fetchActivePodsRef.current(filtersRef.current),
+    );
+    const unsubscribePodJoins = subscribePodJoins(() =>
+      fetchActivePodsRef.current(filtersRef.current),
+    );
     return () => {
-      supabase.removeChannel(channel);
+      unsubscribePods();
+      unsubscribePodJoins();
     };
-  }, []);
+  }, [subscribePods, subscribePodJoins]);
 
   async function handleRequestJoin(podId: string) {
     setPendingPodId(podId);

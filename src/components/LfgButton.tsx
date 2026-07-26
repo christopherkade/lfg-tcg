@@ -8,6 +8,7 @@ import { Fab, Alert, Typography } from "@mui/material";
 import { DEFAULT_GLOW_COLOR, GAMES_CONFIG } from "@/constants/gamesConfig";
 import { cancelPod } from "@/app/actions/pods";
 import { createClient } from "@/lib/supabase/client";
+import { usePodRealtime } from "@/components/PodRealtimeProvider";
 import { LfgDialog } from "@/components/LfgDialog";
 import { CantStartSearchDialog } from "@/components/CantStartSearchDialog";
 import { useTranslation } from "@/lib/i18n/LocaleContext";
@@ -28,6 +29,7 @@ export function LfgButton({
   hasActiveJoin: initialHasActiveJoin,
 }: LfgButtonProps) {
   const { t } = useTranslation();
+  const { subscribePods, subscribePodJoins } = usePodRealtime();
   const router = useRouter();
   const [ownPod, setOwnPod] = useState(initialOwnPod);
   const [hasActiveJoin, setHasActiveJoin] = useState(initialHasActiveJoin);
@@ -94,31 +96,24 @@ export function LfgButton({
   // Keep ownPod and hasActiveJoin in sync with realtime changes (e.g.
   // cancelled/matched/started from another tab or device, or a join
   // request accepted/rejected/left elsewhere) instead of only reflecting
-  // what was fetched on the last page load.
+  // what was fetched on the last page load. Registers with the shared
+  // pods/pod_joins channel (PodRealtimeProvider, mounted once in the (app)
+  // layout) instead of opening its own channel — see that file's docstring
+  // for why the three components that used to each open an identical
+  // unfiltered channel now share one.
   useEffect(() => {
-    const supabase = createClient();
-
-    const channel = supabase
-      .channel(`lfg-own-pod-${profile.id}`)
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "pods" },
-        () => {
-          fetchOwnPodRef.current();
-          fetchHasActiveJoinRef.current();
-        },
-      )
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "pod_joins" },
-        () => fetchHasActiveJoinRef.current(),
-      )
-      .subscribe();
-
+    const unsubscribePods = subscribePods(() => {
+      fetchOwnPodRef.current();
+      fetchHasActiveJoinRef.current();
+    });
+    const unsubscribePodJoins = subscribePodJoins(() =>
+      fetchHasActiveJoinRef.current(),
+    );
     return () => {
-      supabase.removeChannel(channel);
+      unsubscribePods();
+      unsubscribePodJoins();
     };
-  }, [profile.id]);
+  }, [subscribePods, subscribePodJoins]);
 
   const game = profile.preferred_game
     ? GAMES_CONFIG[profile.preferred_game]
