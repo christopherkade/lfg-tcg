@@ -21,7 +21,7 @@
 
   "historyPage.title": "Past Pods",
   "historyPage.gamesPlayed": "Games played: {count}",
-  "historyPage.empty": "No past pods yet — matched groups will show up here.",
+  "historyPage.empty": "No past pods yet, matched groups will show up here.",
   "historyPage.host": "Host",
   "historyPage.members": "Group",
   "historyPage.delete": "Delete",
@@ -69,7 +69,7 @@
   "lfgDialog.search.pending": "Starting...",
 
   "matchFeed.title": "Match Feed",
-  "matchFeed.noCityHint": "Set your city on your Profile to see in-person pods near you — Online pods always show regardless of city.",
+  "matchFeed.noCityHint": "Set your city on your Profile to see in-person pods near you. Online pods always show regardless of city.",
   "matchFeed.loading": "Loading match feed...",
   "matchFeed.empty.title": "No pods match your filters",
   "matchFeed.empty.subtitle": "Try broadening your filters, or check back in a bit.",
@@ -159,7 +159,7 @@
   "lfgButton.lfg": "LFG",
 
   "cantStartSearchDialog.title": "You're already in a group",
-  "cantStartSearchDialog.body": "You can't start a new search while you have a pending request on (or have joined) someone else's pod. Leave that pod first — from its card in the match feed — if you want to search for a different group.",
+  "cantStartSearchDialog.body": "You can't start a new search while you have a pending request on (or have joined) someone else's pod. Leave that pod first, from its card in the match feed, if you want to search for a different group.",
   "cantStartSearchDialog.gotIt": "Got It",
 
   "confirmMarkMatchedDialog.title": "Got everyone on Discord?",
@@ -176,7 +176,7 @@
   "confirmRemoveMemberDialog.remove": "Remove",
 
   "matchedDialog.title": "You're Matched!",
-  "matchedDialog.body": "The host marked this pod as matched. Check your Discord DMs — the host should be reaching out (or sending a friend request) shortly. Also don't be surprised when its card disappears from the match feed — it's been removed now that the group is set.",
+  "matchedDialog.body": "The host marked this pod as matched. Check your Discord DMs, the host should be reaching out (or sending a friend request) shortly. Also don't be surprised when its card disappears from the match feed, it's been removed now that the group is set.",
   "matchedDialog.gotIt": "Got It",
 
   "login.title": "PodMaker",

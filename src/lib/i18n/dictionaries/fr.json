@@ -21,7 +21,7 @@
 
   "historyPage.title": "Tables passées",
   "historyPage.gamesPlayed": "Parties jouées : {count}",
-  "historyPage.empty": "Aucune table passée pour le moment — les groupes formés apparaîtront ici.",
+  "historyPage.empty": "Aucune table passée pour le moment, les groupes formés apparaîtront ici.",
   "historyPage.host": "Hôte",
   "historyPage.members": "Groupe",
   "historyPage.delete": "Supprimer",
@@ -69,7 +69,7 @@
   "lfgDialog.search.pending": "Démarrage...",
 
   "matchFeed.title": "Fil des tables",
-  "matchFeed.noCityHint": "Renseignez votre ville dans votre Profil pour voir les tables en personne près de vous — les tables en ligne s'affichent toujours, quelle que soit la ville.",
+  "matchFeed.noCityHint": "Renseignez votre ville dans votre Profil pour voir les tables en personne près de vous. Les tables en ligne s'affichent toujours, quelle que soit la ville.",
   "matchFeed.loading": "Chargement du fil des tables...",
   "matchFeed.empty.title": "Aucune table ne correspond à vos filtres",
   "matchFeed.empty.subtitle": "Essayez d'élargir vos filtres, ou revenez un peu plus tard.",
@@ -159,7 +159,7 @@
   "lfgButton.lfg": "LFG",
 
   "cantStartSearchDialog.title": "Vous êtes déjà dans un groupe",
-  "cantStartSearchDialog.body": "Vous ne pouvez pas démarrer une nouvelle recherche tant que vous avez une demande en attente (ou avez rejoint) la table de quelqu'un d'autre. Quittez d'abord cette table — depuis sa carte dans le fil des tables — si vous voulez chercher un autre groupe.",
+  "cantStartSearchDialog.body": "Vous ne pouvez pas démarrer une nouvelle recherche tant que vous avez une demande en attente (ou avez rejoint) la table de quelqu'un d'autre. Quittez d'abord cette table, depuis sa carte dans le fil des tables, si vous voulez chercher un autre groupe.",
   "cantStartSearchDialog.gotIt": "Compris",
 
   "confirmMarkMatchedDialog.title": "Tout le monde est ajouté sur Discord ?",
@@ -176,7 +176,7 @@
   "confirmRemoveMemberDialog.remove": "Retirer",
 
   "matchedDialog.title": "Table complète !",
-  "matchedDialog.body": "L'hôte a marqué cette table comme complète. Vérifiez vos messages privés Discord — l'hôte devrait vous contacter (ou vous envoyer une demande d'ami) sous peu. Ne soyez pas surpris de voir sa carte disparaître du fil des tables — elle a été retirée maintenant que le groupe est formé.",
+  "matchedDialog.body": "L'hôte a marqué cette table comme complète. Vérifiez vos messages privés Discord, l'hôte devrait vous contacter (ou vous envoyer une demande d'ami) sous peu. Ne soyez pas surpris de voir sa carte disparaître du fil des tables, elle a été retirée maintenant que le groupe est formé.",
   "matchedDialog.gotIt": "Compris",
 
   "login.title": "PodMaker",
