@@ -131,9 +131,9 @@
   "myPodPanel.copied": "Copié",
   "myPodPanel.remove": "Retirer",
   "myPodPanel.copyAllHandles": "Copier tous les identifiants",
-  "myPodPanel.copyLink": "Copier le lien",
+  "myPodPanel.copyLink": "Copier",
   "myPodPanel.yourNotes": "Vos notes",
-  "myPodPanel.editPod": "Modifier la table",
+  "myPodPanel.editPod": "Modifier",
   "myPodPanel.markAsMatched": "Marquer comme complète",
 
   "notificationBell.title": "Notifications",

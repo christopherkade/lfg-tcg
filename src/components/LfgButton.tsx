@@ -2,9 +2,10 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { motion } from "framer-motion";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { Radio, X } from "lucide-react";
 import { Fab, Alert, Typography } from "@mui/material";
+import { useTheme, alpha, darken, lighten } from "@mui/material/styles";
 import { DEFAULT_GLOW_COLOR, GAMES_CONFIG } from "@/constants/gamesConfig";
 import { cancelPod } from "@/app/actions/pods";
 import { createClient } from "@/lib/supabase/client";
@@ -31,12 +32,15 @@ export function LfgButton({
   const { t } = useTranslation();
   const { subscribePods, subscribePodJoins } = usePodRealtime();
   const router = useRouter();
+  const theme = useTheme();
+  const prefersReducedMotion = useReducedMotion();
   const [ownPod, setOwnPod] = useState(initialOwnPod);
   const [hasActiveJoin, setHasActiveJoin] = useState(initialHasActiveJoin);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [blockedDialogOpen, setBlockedDialogOpen] = useState(false);
+  const [burstKey, setBurstKey] = useState(0);
 
   const fetchOwnPod = useCallback(async () => {
     const supabase = createClient();
@@ -120,6 +124,49 @@ export function LfgButton({
     : null;
   const glowColor = game?.glowColor ?? DEFAULT_GLOW_COLOR;
   const isSearching = ownPod?.status === "ACTIVE";
+
+  // Physical-button palette, derived from the theme so the "keycap +
+  // recessed skirt" bevel effect below reads correctly in both light and
+  // dark mode instead of the fixed dark-only hex values this used to have.
+  const isDarkMode = theme.palette.mode === "dark";
+  const capColor = theme.palette.background.paper;
+  const skirtColor = isDarkMode
+    ? darken(capColor, 0.75)
+    : darken(capColor, 0.22);
+  const glossColor = isDarkMode ? lighten(capColor, 0.16) : "#ffffff";
+  const innerShadowColor = isDarkMode
+    ? "rgba(0, 0, 0, 0.55)"
+    : "rgba(15, 15, 20, 0.14)";
+  const hoverBgColor = isDarkMode
+    ? lighten(capColor, 0.08)
+    : darken(capColor, 0.02);
+  const activeBgColor = isDarkMode
+    ? darken(capColor, 0.1)
+    : darken(capColor, 0.06);
+
+  // Two box-shadow "recipes": resting (gloss line along the top edge, as
+  // if catching light) and pressed (that gloss replaced by an inward
+  // shadow, as if the light source is now blocked by the cap sitting in
+  // its recessed skirt). `skirtOffset` is the vertical distance between
+  // the cap and its skirt — paired 1:1 with how far the cap should
+  // translate down in `whileTap`/press so the two layers meet exactly.
+  const restShadow = (skirtOffset: number, glowBlur: number, glowSpread: number) =>
+    [
+      `inset 0 1.5px 0 0 ${alpha(glossColor, isDarkMode ? 0.22 : 0.9)}`,
+      `inset 0 -3px 6px 0 ${innerShadowColor}`,
+      `0 ${skirtOffset}px 0 0 ${skirtColor}`,
+      `0 0 ${glowBlur}px ${glowSpread}px ${glowColor}`,
+    ].join(", ");
+  const pressedShadow = (
+    skirtOffset: number,
+    glowBlur: number,
+    glowSpread: number,
+  ) =>
+    [
+      `inset 0 3px 7px 0 ${innerShadowColor}`,
+      `0 ${skirtOffset}px 0 0 ${skirtColor}`,
+      `0 0 ${glowBlur}px ${glowSpread}px ${glowColor}`,
+    ].join(", ");
   const formatKey = game?.formats.find(
     (format) => format.key === profile.preferred_format,
   )?.key;
@@ -127,22 +174,115 @@ export function LfgButton({
     ? t(`format.${formatKey}` as TranslationKey)
     : undefined;
 
-  // Real sample (Kenney UI Audio, CC0) instead of a synthesized tone —
-  // cloning the element per play lets rapid presses overlap cleanly.
-  const clickAudioRef = useRef<HTMLAudioElement | null>(null);
-  useEffect(() => {
-    clickAudioRef.current = new Audio("/sounds/button-click.wav");
+  // Synthesized instead of sampled: a tiny oscillator "tap" (pitch-drop
+  // triangle wave + a sliver of filtered noise for transient bite) reads as
+  // a more modern UI sound than a fixed recorded sample, and lets every tap
+  // be pitch-jittered so rapid presses don't sound identical. One shared
+  // AudioContext, created lazily on first interaction (autoplay policies
+  // block audio nodes started before a user gesture) and resumed if a
+  // browser suspends it.
+  const audioCtxRef = useRef<AudioContext | null>(null);
+  const getAudioContext = useCallback(() => {
+    if (typeof window === "undefined") return null;
+    if (!audioCtxRef.current) {
+      const AudioContextCtor =
+        window.AudioContext ||
+        (window as unknown as { webkitAudioContext: typeof AudioContext })
+          .webkitAudioContext;
+      audioCtxRef.current = new AudioContextCtor();
+    }
+    const ctx = audioCtxRef.current;
+    if (ctx.state === "suspended") {
+      void ctx.resume();
+    }
+    return ctx;
   }, []);
-  const playClickSound = useCallback(() => {
-    const base = clickAudioRef.current;
+
+  const playSynthClick = useCallback(
+    (pitchMultiplier = 1) => {
+      const ctx = getAudioContext();
+      if (!ctx) return;
+      const now = ctx.currentTime;
+      const jitter = 0.97 + Math.random() * 0.06;
+      const startFreq = 1200 * pitchMultiplier * jitter;
+
+      const osc = ctx.createOscillator();
+      osc.type = "triangle";
+      osc.frequency.setValueAtTime(startFreq, now);
+      osc.frequency.exponentialRampToValueAtTime(
+        Math.max(startFreq * 0.35, 40),
+        now + 0.08,
+      );
+      const oscGain = ctx.createGain();
+      oscGain.gain.setValueAtTime(0.25, now);
+      oscGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.09);
+      osc.connect(oscGain).connect(ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.1);
+
+      const noiseBufferSize = Math.floor(ctx.sampleRate * 0.02);
+      const noiseBuffer = ctx.createBuffer(
+        1,
+        noiseBufferSize,
+        ctx.sampleRate,
+      );
+      const noiseData = noiseBuffer.getChannelData(0);
+      for (let i = 0; i < noiseBufferSize; i++) {
+        noiseData[i] = (Math.random() * 2 - 1) * (1 - i / noiseBufferSize);
+      }
+      const noise = ctx.createBufferSource();
+      noise.buffer = noiseBuffer;
+      const noiseFilter = ctx.createBiquadFilter();
+      noiseFilter.type = "highpass";
+      noiseFilter.frequency.value = 2500;
+      const noiseGain = ctx.createGain();
+      noiseGain.gain.setValueAtTime(0.15, now);
+      noiseGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.03);
+      noise.connect(noiseFilter).connect(noiseGain).connect(ctx.destination);
+      noise.start(now);
+      noise.stop(now + 0.03);
+    },
+    [getAudioContext],
+  );
+
+  // Bright chime for "search started" — reused from the notification bell
+  // rather than another synthesized sound, since it already reads as a
+  // positive/success cue elsewhere in the app.
+  const chimeAudioRef = useRef<HTMLAudioElement | null>(null);
+  useEffect(() => {
+    chimeAudioRef.current = new Audio("/sounds/notification.wav");
+  }, []);
+  const playChimeSound = useCallback((pitchMultiplier = 1) => {
+    const base = chimeAudioRef.current;
     if (!base) return;
     const sound = base.cloneNode(true) as HTMLAudioElement;
     sound.volume = 0.5;
+    sound.playbackRate = pitchMultiplier;
     void sound.play().catch(() => {});
   }, []);
 
+  // Fires the activate/power-down cue on the isSearching transition itself
+  // (not from handleClick) so it plays correctly even when the state flips
+  // via the LfgDialog success flow or a realtime sync, not just a direct
+  // cancel click. Ref-tracked previous value skips the sound on mount.
+  const prevIsSearchingRef = useRef(isSearching);
+  useEffect(() => {
+    if (prevIsSearchingRef.current !== isSearching) {
+      if (isSearching) {
+        playChimeSound(1.15);
+      } else {
+        playSynthClick(0.6);
+      }
+      prevIsSearchingRef.current = isSearching;
+    }
+  }, [isSearching, playChimeSound, playSynthClick]);
+
   async function handleClick() {
-    playClickSound();
+    playSynthClick();
+    setBurstKey((key) => key + 1);
+    if (typeof navigator !== "undefined" && navigator.vibrate) {
+      navigator.vibrate(18);
+    }
 
     if (!isSearching) {
       if (hasActiveJoin) {
@@ -184,74 +324,185 @@ export function LfgButton({
             : t("podFilters.matchTypeOnline")}
         </Typography>
       </div>
-      <MotionFab
-        type="button"
-        onClick={handleClick}
-        disabled={pending}
-        whileHover={pending ? undefined : { y: -2 }}
-        whileTap={
-          pending
-            ? undefined
-            : { y: 4, boxShadow: `0 2px 0 0 #3f3f46, 0 0 16px 6px ${glowColor}` }
-        }
-        animate={
-          isSearching
-            ? {
-                y: 0,
-                boxShadow: [
-                  `0 6px 0 0 #3f3f46, 0 0 16px 6px ${glowColor}`,
-                  `0 6px 0 0 #3f3f46, 0 0 40px 20px ${glowColor}`,
-                  `0 6px 0 0 #3f3f46, 0 0 16px 6px ${glowColor}`,
-                ],
-              }
-            : { y: 0, boxShadow: `0 6px 0 0 #3f3f46, 0 0 16px 6px ${glowColor}` }
-        }
-        transition={
-          isSearching
-            ? {
-                boxShadow: { duration: 2, repeat: Infinity, ease: "easeInOut" },
-                y: { type: "spring", stiffness: 500, damping: 30 },
-              }
-            : {
-                boxShadow: { duration: 0.3 },
-                y: { type: "spring", stiffness: 500, damping: 30 },
-              }
-        }
-        sx={{
-          height: 128,
-          width: 128,
-          // MUI's Fab defaults to theme.zIndex.fab (1050), which would
-          // otherwise render above LfgDialog's overlay (Tailwind z-20).
-          // This button isn't meant to float above other UI, so pin it
-          // back down to the normal stacking layer.
-          zIndex: 0,
-          display: "flex",
-          flexDirection: "column",
-          gap: 0.5,
-          bgcolor: "#27272a",
-          border: "1px solid #3f3f46",
-          color: "#fafafa",
-          fontSize: "1.125rem",
-          fontWeight: 700,
-          // Let framer-motion own transform/box-shadow (the 3D press
-          // effect below) instead of racing MUI's own CSS transition.
-          transition: "background-color 150ms ease",
-          "&:hover": { bgcolor: "#3f3f46" },
-          "&:active": { bgcolor: "#18181b" },
-          "&.Mui-disabled": {
-            bgcolor: "#27272a",
-            opacity: 0.6,
-            color: "#fafafa",
-          },
-        }}
-      >
-        {isSearching ? (
-          <X className="h-6 w-6" />
-        ) : (
-          <Radio className="h-6 w-6" />
-        )}
-        {isSearching ? t("lfgButton.cancel") : t("lfgButton.lfg")}
-      </MotionFab>
+      <div className="relative flex items-center justify-center">
+        {/* Radar-ping rings: broadcasting-signal metaphor for the Radio
+            icon/"looking for group" concept, looping while a search is
+            active. Suppressed under prefers-reduced-motion. */}
+        <AnimatePresence>
+          {isSearching && !prefersReducedMotion && (
+            <>
+              <motion.div
+                key="radar-ring-1"
+                className="pointer-events-none absolute inset-0 rounded-full"
+                style={{ border: `2px solid ${glowColor}` }}
+                initial={{ scale: 1, opacity: 0.6 }}
+                animate={{ scale: [1, 1.8, 2.2], opacity: [0.6, 0.6, 0] }}
+                exit={{ opacity: 0, transition: { duration: 0.3, repeat: 0 } }}
+                transition={{
+                  duration: 1.8,
+                  times: [0, 0.6, 1],
+                  repeat: Infinity,
+                  ease: "easeOut",
+                }}
+              />
+              <motion.div
+                key="radar-ring-2"
+                className="pointer-events-none absolute inset-0 rounded-full"
+                style={{ border: `2px solid ${glowColor}` }}
+                initial={{ scale: 1, opacity: 0.6 }}
+                animate={{ scale: [1, 1.8, 2.2], opacity: [0.6, 0.6, 0] }}
+                exit={{ opacity: 0, transition: { duration: 0.3, repeat: 0 } }}
+                transition={{
+                  duration: 1.8,
+                  times: [0, 0.6, 1],
+                  repeat: Infinity,
+                  ease: "easeOut",
+                  delay: 0.9,
+                }}
+              />
+            </>
+          )}
+        </AnimatePresence>
+
+        {/* One-shot impact shockwave, re-keyed on every tap. */}
+        <AnimatePresence>
+          {burstKey > 0 && (
+            <motion.div
+              key={burstKey}
+              className="pointer-events-none absolute inset-0 rounded-full"
+              style={{ border: `2px solid ${glowColor}` }}
+              initial={{ scale: 0, opacity: 0.7 }}
+              animate={{ scale: 2.4, opacity: 0 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.5, ease: "easeOut" }}
+            />
+          )}
+        </AnimatePresence>
+
+        <MotionFab
+          type="button"
+          onClick={handleClick}
+          disabled={pending}
+          whileHover={pending ? undefined : { y: -3, scale: 1.02 }}
+          whileTap={
+            pending
+              ? undefined
+              : {
+                  y: 6,
+                  scale: 0.95,
+                  boxShadow: pressedShadow(2, 16, 6),
+                }
+          }
+          animate={
+            pending
+              ? { y: 0, scale: 1, boxShadow: restShadow(8, 16, 6) }
+              : isSearching
+                ? {
+                    y: 0,
+                    scale: 1,
+                    boxShadow: [
+                      restShadow(8, 16, 6),
+                      restShadow(8, 40, 20),
+                      restShadow(8, 16, 6),
+                    ],
+                  }
+                : prefersReducedMotion
+                  ? { y: 0, scale: 1, boxShadow: restShadow(8, 16, 6) }
+                  : {
+                      // Gentle idle "breathing" invitation to press — a slow
+                      // lift + brighten, distinct from (and much subtler
+                      // than) the searching-state pulse below.
+                      y: [0, -3, 0],
+                      scale: [1, 1.015, 1],
+                      boxShadow: [
+                        restShadow(8, 16, 6),
+                        restShadow(8, 26, 10),
+                        restShadow(8, 16, 6),
+                      ],
+                    }
+          }
+          transition={
+            pending
+              ? {
+                  boxShadow: { duration: 0.3 },
+                  y: { type: "spring", stiffness: 500, damping: 30 },
+                  scale: { type: "spring", stiffness: 500, damping: 30 },
+                }
+              : isSearching
+                ? {
+                    boxShadow: { duration: 2, repeat: Infinity, ease: "easeInOut" },
+                    y: { type: "spring", stiffness: 500, damping: 30 },
+                    scale: { type: "spring", stiffness: 500, damping: 30 },
+                  }
+                : prefersReducedMotion
+                  ? { boxShadow: { duration: 0.3 } }
+                  : {
+                      y: { duration: 3, repeat: Infinity, ease: "easeInOut" },
+                      scale: { duration: 3, repeat: Infinity, ease: "easeInOut" },
+                      boxShadow: {
+                        duration: 3,
+                        repeat: Infinity,
+                        ease: "easeInOut",
+                      },
+                    }
+          }
+          sx={{
+            height: 128,
+            width: 128,
+            // MUI's Fab defaults to theme.zIndex.fab (1050), which would
+            // otherwise render above LfgDialog's overlay (Tailwind z-20).
+            // This button isn't meant to float above other UI, so pin it
+            // back down to the normal stacking layer.
+            zIndex: 0,
+            display: "flex",
+            flexDirection: "column",
+            gap: 0.5,
+            bgcolor: capColor,
+            border: `1px solid ${theme.palette.divider}`,
+            color: theme.palette.text.primary,
+            fontSize: "1.125rem",
+            fontWeight: 700,
+            // Let framer-motion own transform/box-shadow (the 3D press
+            // effect below) instead of racing MUI's own CSS transition.
+            transition: "background-color 150ms ease",
+            "&:hover": { bgcolor: hoverBgColor },
+            "&:active": { bgcolor: activeBgColor },
+            "&.Mui-disabled": {
+              bgcolor: capColor,
+              opacity: 0.6,
+              color: theme.palette.text.primary,
+            },
+          }}
+        >
+          <AnimatePresence mode="wait" initial={false}>
+            <motion.span
+              key={isSearching ? "cancel-icon" : "lfg-icon"}
+              className="flex items-center justify-center"
+              initial={{ opacity: 0, rotate: -90, scale: 0.5 }}
+              animate={{ opacity: 1, rotate: 0, scale: 1 }}
+              exit={{ opacity: 0, rotate: 90, scale: 0.5 }}
+              transition={{ duration: 0.2 }}
+            >
+              {isSearching ? (
+                <X className="h-6 w-6" />
+              ) : (
+                <Radio className="h-6 w-6" />
+              )}
+            </motion.span>
+          </AnimatePresence>
+          <AnimatePresence mode="wait" initial={false}>
+            <motion.span
+              key={isSearching ? "cancel-label" : "lfg-label"}
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -6 }}
+              transition={{ duration: 0.2 }}
+            >
+              {isSearching ? t("lfgButton.cancel") : t("lfgButton.lfg")}
+            </motion.span>
+          </AnimatePresence>
+        </MotionFab>
+      </div>
       {error && <Alert severity="error">{error}</Alert>}
 
       <LfgDialog
