@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { isSameDay } from "date-fns";
 import { AnimatePresence, motion } from "framer-motion";
 import { SearchX } from "lucide-react";
 import { Alert, Avatar, Typography, useTheme } from "@mui/material";
@@ -10,12 +9,14 @@ import { createClient } from "@/lib/supabase/client";
 import { usePodRealtime } from "@/components/PodRealtimeProvider";
 import { requestJoin, leavePod } from "@/app/actions/joins";
 import { PodDetailDialog } from "@/components/PodDetailDialog";
-import { PodFilters, type PodFiltersValue } from "@/components/PodFilters";
+import { PodFilters } from "@/components/PodFilters";
 import { CITY_MAP } from "@/constants/citiesConfig";
 import { DEMO_PODS } from "@/constants/demoPods";
 import { formatPodWhen } from "@/lib/date";
 import { useTranslation } from "@/lib/i18n/LocaleContext";
 import type { TranslationKey } from "@/lib/i18n";
+import { fetchActivePodsData, getInitialFilters } from "@/lib/pods/matchFeed";
+import type { PodFiltersValue } from "@/components/PodFilters";
 import type { PodWithRelations, Profile } from "@/types/database";
 
 interface MatchFeedProps {
@@ -23,50 +24,29 @@ interface MatchFeedProps {
   currentUserId: string;
   /** Pod to auto-open in PodDetailDialog, from visiting /pods/<id> directly. */
   initialSharedPod?: PodWithRelations | null;
-}
-
-// Shape of each row returned by the "joined pods" query below — a
-// pod_joins row with its parent pod (and that pod's own
-// relations) embedded via the `pods!inner(...)` foreign-table select.
-interface JoinedPodRow {
-  pods: PodWithRelations;
-}
-
-/**
- * The feed's initial filter state — unlike the "Clear all" neutral state
- * (NEUTRAL_POD_FILTERS), this only seeds the Game filter from the
- * viewer's own profile so first load still browses meaningfully (their own
- * game) instead of showing every game at once. Every other field —
- * including Power Bracket — starts unset/"no restriction", same as the
- * neutral state. Power Bracket specifically must NOT default to
- * `profile.preferred_brackets`: that column is last-used LFG *search*
- * settings, not a standing browse preference, so silently applying it here
- * would hide pods outside whatever bracket the viewer happened to
- * search for last, with no visible indication why (the Power Bracket chip
- * is the only thing that would show it, and nothing prompts the viewer to
- * check it since they never touched it this session).
- */
-function getInitialFilters(profile: Profile): PodFiltersValue {
-  return {
-    gameKey: profile.preferred_game,
-    matchType: "ALL",
-    formatKey: "ALL",
-    date: null,
-    powerBrackets: [],
-  };
+  /**
+   * Feed data for the default filters, fetched server-side by PodsView.
+   * Seeds `pods` directly so the feed renders on first paint instead of
+   * showing a loading state and re-fetching client-side immediately after
+   * mount — mirrors OwnPodPanel's `initialPod` prop.
+   */
+  initialPods?: PodWithRelations[];
 }
 
 export function MatchFeed({
   profile,
   currentUserId,
   initialSharedPod = null,
+  initialPods,
 }: MatchFeedProps) {
   const { t, locale } = useTranslation();
   const { subscribePods, subscribePodJoins } = usePodRealtime();
   const router = useRouter();
   const theme = useTheme();
   const isDark = theme.palette.mode === "dark";
-  const [pods, setPods] = useState<PodWithRelations[] | null>(null);
+  const [pods, setPods] = useState<PodWithRelations[] | null>(
+    initialPods ?? null,
+  );
   const [pendingPodId, setPendingPodId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [selectedPodId, setSelectedPodId] = useState<string | null>(
@@ -90,111 +70,32 @@ export function MatchFeed({
     async (activeFilters: PodFiltersValue) => {
       const supabase = createClient();
 
-      // Pods the viewer has a live (PENDING/ACCEPTED) join request on
-      // must always be shown, regardless of every filter/scoping rule
-      // below — otherwise adjusting a browsing filter (or even just the
-      // always-on playstyle/city scoping) could make a pod the viewer
-      // is actively part of silently vanish from their own feed while
-      // they still have a pending request in, or are coordinating as an
-      // accepted member. This is queried unconditionally, independent of
-      // the filtered query further down.
-      const { data: joinedData } = await supabase
-        .from("pod_joins")
-        .select("pods!inner(*, profiles(*), pod_joins(*, profiles(*)))")
-        .eq("user_id", currentUserId)
-        .in("status", ["PENDING", "ACCEPTED"])
-        .eq("pods.status", "ACTIVE")
-        .gt("pods.expires_at", new Date().toISOString());
-
-      const joinedPods = ((joinedData as JoinedPodRow[] | null) ?? []).map(
-        (row) => row.pods,
-      );
-
-      // City scoping: IRL pods only make sense to show if they're near
-      // the viewer, so they're always restricted to the viewer's own
-      // `profiles.city` regardless of the Match Type filter above — Online
-      // pods are exempt (no IRL travel involved) and always show. A
-      // viewer with no city on file simply can't be matched to any IRL
-      // pod (there's nothing to compare against), so skip the filtered
-      // query entirely rather than show an unscoped/incorrect IRL list —
-      // any joined pods above still show regardless.
-      let filteredRows: PodWithRelations[] = [];
-      if (!(activeFilters.matchType === "IRL" && !profile.city)) {
-        let query = supabase
-          .from("pods")
-          .select("*, profiles(*), pod_joins(*, profiles(*))")
-          .eq("playstyle_key", profile.preferred_playstyle)
-          .eq("status", "ACTIVE")
-          .gt("expires_at", new Date().toISOString())
-          .neq("user_id", currentUserId);
-
-        if (activeFilters.matchType === "ONLINE") {
-          query = query.eq("type", "ONLINE");
-        } else if (activeFilters.matchType === "IRL") {
-          // profile.city is guaranteed set here (see the branch guard above).
-          query = query.eq("type", "IRL").eq("city", profile.city as string);
-        } else if (profile.city) {
-          query = query.or(
-            `type.eq.ONLINE,and(type.eq.IRL,city.eq.${profile.city})`,
-          );
-        } else {
-          query = query.eq("type", "ONLINE");
-        }
-
-        if (activeFilters.gameKey !== "ALL") {
-          query = query.eq("game_key", activeFilters.gameKey);
-        }
-        if (activeFilters.formatKey !== "ALL") {
-          query = query.eq("format_key", activeFilters.formatKey);
-        }
-        if (activeFilters.powerBrackets.length > 0) {
-          query = query.overlaps("power_tiers", activeFilters.powerBrackets);
-        }
-
-        const { data } = await query;
-        filteredRows = (data as PodWithRelations[]) ?? [];
-
-        // Date filtering isn't a plain column match (ONLINE pods have no
-        // scheduled_at, so cards fall back to created_at — see
-        // formatPodWhen), so it's applied client-side against the
-        // same effective date shown on each card rather than via the query.
-        if (activeFilters.date) {
-          const targetDate = activeFilters.date;
-          filteredRows = filteredRows.filter((pod) =>
-            isSameDay(new Date(pod.scheduled_at ?? pod.created_at), targetDate),
-          );
-        }
-      }
-
-      // Merge, with joined pods first (and de-duplicated against the
-      // filtered results, since a joined pod may also legitimately
-      // satisfy the current filters on its own).
-      const joinedIds = new Set(joinedPods.map((pod) => pod.id));
-      const rows = [
-        ...joinedPods,
-        ...filteredRows.filter((pod) => !joinedIds.has(pod.id)),
-      ];
+      // Keep the shared/pinned pod (opened via /pods/<id>) fresh across every
+      // refetch trigger below (realtime events, focus resync, post-join/leave
+      // refetch) so its join status in the dialog never goes stale — it's
+      // intentionally excluded from the feed rows since it may not match
+      // the viewer's filters or may be their own pod.
+      const [rows, pinnedResult] = await Promise.all([
+        fetchActivePodsData(supabase, currentUserId, profile, activeFilters),
+        pinnedPodIdRef.current
+          ? supabase
+              .from("pods")
+              .select("*, profiles(*), pod_joins(*, profiles(*))")
+              .eq("id", pinnedPodIdRef.current)
+              .maybeSingle()
+          : Promise.resolve(null),
+      ]);
 
       // Comment out the DEMO_PODS spread below to stop showing fake demo
       // pods in the feed.
       setPods([...rows]);
       // setPods([...DEMO_PODS, ...rows]);
 
-      // Keep the shared/pinned pod (opened via /pods/<id>) fresh across every
-      // refetch trigger below (realtime events, focus resync, post-join/leave
-      // refetch) so its join status in the dialog never goes stale — it's
-      // intentionally excluded from `rows` above since it may not match the
-      // viewer's filters or may be their own pod.
-      if (pinnedPodIdRef.current) {
-        const { data: pinnedData } = await supabase
-          .from("pods")
-          .select("*, profiles(*), pod_joins(*, profiles(*))")
-          .eq("id", pinnedPodIdRef.current)
-          .maybeSingle();
-        setPinnedPod((pinnedData as PodWithRelations) ?? null);
+      if (pinnedResult) {
+        setPinnedPod((pinnedResult.data as PodWithRelations) ?? null);
       }
     },
-    [profile.preferred_playstyle, profile.city, currentUserId],
+    [profile, currentUserId],
   );
 
   // Filters live in a ref (mirrored from state below) so the realtime/focus
@@ -251,7 +152,11 @@ export function MatchFeed({
   // see that file's docstring for why the three components that used to
   // each open an identical unfiltered channel now share one.
   useEffect(() => {
-    fetchActivePodsRef.current(filtersRef.current);
+    // Skip the initial fetch when PodsView already seeded `pods` server-side
+    // for these same default filters — only subscribe, same as OwnPodPanel.
+    if (!initialPods) {
+      fetchActivePodsRef.current(filtersRef.current);
+    }
     const unsubscribePods = subscribePods(() =>
       fetchActivePodsRef.current(filtersRef.current),
     );
@@ -262,6 +167,7 @@ export function MatchFeed({
       unsubscribePods();
       unsubscribePodJoins();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [subscribePods, subscribePodJoins]);
 
   async function handleRequestJoin(podId: string) {

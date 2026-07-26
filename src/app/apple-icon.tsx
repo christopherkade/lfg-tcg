@@ -1,6 +1,12 @@
 import { ImageResponse } from "next/og";
 
-export async function GET() {
+export const size = {
+  width: 180,
+  height: 180,
+};
+export const contentType = "image/png";
+
+export default function AppleIcon() {
   return new ImageResponse(
     (
       <div
@@ -15,11 +21,11 @@ export async function GET() {
         <div
           style={{
             position: "absolute",
-            width: 110,
-            height: 110,
-            top: 30,
-            left: 30,
-            borderRadius: 24,
+            width: 103,
+            height: 103,
+            top: 29,
+            left: 29,
+            borderRadius: 23,
             background: "#059669",
             opacity: 0.55,
           }}
@@ -27,16 +33,16 @@ export async function GET() {
         <div
           style={{
             position: "absolute",
-            width: 110,
-            height: 110,
-            top: 52,
-            left: 52,
-            borderRadius: 24,
+            width: 103,
+            height: 103,
+            top: 49,
+            left: 49,
+            borderRadius: 23,
             backgroundImage: "linear-gradient(155deg, #34D399 0%, #6EE7B7 100%)",
           }}
         />
       </div>
     ),
-    { width: 192, height: 192 },
+    { ...size },
   );
 }

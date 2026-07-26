@@ -1,6 +1,8 @@
 import { cache } from "react";
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { TRUSTED_USER_ID_HEADER } from "@/proxy";
 import type { Profile } from "@/types/database";
 
 // `auth.getUser()` round-trips to the Supabase Auth server. The layout and
@@ -15,6 +17,20 @@ const getCachedAuthUser = cache(async () => {
   } = await supabase.auth.getUser();
   return user;
 });
+
+/**
+ * Returns just the current user's id, trusting proxy.ts's network-verified
+ * check instead of paying for a second `auth.getUser()` round-trip. Every
+ * matched request passes through proxy first (see its matcher), so this
+ * header can't be spoofed by the client. Use this where only the id is
+ * needed (e.g. the app layout's currentUserId prop) — reach for
+ * requireUser()/requireProfile() when the full user object or a redirect
+ * guarantee is required.
+ */
+export async function getTrustedUserId(): Promise<string | null> {
+  const headerList = await headers();
+  return headerList.get(TRUSTED_USER_ID_HEADER);
+}
 
 /**
  * Returns the authenticated Supabase user for the current request,

@@ -2,6 +2,7 @@ import { Box } from "@mui/material";
 import type { createClient } from "@/lib/supabase/server";
 import { OwnPodPanel } from "@/components/OwnPodPanel";
 import { MatchFeed } from "@/components/MatchFeed";
+import { fetchActivePodsData, getInitialFilters } from "@/lib/pods/matchFeed";
 import type { PodWithRelations, Profile } from "@/types/database";
 
 interface PodsViewProps {
@@ -19,22 +20,33 @@ export async function PodsView({
   highlightOwn = false,
   sharedPodId,
 }: PodsViewProps) {
-  const { data: ownPod } = await supabase
-    .from("pods")
-    .select("*, profiles(*), pod_joins(*, profiles(*))")
-    .eq("user_id", userId)
-    .eq("status", "ACTIVE")
-    .maybeSingle();
-
-  let sharedPod: PodWithRelations | null = null;
-  if (sharedPodId) {
-    const { data } = await supabase
+  // Run independently of each other — and of the feed's own query below —
+  // instead of sequentially, since none of them depend on another's result.
+  const [ownPodResult, sharedPodResult, initialPods] = await Promise.all([
+    supabase
       .from("pods")
       .select("*, profiles(*), pod_joins(*, profiles(*))")
-      .eq("id", sharedPodId)
-      .maybeSingle();
-    sharedPod = data as PodWithRelations | null;
-  }
+      .eq("user_id", userId)
+      .eq("status", "ACTIVE")
+      .maybeSingle(),
+    sharedPodId
+      ? supabase
+          .from("pods")
+          .select("*, profiles(*), pod_joins(*, profiles(*))")
+          .eq("id", sharedPodId)
+          .maybeSingle()
+      : Promise.resolve(null),
+    // Seeds MatchFeed's initial render with the same default filters it
+    // would otherwise fetch client-side on mount — avoids a loading flash
+    // and a client round-trip on every /pods navigation (see MatchFeed's
+    // `initialPods` prop and OwnPodPanel's equivalent `initialPod`).
+    fetchActivePodsData(supabase, userId, profile, getInitialFilters(profile)),
+  ]);
+
+  const { data: ownPod } = ownPodResult;
+  const sharedPod = sharedPodResult
+    ? (sharedPodResult.data as PodWithRelations | null)
+    : null;
 
   return (
     <Box
@@ -50,6 +62,7 @@ export async function PodsView({
         profile={profile}
         currentUserId={userId}
         initialSharedPod={sharedPod}
+        initialPods={initialPods}
       />
     </Box>
   );

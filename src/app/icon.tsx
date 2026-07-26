@@ -8,22 +8,42 @@ export const contentType = "image/png";
 
 export default function Icon() {
   return new ImageResponse(
-    <div
-      style={{
-        fontSize: 20,
-        fontWeight: 700,
-        background: "#09090b",
-        color: "#f59e0b",
-        width: "100%",
-        height: "100%",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        borderRadius: 8,
-      }}
-    >
-      P
-    </div>,
+    (
+      <div
+        style={{
+          width: "100%",
+          height: "100%",
+          display: "flex",
+          background: "#09090b",
+          borderRadius: 7,
+          position: "relative",
+        }}
+      >
+        <div
+          style={{
+            position: "absolute",
+            width: 18,
+            height: 18,
+            top: 5,
+            left: 4,
+            borderRadius: 4,
+            background: "#059669",
+            opacity: 0.55,
+          }}
+        />
+        <div
+          style={{
+            position: "absolute",
+            width: 18,
+            height: 18,
+            top: 9,
+            left: 10,
+            borderRadius: 4,
+            background: "#34D399",
+          }}
+        />
+      </div>
+    ),
     { ...size },
   );
 }
