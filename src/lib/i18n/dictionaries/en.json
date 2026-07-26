@@ -127,7 +127,7 @@
   "myPodPanel.location": "Location",
   "myPodPanel.powerBracket": "Power Bracket",
   "myPodPanel.groupMembers": "Group Members",
-  "myPodPanel.copyHandle": "Copy Handle",
+  "myPodPanel.addOnDiscord": "Add on Discord",
   "myPodPanel.copied": "Copied",
   "myPodPanel.remove": "Remove",
   "myPodPanel.copyAllHandles": "Copy All Handles",
@@ -191,6 +191,7 @@
 
   "profileForm.username": "Username",
   "profileForm.discordHandle": "Discord Handle",
+  "profileForm.discordHandleHelper": "Synced automatically from your Discord account.",
   "profileForm.save.idle": "Save Profile",
   "profileForm.save.pending": "Saving...",
   "profileForm.signOut": "Sign Out",
@@ -219,7 +220,7 @@
   "date.posted": "Posted {duration}",
 
   "errors.usernameRequired": "Username is required.",
-  "errors.discordHandleRequired": "Discord handle is required.",
+  "errors.discordHandleRequired": "Couldn't read your Discord identity. Please sign out and back in.",
   "errors.invalidCity": "Please select a valid city.",
   "errors.usernameTaken": "That username is already taken.",
   "errors.profileSaveFailed": "Something went wrong saving your profile: {reason}",

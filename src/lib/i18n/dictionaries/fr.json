@@ -127,7 +127,7 @@
   "myPodPanel.location": "Lieu",
   "myPodPanel.powerBracket": "Palier de puissance",
   "myPodPanel.groupMembers": "Membres du groupe",
-  "myPodPanel.copyHandle": "Copier l'identifiant",
+  "myPodPanel.addOnDiscord": "Ajouter sur Discord",
   "myPodPanel.copied": "Copié",
   "myPodPanel.remove": "Retirer",
   "myPodPanel.copyAllHandles": "Copier tous les identifiants",
@@ -191,6 +191,7 @@
 
   "profileForm.username": "Pseudo",
   "profileForm.discordHandle": "Identifiant Discord",
+  "profileForm.discordHandleHelper": "Synchronisé automatiquement depuis votre compte Discord.",
   "profileForm.save.idle": "Enregistrer le profil",
   "profileForm.save.pending": "Enregistrement...",
   "profileForm.signOut": "Se déconnecter",
@@ -219,7 +220,7 @@
   "date.posted": "Publié {duration}",
 
   "errors.usernameRequired": "Le pseudo est requis.",
-  "errors.discordHandleRequired": "L'identifiant Discord est requis.",
+  "errors.discordHandleRequired": "Impossible de lire votre identité Discord. Veuillez vous déconnecter puis reconnecter.",
   "errors.invalidCity": "Veuillez sélectionner une ville valide.",
   "errors.usernameTaken": "Ce pseudo est déjà pris.",
   "errors.profileSaveFailed": "Une erreur est survenue lors de l'enregistrement de votre profil : {reason}",

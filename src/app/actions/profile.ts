@@ -28,10 +28,14 @@ export async function upsertProfile(
   const locale = await getServerLocale();
 
   const username = String(formData.get("username") ?? "").trim();
-  const discordHandle = String(formData.get("discord_handle") ?? "").trim();
   const cityInput = String(formData.get("city") ?? "").trim();
   const avatarUrl =
     (user.user_metadata?.avatar_url as string | undefined) ?? null;
+  const discordHandle =
+    (user.user_metadata?.full_name as string | undefined) ??
+    (user.user_metadata?.name as string | undefined) ??
+    (user.user_metadata?.preferred_username as string | undefined) ??
+    "";
 
   if (!username) {
     return { error: translate(locale, "errors.usernameRequired") };

@@ -6,6 +6,7 @@ import { Check, ChevronDown, Copy, UserX, X } from "lucide-react";
 import { Alert, Avatar, Button, useTheme } from "@mui/material";
 import { removeMember, respondToJoin } from "@/app/actions/joins";
 import { markPodMatched } from "@/app/actions/pods";
+import { openDiscordAddFriend } from "@/lib/discord";
 import { ConfirmMarkMatchedDialog } from "@/components/ConfirmMarkMatchedDialog";
 import { ConfirmRemoveMemberDialog } from "@/components/ConfirmRemoveMemberDialog";
 import { LfgDialog } from "@/components/LfgDialog";
@@ -56,6 +57,11 @@ export function MyPodPanel({ pod, onChanged, highlight = false }: MyPodPanelProp
       // Clipboard API unavailable/denied — the handles are still visible
       // to copy manually.
     }
+  }
+
+  async function addOnDiscord(key: string, handle: string) {
+    await copyText(key, handle);
+    openDiscordAddFriend();
   }
 
   async function handleRespond(
@@ -315,7 +321,7 @@ export function MyPodPanel({ pod, onChanged, highlight = false }: MyPodPanelProp
                     <Button
                       type="button"
                       onClick={() =>
-                        copyText(join.id, join.profiles.discord_handle)
+                        addOnDiscord(join.id, join.profiles.discord_handle)
                       }
                       size="small"
                       startIcon={
@@ -346,7 +352,7 @@ export function MyPodPanel({ pod, onChanged, highlight = false }: MyPodPanelProp
                         "&:hover": { bgcolor: "rgba(99, 102, 241, 0.2)" },
                       }}
                     >
-                      {copied === join.id ? t("myPodPanel.copied") : t("myPodPanel.copyHandle")}
+                      {copied === join.id ? t("myPodPanel.copied") : t("myPodPanel.addOnDiscord")}
                     </Button>
                     <Button
                       type="button"

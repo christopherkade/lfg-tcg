@@ -72,12 +72,12 @@ export function ProfileForm({
 
         <TextField
           id="discord_handle"
-          name="discord_handle"
           label={t("profileForm.discordHandle")}
-          defaultValue={initialProfile?.discord_handle ?? defaultDiscordHandle}
-          required
+          value={initialProfile?.discord_handle ?? defaultDiscordHandle}
+          disabled
           fullWidth
           size="small"
+          helperText={t("profileForm.discordHandleHelper")}
         />
 
         <input type="hidden" name="city" value={city ?? ""} />
