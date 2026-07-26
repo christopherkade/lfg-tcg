@@ -43,6 +43,10 @@
   "tutorial.step4.body": "La cloche vous tient informé des demandes et des mises à jour.",
   "tutorial.step5.title": "Connectez-vous et jouez",
   "tutorial.step5.body": "Ajoutez-vous sur Discord, puis marquez votre table comme complète.",
+  "tutorial.networkEffect.title": "Plus on est, mieux c'est",
+  "tutorial.networkEffect.body": "PodFinder fonctionne d'autant mieux qu'il y a de monde, plus de tables, plus de rencontres, moins d'attente. Parlez-en autour de vous !",
+  "tutorial.credit": "Créé par",
+  "tutorial.credit.linkLabel": "Christopher Kade",
 
   "lfgDialog.title.edit": "Modifier la table",
   "lfgDialog.title.create": "Critères de recherche",

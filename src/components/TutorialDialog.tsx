@@ -15,6 +15,7 @@ import {
   Users,
   Bell,
   Handshake,
+  Sparkles,
   X,
   type LucideIcon,
 } from "lucide-react";
@@ -28,11 +29,36 @@ interface Step {
 }
 
 const STEPS: Step[] = [
-  { icon: UserCircle, titleKey: "tutorial.step1.title", bodyKey: "tutorial.step1.body" },
-  { icon: Zap, titleKey: "tutorial.step2.title", bodyKey: "tutorial.step2.body" },
-  { icon: Users, titleKey: "tutorial.step3.title", bodyKey: "tutorial.step3.body" },
-  { icon: Bell, titleKey: "tutorial.step4.title", bodyKey: "tutorial.step4.body" },
-  { icon: Handshake, titleKey: "tutorial.step5.title", bodyKey: "tutorial.step5.body" },
+  {
+    icon: UserCircle,
+    titleKey: "tutorial.step1.title",
+    bodyKey: "tutorial.step1.body",
+  },
+  {
+    icon: Zap,
+    titleKey: "tutorial.step2.title",
+    bodyKey: "tutorial.step2.body",
+  },
+  {
+    icon: Users,
+    titleKey: "tutorial.step3.title",
+    bodyKey: "tutorial.step3.body",
+  },
+  {
+    icon: Bell,
+    titleKey: "tutorial.step4.title",
+    bodyKey: "tutorial.step4.body",
+  },
+  {
+    icon: Handshake,
+    titleKey: "tutorial.step5.title",
+    bodyKey: "tutorial.step5.body",
+  },
+  {
+    icon: Sparkles,
+    titleKey: "tutorial.networkEffect.title",
+    bodyKey: "tutorial.networkEffect.body",
+  },
 ];
 
 export function TutorialDialog() {
@@ -77,7 +103,10 @@ export function TutorialDialog() {
           <IconButton
             onClick={() => setOpen(false)}
             size="small"
-            sx={{ color: "text.primary", "&:hover": { color: "text.secondary" } }}
+            sx={{
+              color: "text.primary",
+              "&:hover": { color: "text.secondary" },
+            }}
           >
             <X className="h-4 w-4" />
           </IconButton>
@@ -109,6 +138,29 @@ export function TutorialDialog() {
               );
             })}
           </div>
+          <Typography
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 0.5,
+              fontSize: "0.75rem",
+              color: "text.secondary",
+              textAlign: "center",
+              pt: 2,
+              borderTop: (theme) => `1px solid ${theme.palette.divider}`,
+            }}
+          >
+            {t("tutorial.credit")}
+            <a
+              href="https://christopherkade.com/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-semibold text-amber-400 hover:underline"
+            >
+              {t("tutorial.credit.linkLabel")}
+            </a>
+          </Typography>
         </DialogContent>
       </Dialog>
     </>

@@ -43,6 +43,10 @@
   "tutorial.step4.body": "The bell keeps you posted on requests and updates.",
   "tutorial.step5.title": "Connect and play",
   "tutorial.step5.body": "Add each other on Discord, then mark your pod as matched.",
+  "tutorial.networkEffect.title": "The more, the better",
+  "tutorial.networkEffect.body": "PodFinder gets better the more people use it, more pods, more matches, less waiting. Tell your playgroup!",
+  "tutorial.credit": "Made by",
+  "tutorial.credit.linkLabel": "Christopher Kade",
 
   "lfgDialog.title.edit": "Edit Pod",
   "lfgDialog.title.create": "Search Settings",
