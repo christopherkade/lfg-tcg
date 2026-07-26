@@ -177,8 +177,8 @@ export function MatchFeed({
 
       // Comment out the DEMO_PODS spread below to stop showing fake demo
       // pods in the feed.
-      // setPods([...rows]);
-      setPods([...DEMO_PODS, ...rows]);
+      setPods([...rows]);
+      // setPods([...DEMO_PODS, ...rows]);
 
       // Keep the shared/pinned pod (opened via /pods/<id>) fresh across every
       // refetch trigger below (realtime events, focus resync, post-join/leave
