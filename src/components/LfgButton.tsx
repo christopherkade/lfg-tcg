@@ -13,6 +13,7 @@ import { usePodRealtime } from "@/components/PodRealtimeProvider";
 import { LfgDialog } from "@/components/LfgDialog";
 import { CantStartSearchDialog } from "@/components/CantStartSearchDialog";
 import { useTranslation } from "@/lib/i18n/LocaleContext";
+import { playSound } from "@/lib/soundEffect";
 import type { TranslationKey } from "@/lib/i18n";
 import type { Pod, Profile } from "@/types/database";
 
@@ -174,37 +175,25 @@ export function LfgButton({
     ? t(`format.${formatKey}` as TranslationKey)
     : undefined;
 
-  // Real sample (Kenney UI Audio, CC0) — cloning the element per play lets
-  // rapid presses overlap cleanly, and playbackRate is jittered so repeated
-  // taps don't sound identical.
-  const clickAudioRef = useRef<HTMLAudioElement | null>(null);
-  useEffect(() => {
-    clickAudioRef.current = new Audio("/sounds/button-click.wav");
-  }, []);
+  // Real sample (Kenney UI Audio, CC0). playbackRate is jittered so repeated
+  // taps don't sound identical. Played via Web Audio API (not
+  // HTMLAudioElement) so iOS Safari doesn't show its "now playing" pill.
   const playClickSound = useCallback((pitchMultiplier = 1) => {
-    const base = clickAudioRef.current;
-    if (!base) return;
     const jitter = 0.97 + Math.random() * 0.06;
-    const sound = base.cloneNode(true) as HTMLAudioElement;
-    sound.volume = 0.3;
-    sound.playbackRate = pitchMultiplier * jitter;
-    void sound.play().catch(() => {});
+    playSound("/sounds/button-click.wav", {
+      volume: 0.3,
+      playbackRate: pitchMultiplier * jitter,
+    });
   }, []);
 
   // Bright chime for "search started" — reused from the notification bell
   // rather than another synthesized sound, since it already reads as a
   // positive/success cue elsewhere in the app.
-  const chimeAudioRef = useRef<HTMLAudioElement | null>(null);
-  useEffect(() => {
-    chimeAudioRef.current = new Audio("/sounds/notification.wav");
-  }, []);
   const playChimeSound = useCallback((pitchMultiplier = 1) => {
-    const base = chimeAudioRef.current;
-    if (!base) return;
-    const sound = base.cloneNode(true) as HTMLAudioElement;
-    sound.volume = 0.5;
-    sound.playbackRate = pitchMultiplier;
-    void sound.play().catch(() => {});
+    playSound("/sounds/notification.wav", {
+      volume: 0.5,
+      playbackRate: pitchMultiplier,
+    });
   }, []);
 
   // Fires the activate/power-down cue on the isSearching transition itself

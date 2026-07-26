@@ -32,6 +32,7 @@ import {
   markAllNotificationsRead,
 } from "@/app/actions/notifications";
 import { useTranslation } from "@/lib/i18n/LocaleContext";
+import { playSound } from "@/lib/soundEffect";
 import type { TranslationKey } from "@/lib/i18n";
 import type {
   NotificationType,
@@ -132,18 +133,10 @@ export function NotificationBell({ currentUserId }: NotificationBellProps) {
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
   const [toast, setToast] = useState<Toast | null>(null);
 
-  // Same clone-per-play pattern as LfgButton's click sound — lets
-  // back-to-back notifications overlap cleanly instead of cutting each other off.
-  const chimeAudioRef = useRef<HTMLAudioElement | null>(null);
-  useEffect(() => {
-    chimeAudioRef.current = new Audio("/sounds/notification.wav");
-  }, []);
+  // Played via Web Audio API (not HTMLAudioElement), same as LfgButton's
+  // click sound, so iOS Safari doesn't show its "now playing" pill.
   const playChime = useCallback(() => {
-    const base = chimeAudioRef.current;
-    if (!base) return;
-    const sound = base.cloneNode(true) as HTMLAudioElement;
-    sound.volume = 0.5;
-    void sound.play().catch(() => {});
+    playSound("/sounds/notification.wav", { volume: 0.5 });
   }, []);
 
   useEffect(() => {
