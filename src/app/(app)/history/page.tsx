@@ -1,11 +1,11 @@
 import { Box, Typography } from "@mui/material";
-import { requireProfile } from "@/lib/session";
+import { requireTrustedProfile } from "@/lib/session";
 import { getServerLocale } from "@/lib/i18n/server";
 import { translate } from "@/lib/i18n";
 import { HistoryList, type PodHistoryEntryWithHost } from "@/components/HistoryList";
 
 export default async function HistoryPage() {
-  const { supabase } = await requireProfile("/history");
+  const { supabase } = await requireTrustedProfile("/history");
   const locale = await getServerLocale();
   const { data: gamesPlayedCount } = await supabase.rpc(
     "get_games_played_count",

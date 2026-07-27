@@ -83,3 +83,28 @@ export async function requireProfile(path?: string) {
 
   return { supabase, user, profile };
 }
+
+/**
+ * Same guarantee as requireProfile() — a session and a completed profile,
+ * redirecting to /login or /profile as needed — but skips the extra
+ * `auth.getUser()` round-trip in favor of proxy.ts's already-verified id
+ * (see getTrustedUserId()). Use this wherever the caller only needs the
+ * user's id, not the full Supabase user object (email, user_metadata,
+ * etc.) — reach for requireProfile() when that's needed instead.
+ */
+export async function requireTrustedProfile(path?: string) {
+  const supabase = await createClient();
+  const userId = await getTrustedUserId();
+
+  if (!userId) {
+    redirect(path ? `/login?next=${encodeURIComponent(path)}` : "/login");
+  }
+
+  const profile = await getProfile(supabase, userId);
+
+  if (!profile) {
+    redirect("/profile");
+  }
+
+  return { supabase, userId, profile };
+}

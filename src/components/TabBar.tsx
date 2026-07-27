@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Users, Zap, History, UserCircle, type LucideIcon } from "lucide-react";
@@ -31,6 +32,16 @@ export function TabBar({ currentUserId }: TabBarProps) {
   const pathname = usePathname();
   const { t } = useTranslation();
   const theme = useTheme();
+
+  // Highlights the clicked tab immediately on click rather than waiting for
+  // usePathname() to reflect the new route (which only happens once the
+  // destination page's data is ready) — reconciles back to the real
+  // pathname as soon as navigation actually lands.
+  const [pendingHref, setPendingHref] = useState<string | null>(null);
+  useEffect(() => {
+    setPendingHref(null);
+  }, [pathname]);
+  const activeHref = pendingHref ?? pathname;
 
   return (
     <>
@@ -70,13 +81,14 @@ export function TabBar({ currentUserId }: TabBarProps) {
           <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
             <Box sx={{ display: "flex", gap: 1 }}>
               {TABS.map((tab) => {
-                const isActive = pathname === tab.href;
+                const isActive = activeHref === tab.href;
                 const Icon = tab.icon;
                 return (
                   <Button
                     key={tab.href}
                     component={Link}
                     href={tab.href}
+                    onClick={() => setPendingHref(tab.href)}
                     startIcon={<Icon className="h-4 w-4" />}
                     sx={{
                       px: 2,
@@ -110,12 +122,13 @@ export function TabBar({ currentUserId }: TabBarProps) {
         className="fixed inset-x-0 bottom-0 z-10 flex sm:hidden"
       >
         {TABS.map((tab) => {
-          const isActive = pathname === tab.href;
+          const isActive = activeHref === tab.href;
           const Icon = tab.icon;
           return (
             <Link
               key={tab.href}
               href={tab.href}
+              onClick={() => setPendingHref(tab.href)}
               className={`flex flex-1 flex-col items-center gap-1 py-3 text-xs font-medium transition-colors ${
                 isActive ? "text-ember" : ""
               }`}

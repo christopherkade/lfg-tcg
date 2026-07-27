@@ -1,4 +1,4 @@
-import { requireProfile } from "@/lib/session";
+import { requireTrustedProfile } from "@/lib/session";
 import { PodsView } from "./PodsView";
 
 interface PodsPageProps {
@@ -6,13 +6,13 @@ interface PodsPageProps {
 }
 
 export default async function PodsPage({ searchParams }: PodsPageProps) {
-  const { supabase, user, profile } = await requireProfile("/pods");
+  const { supabase, userId, profile } = await requireTrustedProfile("/pods");
   const { highlight } = await searchParams;
 
   return (
     <PodsView
       supabase={supabase}
-      userId={user.id}
+      userId={userId}
       profile={profile}
       highlightOwn={highlight === "own"}
     />

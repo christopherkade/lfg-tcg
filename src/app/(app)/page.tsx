@@ -1,15 +1,15 @@
 import { Box } from "@mui/material";
-import { requireProfile } from "@/lib/session";
+import { requireTrustedProfile } from "@/lib/session";
 import { LfgButton } from "@/components/LfgButton";
 import type { Pod } from "@/types/database";
 
 export default async function LfgPage() {
-  const { supabase, user, profile } = await requireProfile();
+  const { supabase, userId, profile } = await requireTrustedProfile();
 
   const { data: ownPod } = await supabase
     .from("pods")
     .select("*")
-    .eq("user_id", user.id)
+    .eq("user_id", userId)
     .eq("status", "ACTIVE")
     .maybeSingle();
 
@@ -19,7 +19,7 @@ export default async function LfgPage() {
   const { data: activeJoin } = await supabase
     .from("pod_joins")
     .select("id, pods!inner(status)")
-    .eq("user_id", user.id)
+    .eq("user_id", userId)
     .in("status", ["PENDING", "ACCEPTED"])
     .eq("pods.status", "ACTIVE")
     .maybeSingle();
