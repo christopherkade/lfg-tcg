@@ -1,39 +1,22 @@
 import { Box } from "@mui/material";
 import { requireTrustedProfile } from "@/lib/session";
 import { LfgButton } from "@/components/LfgButton";
-import type { Pod } from "@/types/database";
 
 export default async function LfgPage() {
-  const { supabase, userId, profile } = await requireTrustedProfile();
+  const { profile } = await requireTrustedProfile();
 
-  const { data: ownPod } = await supabase
-    .from("pods")
-    .select("*")
-    .eq("user_id", userId)
-    .eq("status", "ACTIVE")
-    .maybeSingle();
-
-  // A PENDING request on (or ACCEPTED into) someone else's still-ACTIVE
-  // pod blocks starting a new search — see CantStartSearchDialog /
-  // createPod's mirrored server-side check.
-  const { data: activeJoin } = await supabase
-    .from("pod_joins")
-    .select("id, pods!inner(status)")
-    .eq("user_id", userId)
-    .in("status", ["PENDING", "ACCEPTED"])
-    .eq("pods.status", "ACTIVE")
-    .maybeSingle();
-
+  // ownPod/hasActiveJoin are deliberately not fetched here — LfgButton
+  // renders everything it needs from `profile` alone, then fetches these
+  // itself client-side on mount (same functions it already uses for
+  // realtime resync). Blocking the whole page on two more sequential
+  // queries just to seed a value the button can fetch itself in parallel
+  // with painting isn't worth the added navigation latency.
   return (
     <Box
       sx={{ bgcolor: "background.default" }}
       className="flex flex-1 flex-col items-center justify-center gap-6 px-6"
     >
-      <LfgButton
-        profile={profile}
-        ownPod={ownPod as Pod | null}
-        hasActiveJoin={activeJoin != null}
-      />
+      <LfgButton profile={profile} />
     </Box>
   );
 }

@@ -21,8 +21,16 @@ const MotionFab = motion.create(Fab);
 
 interface LfgButtonProps {
   profile: Profile;
-  ownPod: Pod | null;
-  hasActiveJoin: boolean;
+  /**
+   * Optional — when omitted (the normal case, see `(app)/page.tsx`), the
+   * button renders immediately from `profile` alone and fetches these
+   * itself on mount via `fetchOwnPod`/`fetchHasActiveJoin` below, the same
+   * functions already used for realtime resync. Mirrors MatchFeed's
+   * `initialPods` "skip fetch if already seeded" pattern, just inverted:
+   * here the seed is intentionally never provided by the server.
+   */
+  ownPod?: Pod | null;
+  hasActiveJoin?: boolean;
 }
 
 export function LfgButton({
@@ -35,8 +43,10 @@ export function LfgButton({
   const router = useRouter();
   const theme = useTheme();
   const prefersReducedMotion = useReducedMotion();
-  const [ownPod, setOwnPod] = useState(initialOwnPod);
-  const [hasActiveJoin, setHasActiveJoin] = useState(initialHasActiveJoin);
+  const [ownPod, setOwnPod] = useState(initialOwnPod ?? null);
+  const [hasActiveJoin, setHasActiveJoin] = useState(
+    initialHasActiveJoin ?? false,
+  );
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -77,6 +87,17 @@ export function LfgButton({
   useEffect(() => {
     fetchHasActiveJoinRef.current = fetchHasActiveJoin;
   }, [fetchHasActiveJoin]);
+
+  // The page intentionally never seeds these server-side (see the
+  // LfgButtonProps doc comment above) — fetch on mount instead, same as
+  // MatchFeed does when it isn't handed `initialPods`. Skipped whenever a
+  // caller *does* pass an initial value, so this stays inert if that ever
+  // changes.
+  useEffect(() => {
+    if (initialOwnPod === undefined) fetchOwnPodRef.current();
+    if (initialHasActiveJoin === undefined) fetchHasActiveJoinRef.current();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Resilience fallback: Supabase Realtime's postgres_changes delivery has
   // been observed to be unreliable in this project (channel stays

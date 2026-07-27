@@ -7,17 +7,25 @@ import { HistoryList, type PodHistoryEntryWithHost } from "@/components/HistoryL
 export default async function HistoryPage() {
   const { supabase } = await requireTrustedProfile("/history");
   const locale = await getServerLocale();
-  const { data: gamesPlayedCount } = await supabase.rpc(
-    "get_games_played_count",
+
+  // Neither of these is awaited here — HistoryEntriesList suspends on them
+  // itself, so the title/refresh button (HistoryList) can render
+  // immediately instead of blocking on these two Supabase round-trips.
+  // Wrapped in Promise.resolve() — Supabase's query builders are thenable
+  // but not real Promise instances (missing .catch/.finally), which
+  // React's use() and plain prop typing both expect.
+  const gamesPlayedCountPromise = Promise.resolve(
+    supabase.rpc("get_games_played_count").then(({ data }) => data ?? 0),
   );
 
-  const { data: entries } = await supabase
-    .from("pod_history")
-    .select("*, host:profiles!host_id(id, username, avatar_url, discord_handle)")
-    .order("matched_at", { ascending: false })
-    .limit(50);
-
-  const history = (entries ?? []) as PodHistoryEntryWithHost[];
+  const entriesPromise = Promise.resolve(
+    supabase
+      .from("pod_history")
+      .select("*, host:profiles!host_id(id, username, avatar_url, discord_handle)")
+      .order("matched_at", { ascending: false })
+      .limit(50)
+      .then(({ data }) => (data ?? []) as PodHistoryEntryWithHost[]),
+  );
 
   return (
     <Box
@@ -26,11 +34,9 @@ export default async function HistoryPage() {
     >
       <HistoryList
         title={translate(locale, "historyPage.title")}
-        gamesPlayedLabel={translate(locale, "historyPage.gamesPlayed", {
-          count: gamesPlayedCount ?? 0,
-        })}
-        initialEntries={history}
         emptyLabel={translate(locale, "historyPage.empty")}
+        gamesPlayedCountPromise={gamesPlayedCountPromise}
+        entriesPromise={entriesPromise}
       />
     </Box>
   );

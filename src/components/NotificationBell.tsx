@@ -126,6 +126,12 @@ export function NotificationBell({ currentUserId }: NotificationBellProps) {
   // callbacks ... after subscribe()". `useId()` keeps each instance's
   // channel name unique regardless of how many share the same currentUserId.
   const instanceId = useId();
+  // Only the CSS-visible instance's poll (below) should actually fire —
+  // otherwise the always-mounted hidden sibling would double the query rate
+  // for no benefit. offsetParent is null when an element (or an ancestor)
+  // has display:none, which is exactly how the hidden instance is hidden —
+  // cheaper and less brittle than duplicating the sm: breakpoint in JS.
+  const rootRef = useRef<HTMLButtonElement>(null);
   const [notifications, setNotifications] = useState<
     NotificationWithRelations[] | null
   >(null);
@@ -215,11 +221,15 @@ export function NotificationBell({ currentUserId }: NotificationBellProps) {
   // Resilience fallback: Supabase Realtime's postgres_changes delivery has
   // been observed to be unreliable in this project even for long-proven
   // subscriptions (channel stays SUBSCRIBED, but specific events never
-  // arrive) — independent of the notifications feature itself. Rather than
-  // only ever refreshing on a full page reload, resync whenever the tab
-  // regains focus/visibility (e.g. switching back from another tab/app, or
-  // the OS waking the browser from sleep), so a missed event self-heals
-  // without the user needing to manually reload.
+  // arrive) — independent of the notifications feature itself. Resync
+  // whenever the tab regains focus/visibility (e.g. switching back from
+  // another tab/app, or the OS waking the browser from sleep), so a missed
+  // event self-heals without the user needing to manually reload. On top of
+  // that, also poll on an interval while the tab stays visible and focused
+  // the whole time (mirroring MatchedPodWatcher's fallback, for the same
+  // reason: a focus/visibility listener alone never fires if the user never
+  // looks away) — gated on rootRef's offsetParent so only the one CSS-visible
+  // NotificationBell instance actually polls, not both mounted copies.
   useEffect(() => {
     function handleFocusOrVisible() {
       if (document.visibilityState === "visible") {
@@ -228,9 +238,18 @@ export function NotificationBell({ currentUserId }: NotificationBellProps) {
     }
     document.addEventListener("visibilitychange", handleFocusOrVisible);
     window.addEventListener("focus", handleFocusOrVisible);
+    const intervalId = setInterval(() => {
+      if (
+        document.visibilityState === "visible" &&
+        rootRef.current?.offsetParent !== null
+      ) {
+        fetchNotificationsRef.current();
+      }
+    }, 10_000);
     return () => {
       document.removeEventListener("visibilitychange", handleFocusOrVisible);
       window.removeEventListener("focus", handleFocusOrVisible);
+      clearInterval(intervalId);
     };
   }, []);
 
@@ -345,7 +364,7 @@ export function NotificationBell({ currentUserId }: NotificationBellProps) {
 
   return (
     <>
-      <IconButton onClick={handleOpen} sx={{ color: "text.primary" }}>
+      <IconButton ref={rootRef} onClick={handleOpen} sx={{ color: "text.primary" }}>
         <Badge badgeContent={unreadCount} max={9} color="error">
           <Bell className="h-5 w-5" />
         </Badge>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { use, useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { usePodRealtime } from "@/components/PodRealtimeProvider";
@@ -13,7 +13,14 @@ const HIGHLIGHT_DURATION_MS = 3600;
 
 interface OwnPodPanelProps {
   currentUserId: string;
-  initialPod: PodWithRelations | null;
+  /**
+   * Not awaited by PodsView — this suspends on it directly via use(),
+   * covered by that caller's own <Suspense fallback={null}>. Since this
+   * component already renders nothing until `pod` is set, an empty
+   * fallback while the promise is pending is visually identical to today's
+   * "no active pod" state, just arriving a beat later.
+   */
+  initialPodPromise: Promise<{ data: PodWithRelations | null; error: unknown }>;
   /**
    * True when the page was reached via ?highlight=own (set by LfgButton
    * right after creating a pod), so the just-created pod can be called out
@@ -32,11 +39,12 @@ interface OwnPodPanelProps {
  */
 export function OwnPodPanel({
   currentUserId,
-  initialPod,
+  initialPodPromise,
   initialHighlight = false,
 }: OwnPodPanelProps) {
   const router = useRouter();
   const { subscribePods, subscribePodJoins } = usePodRealtime();
+  const { data: initialPod } = use(initialPodPromise);
   const [pod, setPod] = useState<PodWithRelations | null>(initialPod);
 
   // A freshly created pod arrives here via ?highlight=own (see LfgButton).
