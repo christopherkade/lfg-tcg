@@ -10,6 +10,7 @@ import { usePodRealtime } from "@/components/PodRealtimeProvider";
 import { requestJoin, leavePod } from "@/app/actions/joins";
 import { PodDetailDialog } from "@/components/PodDetailDialog";
 import { PodFilters } from "@/components/PodFilters";
+import { RefreshButton } from "@/components/RefreshButton";
 import { CITY_MAP } from "@/constants/citiesConfig";
 import { DEMO_PODS } from "@/constants/demoPods";
 import { formatPodWhen } from "@/lib/date";
@@ -205,16 +206,22 @@ export function MatchFeed({
           <PodFilters value={filters} onChange={handleFiltersChange} />
         </div>
         <div className="flex w-full max-w-md flex-col gap-3">
-          <Typography
-            component="h2"
-            sx={{
-              fontSize: "1.125rem",
-              fontWeight: 600,
-              color: "text.primary",
-            }}
-          >
-            {t("matchFeed.title")}
-          </Typography>
+          <div className="flex items-center gap-1">
+            <Typography
+              component="h2"
+              sx={{
+                fontSize: "1.125rem",
+                fontWeight: 600,
+                color: "text.primary",
+              }}
+            >
+              {t("matchFeed.title")}
+            </Typography>
+            <RefreshButton
+              onRefresh={() => fetchActivePods(filters)}
+              ariaLabel={t("matchFeed.refresh")}
+            />
+          </div>
           {!profile.city && (
             <Typography sx={{ fontSize: "0.75rem", color: "text.secondary" }}>
               {t("matchFeed.noCityHint")}

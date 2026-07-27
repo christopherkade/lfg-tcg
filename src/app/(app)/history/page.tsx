@@ -1,4 +1,4 @@
-import { Box, Typography } from "@mui/material";
+import { Box } from "@mui/material";
 import { requireTrustedProfile } from "@/lib/session";
 import { getServerLocale } from "@/lib/i18n/server";
 import { translate } from "@/lib/i18n";
@@ -24,19 +24,11 @@ export default async function HistoryPage() {
       sx={{ bgcolor: "background.default" }}
       className="flex flex-1 flex-col items-center gap-8 px-6 py-10"
     >
-      <Typography
-        component="h1"
-        sx={{ fontSize: "1.5rem", fontWeight: 700, color: "text.primary" }}
-      >
-        {translate(locale, "historyPage.title")}
-      </Typography>
-      <Typography sx={{ fontSize: "0.875rem", color: "text.secondary" }}>
-        {translate(locale, "historyPage.gamesPlayed", {
+      <HistoryList
+        title={translate(locale, "historyPage.title")}
+        gamesPlayedLabel={translate(locale, "historyPage.gamesPlayed", {
           count: gamesPlayedCount ?? 0,
         })}
-      </Typography>
-
-      <HistoryList
         initialEntries={history}
         emptyLabel={translate(locale, "historyPage.empty")}
       />

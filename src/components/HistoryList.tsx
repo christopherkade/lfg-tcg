@@ -1,26 +1,35 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { Avatar, Box, IconButton, Typography } from "@mui/material";
 import { Trash2 } from "lucide-react";
 import { GAMES_CONFIG } from "@/constants/gamesConfig";
 import { CITY_MAP } from "@/constants/citiesConfig";
+import { createClient } from "@/lib/supabase/client";
 import { formatPodWhen } from "@/lib/date";
 import { useTranslation } from "@/lib/i18n/LocaleContext";
 import type { TranslationKey } from "@/lib/i18n";
 import type { PodHistoryEntry, Profile } from "@/types/database";
 import { deletePodHistoryEntry } from "@/app/actions/history";
+import { RefreshButton } from "@/components/RefreshButton";
 
 export type PodHistoryEntryWithHost = PodHistoryEntry & {
   host: Pick<Profile, "id" | "username" | "avatar_url" | "discord_handle">;
 };
 
 interface HistoryListProps {
+  title: string;
+  gamesPlayedLabel: string;
   initialEntries: PodHistoryEntryWithHost[];
   emptyLabel: string;
 }
 
-export function HistoryList({ initialEntries, emptyLabel }: HistoryListProps) {
+export function HistoryList({
+  title,
+  gamesPlayedLabel,
+  initialEntries,
+  emptyLabel,
+}: HistoryListProps) {
   const [entries, setEntries] = useState(initialEntries);
   const { t, locale } = useTranslation();
 
@@ -29,16 +38,52 @@ export function HistoryList({ initialEntries, emptyLabel }: HistoryListProps) {
     deletePodHistoryEntry(entryId);
   };
 
+  // Mirrors MatchFeed's own client-side refetch pattern (createClient() +
+  // direct query) rather than router.refresh() — this list's state is
+  // seeded once from `initialEntries` and never re-syncs from server props,
+  // so a router-level refresh wouldn't actually update what's on screen.
+  const handleRefresh = useCallback(async () => {
+    const supabase = createClient();
+    const { data } = await supabase
+      .from("pod_history")
+      .select("*, host:profiles!host_id(id, username, avatar_url, discord_handle)")
+      .order("matched_at", { ascending: false })
+      .limit(50);
+    setEntries((data ?? []) as PodHistoryEntryWithHost[]);
+  }, []);
+
+  const header = (
+    <>
+      <div className="flex items-center gap-1">
+        <Typography
+          component="h1"
+          sx={{ fontSize: "1.5rem", fontWeight: 700, color: "text.primary" }}
+        >
+          {title}
+        </Typography>
+        <RefreshButton onRefresh={handleRefresh} ariaLabel={t("historyPage.refresh")} />
+      </div>
+      <Typography sx={{ fontSize: "0.875rem", color: "text.secondary" }}>
+        {gamesPlayedLabel}
+      </Typography>
+    </>
+  );
+
   if (entries.length === 0) {
     return (
-      <Typography sx={{ color: "text.secondary", textAlign: "center" }}>
-        {emptyLabel}
-      </Typography>
+      <>
+        {header}
+        <Typography sx={{ color: "text.secondary", textAlign: "center" }}>
+          {emptyLabel}
+        </Typography>
+      </>
     );
   }
 
   return (
-    <div className="flex w-full max-w-md flex-col gap-4">
+    <>
+      {header}
+      <div className="flex w-full max-w-md flex-col gap-4">
       {entries.map((entry) => {
         const game = GAMES_CONFIG[entry.game_key];
         const when = formatPodWhen(
@@ -143,6 +188,7 @@ export function HistoryList({ initialEntries, emptyLabel }: HistoryListProps) {
           </Box>
         );
       })}
-    </div>
+      </div>
+    </>
   );
 }

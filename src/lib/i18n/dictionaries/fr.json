@@ -25,6 +25,7 @@
   "historyPage.host": "Hôte",
   "historyPage.members": "Groupe",
   "historyPage.delete": "Supprimer",
+  "historyPage.refresh": "Actualiser",
 
   "tutorial.buttonLabel": "Comment fonctionne PodFinder",
   "settings.buttonLabel": "Paramètres",
@@ -73,6 +74,7 @@
   "lfgDialog.search.pending": "Démarrage...",
 
   "matchFeed.title": "Fil des tables",
+  "matchFeed.refresh": "Actualiser",
   "matchFeed.noCityHint": "Renseignez votre ville dans votre Profil pour voir les tables en personne près de vous. Les tables en ligne s'affichent toujours, quelle que soit la ville.",
   "matchFeed.loading": "Chargement du fil des tables...",
   "matchFeed.empty.title": "Aucune table ne correspond à vos filtres",

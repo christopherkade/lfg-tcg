@@ -25,6 +25,7 @@
   "historyPage.host": "Host",
   "historyPage.members": "Group",
   "historyPage.delete": "Delete",
+  "historyPage.refresh": "Refresh",
 
   "tutorial.buttonLabel": "How PodFinder works",
   "settings.buttonLabel": "Settings",
@@ -73,6 +74,7 @@
   "lfgDialog.search.pending": "Starting...",
 
   "matchFeed.title": "Match Feed",
+  "matchFeed.refresh": "Refresh",
   "matchFeed.noCityHint": "Set your city on your Profile to see in-person pods near you. Online pods always show regardless of city.",
   "matchFeed.loading": "Loading match feed...",
   "matchFeed.empty.title": "No pods match your filters",
