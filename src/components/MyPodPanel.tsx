@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Check, ChevronDown, Copy, UserX, X } from "lucide-react";
-import { Alert, Avatar, Button, useTheme } from "@mui/material";
+import { Alert, Avatar, Box, Button, useTheme } from "@mui/material";
 import { removeMember, respondToJoin } from "@/app/actions/joins";
 import { markPodMatched } from "@/app/actions/pods";
 import { openDiscordAddFriend } from "@/lib/discord";
@@ -344,15 +344,19 @@ export function MyPodPanel({ pod, onChanged, highlight = false }: MyPodPanelProp
                       }
                       sx={{
                         flexShrink: 0,
+                        minWidth: 0,
                         px: 1.5,
                         py: 0.75,
                         fontSize: "0.75rem",
                         bgcolor: "rgba(99, 102, 241, 0.1)",
                         color: "#a5b4fc",
                         "&:hover": { bgcolor: "rgba(99, 102, 241, 0.2)" },
+                        "& .MuiButton-startIcon": { mr: { xs: 0, sm: 1 } },
                       }}
                     >
-                      {copied === join.id ? t("myPodPanel.copied") : t("myPodPanel.addOnDiscord")}
+                      <Box component="span" sx={{ display: { xs: "none", sm: "inline" } }}>
+                        {copied === join.id ? t("myPodPanel.copied") : t("myPodPanel.addOnDiscord")}
+                      </Box>
                     </Button>
                     <Button
                       type="button"
@@ -364,15 +368,19 @@ export function MyPodPanel({ pod, onChanged, highlight = false }: MyPodPanelProp
                       startIcon={<UserX className="h-3.5 w-3.5" />}
                       sx={{
                         flexShrink: 0,
+                        minWidth: 0,
                         px: 1.5,
                         py: 0.75,
                         fontSize: "0.75rem",
                         bgcolor: "rgba(239, 68, 68, 0.1)",
                         color: "#f87171",
                         "&:hover": { bgcolor: "rgba(239, 68, 68, 0.2)" },
+                        "& .MuiButton-startIcon": { mr: { xs: 0, sm: 1 } },
                       }}
                     >
-                      {t("myPodPanel.remove")}
+                      <Box component="span" sx={{ display: { xs: "none", sm: "inline" } }}>
+                        {t("myPodPanel.remove")}
+                      </Box>
                     </Button>
                   </div>
                 </div>

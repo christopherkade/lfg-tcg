@@ -11,14 +11,14 @@
 --
 -- Cooldowns are intentionally simple last-action-timestamp checks rather
 -- than a sliding-window counter table — no new infra, and "one pod create
--- per 60s" / "one join request per 10s" is enough to stop rapid-fire abuse
+-- per 15s" / "one join request per 10s" is enough to stop rapid-fire abuse
 -- without needing to count requests over a rolling window.
 
 -- 1. Track the last time each user created a pod / sent a join request.
 alter table profiles add column if not exists last_pod_created_at timestamptz;
 alter table profiles add column if not exists last_join_request_at timestamptz;
 
--- 2. Pod-creation cooldown: 60 seconds between new pods per user.
+-- 2. Pod-creation cooldown: 15 seconds between new pods per user.
 create or replace function enforce_pod_creation_cooldown()
 returns trigger
 language plpgsql
@@ -30,7 +30,7 @@ declare
 begin
   select last_pod_created_at into v_last from profiles where id = new.user_id;
 
-  if v_last is not null and v_last > now() - interval '60 seconds' then
+  if v_last is not null and v_last > now() - interval '15 seconds' then
     raise exception 'RATE_LIMITED_POD_CREATE';
   end if;
 
