@@ -7,6 +7,7 @@ import { Box, Button, Link, Typography } from "@mui/material";
 import { createClient } from "@/lib/supabase/client";
 import { LocaleSwitcher } from "@/components/LocaleSwitcher";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { useThemeMode } from "@/lib/theme/ThemeModeContext";
 import { useTranslation } from "@/lib/i18n/LocaleContext";
 import type { TranslationKey } from "@/lib/i18n";
 import { GAMES_CONFIG } from "@/constants/gamesConfig";
@@ -42,10 +43,10 @@ const BLOBS = [
 // Fixed screen-edge slots for the floating game logos, kept clear of the
 // centered content column. Hidden below `sm` where there isn't room.
 const LOGO_SLOTS = [
-  { className: "left-[5%] top-[8%]", size: 88, duration: 9, delay: 0 },
-  { className: "right-[6%] top-[14%]", size: 76, duration: 11, delay: 1.1 },
-  { className: "left-[7%] bottom-[12%]", size: 80, duration: 10, delay: 0.6 },
-  { className: "right-[5%] bottom-[7%]", size: 96, duration: 12, delay: 1.7 },
+  { className: "left-[5%] top-[8%]", size: 112, duration: 9, delay: 0 },
+  { className: "right-[6%] top-[14%]", size: 100, duration: 11, delay: 1.1 },
+  { className: "left-[7%] bottom-[12%]", size: 104, duration: 10, delay: 0.6 },
+  { className: "right-[5%] bottom-[7%]", size: 124, duration: 12, delay: 1.7 },
 ];
 
 const containerVariants = {
@@ -65,6 +66,8 @@ interface LoginViewProps {
 
 export function LoginView({ next }: LoginViewProps) {
   const { t } = useTranslation();
+  const { mode } = useThemeMode();
+  const isDark = mode === "dark";
   async function handleDiscordLogin() {
     const supabase = createClient();
     const callbackUrl = new URL("/auth/callback", window.location.origin);
@@ -104,17 +107,28 @@ export function LoginView({ next }: LoginViewProps) {
           <motion.div
             key={game.name}
             aria-hidden
-            className={`pointer-events-none absolute hidden opacity-45 sm:block ${slot.className}`}
+            className={`pointer-events-none absolute hidden opacity-90 sm:block ${slot.className}`}
             animate={{ y: [0, -12, 0], rotate: [0, 3, 0] }}
             transition={{ duration: slot.duration, delay: slot.delay, repeat: Infinity, ease: "easeInOut" }}
+            style={{ width: slot.size, height: slot.size }}
           >
-            <Image
-              src={game.logo}
-              alt=""
-              width={slot.size}
-              height={slot.size}
-              className="object-contain drop-shadow-[0_0_8px_rgba(110,231,183,0.55)]"
-            />
+            {/* Dark-lined logo art (e.g. MTG, One Piece) is invisible against
+                the near-black dark background, so give it a light backdrop
+                there; the light background already has enough contrast on
+                its own. */}
+            <div
+              className={`flex h-full w-full items-center justify-center rounded-2xl p-2.5 ${
+                isDark ? "bg-white/85 shadow-[0_0_20px_6px_rgba(110,231,183,0.35)] ring-1 ring-white/60" : ""
+              }`}
+            >
+              <Image
+                src={game.logo}
+                alt=""
+                width={slot.size}
+                height={slot.size}
+                className="h-full w-full object-contain"
+              />
+            </div>
           </motion.div>
         );
       })}

@@ -187,7 +187,7 @@
   "login.step1.title": "Créez une table",
   "login.step1.description": "Choisissez un jeu et créez votre table en quelques secondes.",
   "login.step2.title": "Trouvez de nouveaux joueurs",
-  "login.step2.description": "Rencontrez des joueurs à la recherche d'une partie en personne ou en ligne.",
+  "login.step2.description": "Rencontrez des joueurs à la recherche d'une partie.",
   "login.step3.title": "Jouez facilement",
   "login.step3.description": "Coordonnez-vous sur Discord et c'est parti !",
   "login.continueWithDiscord": "Continuer avec Discord",
@@ -215,7 +215,7 @@
   "format.EXPANDED": "Étendu",
   "format.CONSTRUCTED": "Constructed principal",
   "tier.powerBracket": "Palier de puissance",
-  "playstyle.casual": "Décontracté",
+  "playstyle.casual": "Casual",
   "playstyle.competitive": "Compétitif",
 
   "date.startsIn": "Commence dans {duration}",
