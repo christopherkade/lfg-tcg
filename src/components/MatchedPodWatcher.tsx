@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { MatchedDialog } from "@/components/MatchedDialog";
+import { usePodRealtime } from "@/components/PodRealtimeProvider";
 
 interface MatchedPodWatcherProps {
   currentUserId: string;
@@ -43,6 +44,7 @@ interface MatchedPodWatcherProps {
  */
 export function MatchedPodWatcher({ currentUserId }: MatchedPodWatcherProps) {
   const [matchedDialogOpen, setMatchedDialogOpen] = useState(false);
+  const { notifyPodsChanged } = usePodRealtime();
   // In-flight guard only: prevents the poll and the realtime handler from
   // both firing the RPC + dialog for the same pod_joins row before the
   // server-side matched_notified_at write lands. The server column (not
@@ -100,6 +102,11 @@ export function MatchedPodWatcher({ currentUserId }: MatchedPodWatcherProps) {
       );
 
       setMatchedDialogOpen(true);
+      // The pod(s) behind this dialog just left every match-feed query
+      // (status is no longer ACTIVE) — force MatchFeed/OwnPodPanel/LfgButton
+      // to refetch now rather than waiting on their own, separately
+      // unreliable postgres_changes delivery to notice the same UPDATE.
+      notifyPodsChanged();
     }
 
     function handleFocusOrVisible() {
@@ -121,7 +128,7 @@ export function MatchedPodWatcher({ currentUserId }: MatchedPodWatcherProps) {
       window.removeEventListener("focus", handleFocusOrVisible);
       clearInterval(intervalId);
     };
-  }, [currentUserId]);
+  }, [currentUserId, notifyPodsChanged]);
 
   useEffect(() => {
     const supabase = createClient();
@@ -168,6 +175,10 @@ export function MatchedPodWatcher({ currentUserId }: MatchedPodWatcherProps) {
               p_pod_join_id: ownJoin.id,
             });
             setMatchedDialogOpen(true);
+            // See the poll effect above for why this is needed in addition
+            // to PodRealtimeProvider's own (separate) postgres_changes
+            // subscription.
+            notifyPodsChanged();
           }
         },
       )
@@ -176,7 +187,7 @@ export function MatchedPodWatcher({ currentUserId }: MatchedPodWatcherProps) {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [currentUserId]);
+  }, [currentUserId, notifyPodsChanged]);
 
   return (
     <MatchedDialog

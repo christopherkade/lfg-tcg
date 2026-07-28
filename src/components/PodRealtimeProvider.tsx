@@ -8,6 +8,7 @@ type PodChangeCallback = () => void;
 interface PodRealtimeContextValue {
   subscribePods: (callback: PodChangeCallback) => () => void;
   subscribePodJoins: (callback: PodChangeCallback) => () => void;
+  notifyPodsChanged: () => void;
 }
 
 const PodRealtimeContext = createContext<PodRealtimeContextValue | null>(null);
@@ -55,6 +56,21 @@ export function PodRealtimeProvider({
     };
   }, []);
 
+  // Manual escape hatch alongside the postgres_changes subscription below:
+  // lets a component that has already confirmed a `pods` change through some
+  // other channel (e.g. MatchedPodWatcher's own realtime subscription/poll
+  // fallback noticing a MATCHED transition) force every other subscriber
+  // (MatchFeed, OwnPodPanel, LfgButton) to refetch immediately, instead of
+  // depending on that second, independent postgres_changes delivery to this
+  // provider's own channel also succeeding — Realtime delivery has been
+  // observed to be unreliable in this project, and unlike those other
+  // subscribers' focus/visibility fallback, a viewer dismissing the Matched
+  // dialog is typically already on a focused /pods tab, so that fallback
+  // would never fire either.
+  const notifyPodsChanged = useCallback(() => {
+    for (const callback of podCallbacksRef.current) callback();
+  }, []);
+
   useEffect(() => {
     const supabase = createClient();
     const channel = supabase
@@ -81,7 +97,9 @@ export function PodRealtimeProvider({
   }, []);
 
   return (
-    <PodRealtimeContext.Provider value={{ subscribePods, subscribePodJoins }}>
+    <PodRealtimeContext.Provider
+      value={{ subscribePods, subscribePodJoins, notifyPodsChanged }}
+    >
       {children}
     </PodRealtimeContext.Provider>
   );
