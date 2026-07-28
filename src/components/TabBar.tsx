@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Users, Zap, History, UserCircle, type LucideIcon } from "lucide-react";
@@ -54,11 +55,14 @@ export function TabBar({ currentUserId }: TabBarProps) {
         sx={{ borderBottom: 1, borderColor: "divider", bgcolor: "background.default" }}
         className="flex items-center justify-between px-4 py-3 sm:hidden"
       >
-        <Typography
-          sx={{ fontSize: "1rem", fontWeight: 700, color: "primary.main" }}
-        >
-          PodFinder
-        </Typography>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+          <Image src="/mascot.svg" alt="" width={22} height={30} aria-hidden />
+          <Typography
+            sx={{ fontSize: "1rem", fontWeight: 700, color: "primary.main" }}
+          >
+            PodFinder
+          </Typography>
+        </Box>
         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
           <SettingsDialog />
           <TutorialDialog />
@@ -72,12 +76,15 @@ export function TabBar({ currentUserId }: TabBarProps) {
         sx={{ borderBottom: 1, borderColor: "divider", bgcolor: "background.default" }}
         className="hidden sm:block"
       >
-        <div className="mx-auto flex max-w-3xl items-center justify-between px-6 py-4">
-          <Typography
-            sx={{ fontSize: "1.125rem", fontWeight: 700, color: "primary.main" }}
-          >
-            PodFinder
-          </Typography>
+        <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-4">
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+            <Image src="/mascot.svg" alt="" width={28} height={39} aria-hidden />
+            <Typography
+              sx={{ fontSize: "1.125rem", fontWeight: 700, color: "primary.main" }}
+            >
+              PodFinder
+            </Typography>
+          </Box>
           <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
             <Box sx={{ display: "flex", gap: 1 }}>
               {TABS.map((tab) => {

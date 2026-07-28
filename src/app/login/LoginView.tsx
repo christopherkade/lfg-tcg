@@ -147,12 +147,15 @@ export function LoginView({ next }: LoginViewProps) {
         className="relative z-10 mt-16 flex flex-col items-center gap-10 sm:mt-0"
       >
         <motion.div variants={itemVariants} className="flex flex-col gap-2">
-          <Typography
-            component="h1"
-            sx={{ fontSize: "1.875rem", fontWeight: 700, color: "text.primary" }}
-          >
-            {t("login.title")}
-          </Typography>
+          <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 1.5 }}>
+            <Image src="/mascot.svg" alt="" width={36} height={50} aria-hidden />
+            <Typography
+              component="h1"
+              sx={{ fontSize: "1.875rem", fontWeight: 700, color: "text.primary" }}
+            >
+              {t("login.title")}
+            </Typography>
+          </Box>
           <Typography sx={{ color: "text.secondary" }}>
             {t("login.subtitle")}
           </Typography>

@@ -21,6 +21,15 @@ export const metadata: Metadata = {
   title: "PodFinder",
   description:
     "Create your own TCG pods and find your next game, IRL or online.",
+  icons: {
+    icon: [
+      { url: "/favicon_16.png", sizes: "16x16", type: "image/png" },
+      { url: "/favicon_32.png", sizes: "32x32", type: "image/png" },
+      { url: "/favicon_64.png", sizes: "64x64", type: "image/png" },
+      { url: "/favicon_256.png", sizes: "256x256", type: "image/png" },
+    ],
+    apple: "/apple-icon.png",
+  },
 };
 
 export default async function RootLayout({

@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 166" width="120" height="166" role="img" aria-label="PodFinder mascot">
+<title>PodFinder mascot</title>
+<g transform="translate(60,120)">
+<rect x="-35" y="-110" width="70" height="110" rx="14" fill="#FBF5E6" stroke="#2C3E50" stroke-width="3"/>
+<rect x="-27" y="-102" width="54" height="94" rx="8" fill="none" stroke="#34D399" stroke-width="1.5"/>
+<path d="M -35,-55 L -50,-32 L -32,-15" fill="none" stroke="#2C3E50" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M 35,-55 L 50,-32 L 32,-15" fill="none" stroke="#2C3E50" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="-9" cy="-78" r="3.2" fill="#2C3E50"/>
+<circle cx="9" cy="-78" r="3.2" fill="#2C3E50"/>
+<path d="M -7,-65 Q 0,-60 7,-65" fill="none" stroke="#2C3E50" stroke-width="2" stroke-linecap="round"/>
+<path d="M -18,0 L -18,30" fill="none" stroke="#2C3E50" stroke-width="5" stroke-linecap="round"/>
+<path d="M 18,0 L 18,30" fill="none" stroke="#2C3E50" stroke-width="5" stroke-linecap="round"/>
+<ellipse cx="-18" cy="32" rx="6" ry="3.5" fill="#2C3E50"/>
+<ellipse cx="18" cy="32" rx="6" ry="3.5" fill="#2C3E50"/>
+</g>
+</svg>
