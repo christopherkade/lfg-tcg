@@ -70,7 +70,6 @@ export async function fetchActivePodsData(
     let query = supabase
       .from("pods")
       .select("*, profiles(*), pod_joins(*, profiles(*))")
-      .eq("playstyle_key", profile.preferred_playstyle)
       .eq("status", "ACTIVE")
       .gt("expires_at", new Date().toISOString())
       .neq("user_id", currentUserId);
@@ -102,30 +101,10 @@ export async function fetchActivePodsData(
   }
 
   // Independent queries — run concurrently instead of sequentially.
-  const [
-    { data: joinedData, error: joinedError },
-    filteredData,
-  ] = await Promise.all([
+  const [{ data: joinedData }, filteredData] = await Promise.all([
     joinedQuery,
     filteredQuery ? filteredQuery : Promise.resolve({ data: [], error: null }),
   ]);
-
-  console.log(
-    "[DEBUG fetchActivePodsData] " +
-      JSON.stringify({
-        currentUserId,
-        activeFilters,
-        profileCity: profile.city,
-        profilePlaystyle: profile.preferred_playstyle,
-        joinedError: joinedError ? String(joinedError.message) : null,
-        joinedCount: (joinedData as JoinedPodRow[] | null)?.length ?? -1,
-        filteredError: filteredData.error
-          ? String((filteredData.error as { message?: string }).message)
-          : null,
-        filteredCount:
-          (filteredData.data as PodWithRelations[] | null)?.length ?? -1,
-      }),
-  );
 
   const joinedPods = ((joinedData as JoinedPodRow[] | null) ?? []).map(
     (row) => row.pods,

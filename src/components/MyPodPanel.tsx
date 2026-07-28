@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { Check, ChevronDown, Copy, UserX, X } from "lucide-react";
+import { Check, ChevronDown, Copy, Pencil, UserX, X } from "lucide-react";
 import { Alert, Avatar, Box, Button, useTheme } from "@mui/material";
 import { removeMember, respondToJoin } from "@/app/actions/joins";
 import { markPodMatched } from "@/app/actions/pods";
@@ -18,7 +18,7 @@ import type { PodJoinWithProfile, PodWithRelations } from "@/types/database";
 
 interface MyPodPanelProps {
   pod: PodWithRelations;
-  onChanged?: () => void;
+  onChanged?: () => void | Promise<void>;
   /** Briefly pulses the panel's border/glow — used right after pod creation. */
   highlight?: boolean;
 }
@@ -79,7 +79,15 @@ export function MyPodPanel({ pod, onChanged, highlight = false }: MyPodPanelProp
       // repo memory), which left the request stuck showing Accept/Reject
       // even though the DB row had already been updated. Refetch
       // immediately on success instead.
-      onChanged?.();
+      //
+      // Awaited (rather than fire-and-forget) so that when we auto-expand
+      // below, the accordion opens with the new member already in
+      // `pod.pod_joins` instead of opening on stale data and then having
+      // the member pop in a beat later once the refetch resolves.
+      await onChanged?.();
+      if (decision === "ACCEPTED") {
+        setExpanded(true);
+      }
     }
     setPendingId(null);
   }
@@ -247,8 +255,17 @@ export function MyPodPanel({ pod, onChanged, highlight = false }: MyPodPanelProp
 
       {error && <Alert severity="error">{error}</Alert>}
 
-      {expanded && (
-        <>
+      <AnimatePresence initial={false}>
+        {expanded && (
+          <motion.div
+            key="pod-details"
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.25, ease: "easeInOut" }}
+            style={{ overflow: "hidden" }}
+            className="flex flex-col gap-4"
+          >
           <div className="flex flex-col gap-2 text-sm" style={{ color: theme.palette.text.primary }}>
             <div className="flex justify-between">
               <span style={{ color: theme.palette.text.secondary }}>{t("myPodPanel.game")}</span>
@@ -295,12 +312,18 @@ export function MyPodPanel({ pod, onChanged, highlight = false }: MyPodPanelProp
               <span className="text-sm font-medium" style={{ color: theme.palette.text.secondary }}>
                 {t("myPodPanel.groupMembers")}
               </span>
-              {acceptedMembers.map((join) => (
-                <div
-                  key={join.id}
-                  className="flex items-center justify-between gap-2 rounded-lg px-3 py-2"
-                  style={{ border: `1px solid ${theme.palette.divider}` }}
-                >
+              <AnimatePresence initial={false}>
+                {acceptedMembers.map((join) => (
+                  <motion.div
+                    key={join.id}
+                    layout
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    transition={{ duration: 0.2, ease: "easeInOut" }}
+                    style={{ overflow: "hidden", border: `1px solid ${theme.palette.divider}` }}
+                    className="flex items-center justify-between gap-2 rounded-lg px-3 py-2"
+                  >
                   <div className="flex items-center gap-2">
                     <Avatar
                       src={join.profiles.avatar_url ?? undefined}
@@ -349,7 +372,7 @@ export function MyPodPanel({ pod, onChanged, highlight = false }: MyPodPanelProp
                         py: 0.75,
                         fontSize: "0.75rem",
                         bgcolor: "rgba(99, 102, 241, 0.1)",
-                        color: "#a5b4fc",
+                        color: "text.primary",
                         "&:hover": { bgcolor: "rgba(99, 102, 241, 0.2)" },
                         "& .MuiButton-startIcon": { mr: { xs: 0, sm: 1 } },
                       }}
@@ -375,7 +398,7 @@ export function MyPodPanel({ pod, onChanged, highlight = false }: MyPodPanelProp
                         bgcolor: "rgba(239, 68, 68, 0.1)",
                         color: "#f87171",
                         "&:hover": { bgcolor: "rgba(239, 68, 68, 0.2)" },
-                        "& .MuiButton-startIcon": { mr: { xs: 0, sm: 1 } },
+                        "& .MuiButton-startIcon": { mr: { xs: 0, sm: 1 }, ml: { xs: 0, sm: -0.5 } },
                       }}
                     >
                       <Box component="span" sx={{ display: { xs: "none", sm: "inline" } }}>
@@ -383,8 +406,9 @@ export function MyPodPanel({ pod, onChanged, highlight = false }: MyPodPanelProp
                       </Box>
                     </Button>
                   </div>
-                </div>
-              ))}
+                  </motion.div>
+                ))}
+              </AnimatePresence>
             </div>
           )}
 
@@ -399,44 +423,57 @@ export function MyPodPanel({ pod, onChanged, highlight = false }: MyPodPanelProp
             </div>
           )}
 
-          <div className="flex justify-end gap-3">
+          <div className="flex justify-end gap-2">
             <Button
               type="button"
               onClick={() =>
                 copyText("__link__", `${window.location.origin}/pods/${pod.id}`)
               }
-              variant="outlined"
               size="small"
-              startIcon={
-                <AnimatePresence mode="wait" initial={false}>
-                  <motion.span
-                    key={copied === "__link__" ? "check" : "copy"}
-                    initial={{ scale: 0.5, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    exit={{ scale: 0.5, opacity: 0 }}
-                    transition={{ duration: 0.15, ease: "easeOut" }}
-                    className="inline-flex"
-                  >
-                    {copied === "__link__" ? (
-                      <Check className="h-3.5 w-3.5" />
-                    ) : (
-                      <Copy className="h-3.5 w-3.5" />
-                    )}
-                  </motion.span>
-                </AnimatePresence>
-              }
-              sx={{ borderColor: "divider", color: "text.secondary" }}
+              aria-label={copied === "__link__" ? t("myPodPanel.copied") : t("myPodPanel.copyLink")}
+              sx={{
+                flexShrink: 0,
+                minWidth: 0,
+                px: 1.25,
+                py: 0.75,
+                bgcolor: "rgba(99, 102, 241, 0.1)",
+                color: "text.primary",
+                "&:hover": { bgcolor: "rgba(99, 102, 241, 0.2)" },
+              }}
             >
-              {copied === "__link__" ? t("myPodPanel.copied") : t("myPodPanel.copyLink")}
+              <AnimatePresence mode="wait" initial={false}>
+                <motion.span
+                  key={copied === "__link__" ? "check" : "copy"}
+                  initial={{ scale: 0.5, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  exit={{ scale: 0.5, opacity: 0 }}
+                  transition={{ duration: 0.15, ease: "easeOut" }}
+                  className="inline-flex"
+                >
+                  {copied === "__link__" ? (
+                    <Check className="h-4 w-4" />
+                  ) : (
+                    <Copy className="h-4 w-4" />
+                  )}
+                </motion.span>
+              </AnimatePresence>
             </Button>
             <Button
               type="button"
               onClick={() => setEditOpen(true)}
-              variant="outlined"
               size="small"
-              sx={{ borderColor: "divider", color: "text.secondary" }}
+              aria-label={t("myPodPanel.editPod")}
+              sx={{
+                flexShrink: 0,
+                minWidth: 0,
+                px: 1.25,
+                py: 0.75,
+                bgcolor: "rgba(148, 163, 184, 0.12)",
+                color: "text.primary",
+                "&:hover": { bgcolor: "rgba(148, 163, 184, 0.22)" },
+              }}
             >
-              {t("myPodPanel.editPod")}
+              <Pencil className="h-4 w-4" />
             </Button>
             <Button
               type="button"
@@ -444,12 +481,20 @@ export function MyPodPanel({ pod, onChanged, highlight = false }: MyPodPanelProp
               disabled={pendingId === pod.id || acceptedMembers.length === 0}
               variant="contained"
               size="small"
+              sx={{
+                flexShrink: 0,
+                minWidth: 0,
+                px: 1.5,
+                py: 0.75,
+                fontSize: "0.75rem",
+              }}
             >
               {t("myPodPanel.markAsMatched")}
             </Button>
           </div>
-        </>
-      )}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <ConfirmMarkMatchedDialog
         open={confirmMatchedOpen}

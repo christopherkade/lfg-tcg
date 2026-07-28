@@ -80,18 +80,32 @@ export function OwnPodPanel({
   // been observed to be unreliable in this project (channel stays
   // SUBSCRIBED, but specific events occasionally never arrive — see repo
   // memory). Resync whenever the tab regains focus/visibility so a missed
-  // event self-heals without the user needing to manually reload.
+  // event self-heals without the user needing to manually reload. Unlike
+  // MatchFeed/LfgButton/NotificationBell (whose focus/visibility-only
+  // fallback is enough since their content just sits there stale until
+  // next glanced at), a host waiting on a join request is typically
+  // staring at an already-focused /pods tab the whole time — a
+  // focus/visibility listener alone would never fire, so this also polls
+  // on an interval while the tab is visible, in addition to on mount and
+  // focus/visibility, mirroring MatchedPodWatcher/NotificationBell.
   useEffect(() => {
     function handleFocusOrVisible() {
       if (document.visibilityState === "visible") {
         fetchOwnPodRef.current();
       }
     }
+    fetchOwnPodRef.current();
     document.addEventListener("visibilitychange", handleFocusOrVisible);
     window.addEventListener("focus", handleFocusOrVisible);
+    const intervalId = setInterval(() => {
+      if (document.visibilityState === "visible") {
+        fetchOwnPodRef.current();
+      }
+    }, 10_000);
     return () => {
       document.removeEventListener("visibilitychange", handleFocusOrVisible);
       window.removeEventListener("focus", handleFocusOrVisible);
+      clearInterval(intervalId);
     };
   }, []);
 
