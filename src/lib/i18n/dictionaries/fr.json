@@ -283,5 +283,9 @@
   "deleteAccountDialog.body": "Cela supprime définitivement votre profil, les tables actives et passées que vous avez créées, ainsi que votre historique de participation. Cette action est irréversible.",
   "deleteAccountDialog.cancel": "Annuler",
   "deleteAccountDialog.confirm": "Supprimer le compte",
-  "deleteAccountDialog.deleting": "Suppression..."
+  "deleteAccountDialog.deleting": "Suppression...",
+
+  "notFound.title": "On dirait que vous êtes perdu",
+  "notFound.description": "Cette page n'existe pas, ou elle a peut-être été déplacée. Revenons sur la bonne voie.",
+  "notFound.cta": "Retour à PodFinder"
 }

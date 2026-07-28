@@ -283,5 +283,9 @@
   "deleteAccountDialog.body": "This permanently deletes your profile, active and past pods you hosted, and your join history. This can't be undone.",
   "deleteAccountDialog.cancel": "Cancel",
   "deleteAccountDialog.confirm": "Delete Account",
-  "deleteAccountDialog.deleting": "Deleting..."
+  "deleteAccountDialog.deleting": "Deleting...",
+
+  "notFound.title": "Looks like you're lost",
+  "notFound.description": "This page doesn't exist, or it may have moved. Let's get you back on track.",
+  "notFound.cta": "Back to PodFinder"
 }

@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="PodFinder favicon">
+<title>PodFinder favicon</title>
+<rect x="16" y="6" width="32" height="52" rx="8" fill="#FBF5E6" stroke="#2C3E50" stroke-width="4"/>
+<rect x="21" y="11" width="22" height="42" rx="5" fill="none" stroke="#34D399" stroke-width="2.5"/>
+<circle cx="27" cy="24" r="2.6" fill="#2C3E50"/>
+<circle cx="37" cy="24" r="2.6" fill="#2C3E50"/>
+<path d="M 26,32 Q 32,36 38,32" fill="none" stroke="#2C3E50" stroke-width="2.5" stroke-linecap="round"/>
+</svg>
