@@ -222,9 +222,12 @@ export function MyPodPanel({ pod, onChanged, highlight = false }: MyPodPanelProp
                     px: 1.5,
                     "&:hover": { bgcolor: "rgba(16, 185, 129, 0.2)" },
                     "&.Mui-disabled": { color: "#34d399", opacity: 0.4 },
+                    "& .MuiButton-startIcon": { mr: { xs: 0, sm: 1 }, ml: { xs: 0, sm: -0.5 } },
                   }}
                 >
-                  {t("myPodPanel.accept")}
+                  <Box component="span" sx={{ display: { xs: "none", sm: "inline" } }}>
+                    {t("myPodPanel.accept")}
+                  </Box>
                 </Button>
                 <Button
                   type="button"
@@ -239,9 +242,12 @@ export function MyPodPanel({ pod, onChanged, highlight = false }: MyPodPanelProp
                     px: 1.5,
                     "&:hover": { bgcolor: "rgba(239, 68, 68, 0.2)" },
                     "&.Mui-disabled": { color: "#f87171", opacity: 0.4 },
+                    "& .MuiButton-startIcon": { mr: { xs: 0, sm: 1 }, ml: { xs: 0, sm: -0.5 } },
                   }}
                 >
-                  {t("myPodPanel.reject")}
+                  <Box component="span" sx={{ display: { xs: "none", sm: "inline" } }}>
+                    {t("myPodPanel.reject")}
+                  </Box>
                 </Button>
               </div>
             </div>

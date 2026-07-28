@@ -306,7 +306,10 @@ export function MatchFeedList({
                     className="text-xs"
                     style={{ color: theme.palette.text.secondary }}
                   >
-                    {acceptedMembers.length + 1}/{pod.max_players}
+                    {t("myPodPanel.playersCount", {
+                      count: acceptedMembers.length + 1,
+                      max: pod.max_players,
+                    })}
                   </span>
                 </div>
                 <div

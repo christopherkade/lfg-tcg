@@ -9,6 +9,7 @@ import type { MatchType, PlaystyleKey } from "@/types/database";
 
 export interface PodActionResult {
   error?: string;
+  podId?: string;
 }
 
 export interface StartSearchInput {
@@ -162,22 +163,26 @@ export async function createPod(
     };
   }
 
-  const { error } = await supabase.from("pods").insert({
-    user_id: user.id,
-    game_key: input.gameKey,
-    format_key: input.formatKey,
-    playstyle_key: input.playstyleKey,
-    power_tiers: brackets,
-    type: input.matchType,
-    location_name: locationName,
-    // Snapshot of profiles.city at creation time — lets the Match Feed
-    // (Section 6) scope IRL pods to the viewer's city via a plain
-    // column filter, without joining back to profiles.
-    city: profile.city,
-    scheduled_at: scheduledAt,
-    max_players: input.maxPlayers,
-    notes,
-  });
+  const { data: created, error } = await supabase
+    .from("pods")
+    .insert({
+      user_id: user.id,
+      game_key: input.gameKey,
+      format_key: input.formatKey,
+      playstyle_key: input.playstyleKey,
+      power_tiers: brackets,
+      type: input.matchType,
+      location_name: locationName,
+      // Snapshot of profiles.city at creation time — lets the Match Feed
+      // (Section 6) scope IRL pods to the viewer's city via a plain
+      // column filter, without joining back to profiles.
+      city: profile.city,
+      scheduled_at: scheduledAt,
+      max_players: input.maxPlayers,
+      notes,
+    })
+    .select("id")
+    .single();
 
   if (error) {
     if (error.message?.includes("RATE_LIMITED_POD_CREATE")) {
@@ -193,7 +198,7 @@ export async function createPod(
 
   revalidatePath("/");
   revalidatePath("/pods");
-  return {};
+  return { podId: created.id };
 }
 
 /**

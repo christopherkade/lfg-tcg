@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { format } from "date-fns";
 import { CalendarClock, ChevronDown, Sparkles, Swords, X } from "lucide-react";
@@ -20,7 +20,7 @@ import { GAMES_CONFIG } from "@/constants/gamesConfig";
 import { GameSelector } from "@/components/GameSelector";
 import { PlaystyleToggle } from "@/components/PlaystyleToggle";
 import { PowerBracketPicker } from "@/components/PowerBracketPicker";
-import { createPod, updatePod } from "@/app/actions/pods";
+import { cancelPod, createPod, updatePod } from "@/app/actions/pods";
 import { useTranslation } from "@/lib/i18n/LocaleContext";
 import type { TranslationKey } from "@/lib/i18n";
 import type { Pod, Profile, PlaystyleKey, MatchType } from "@/types/database";
@@ -186,6 +186,34 @@ export function LfgDialog({
   // into the time field without an extra click.
   const timeFieldRef = useRef<HTMLInputElement>(null);
 
+  // The error Alert renders at the bottom of the scrollable content area, so
+  // if the user has a tall form scrolled to the top (or on a small viewport)
+  // a submission error can appear entirely off-screen. Scroll it into view
+  // whenever a new error comes in.
+  const contentRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (error) {
+      contentRef.current?.scrollTo({
+        top: contentRef.current.scrollHeight,
+        behavior: "smooth",
+      });
+    }
+  }, [error]);
+
+  // Cancel/close stays clickable while a submission is in flight (only the
+  // Search/Save button disables). If the user closes the dialog during that
+  // window, this tells handleSearch to drop the result instead of firing
+  // onSuccess (and its navigation) once the request resolves.
+  const cancelledRef = useRef(false);
+
+  function handleCancel() {
+    if (pending) {
+      cancelledRef.current = true;
+    }
+    onClose();
+  }
+
   // Re-sync the form with the latest saved settings every time the dialog
   // transitions from closed to open. Adjusted during render (not in an
   // effect) per React's "adjusting state when a prop changes" pattern.
@@ -292,6 +320,7 @@ export function LfgDialog({
   async function handleSearch() {
     if (!canSubmit) return;
 
+    cancelledRef.current = false;
     setPending(true);
     setError(null);
 
@@ -335,6 +364,19 @@ export function LfgDialog({
     }
 
     setPending(false);
+    if (cancelledRef.current) {
+      // The search itself already went through (a pod now exists/was
+      // updated), but the user backed out before we could navigate them
+      // there — so a brand new pod shouldn't linger ACTIVE in the
+      // background as a search they never saw confirmed. Editing an
+      // existing pod has no such dangling side effect (it was already
+      // ACTIVE, and its dialog never navigates), so only cancel here for
+      // the create flow.
+      if (!editPod && result.podId) {
+        void cancelPod(result.podId);
+      }
+      return;
+    }
     onSuccess();
   }
 
@@ -346,7 +388,7 @@ export function LfgDialog({
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           className="fixed inset-0 z-20 flex items-center justify-center bg-black/60 p-4 sm:p-8"
-          onClick={onClose}
+          onClick={handleCancel}
         >
           <motion.div
             initial={{ y: 40, opacity: 0 }}
@@ -389,14 +431,17 @@ export function LfgDialog({
               <IconButton
                 aria-label={t("lfgDialog.close")}
                 size="small"
-                onClick={onClose}
+                onClick={handleCancel}
                 sx={{ color: "text.secondary", mt: "-4px", mr: "-8px" }}
               >
                 <X className="h-4 w-4" />
               </IconButton>
             </div>
 
-            <div className="flex flex-col gap-3 overflow-y-auto px-4 py-3 sm:gap-4 sm:px-6 sm:py-4">
+            <div
+              ref={contentRef}
+              className="flex flex-col gap-3 overflow-y-auto px-4 py-3 sm:gap-4 sm:px-6 sm:py-4"
+            >
               <DialogSection
                 icon={<Swords className="h-3.5 w-3.5" />}
                 title={t("lfgDialog.section.game")}
@@ -625,7 +670,7 @@ export function LfgDialog({
             >
               <Button
                 type="button"
-                onClick={onClose}
+                onClick={handleCancel}
                 variant="outlined"
                 fullWidth
                 sx={{ py: 1 }}

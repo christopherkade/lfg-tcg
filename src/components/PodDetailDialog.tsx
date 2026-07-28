@@ -85,8 +85,10 @@ export function PodDetailDialog({
                   color: theme.palette.text.secondary,
                 }}
               >
-                {acceptedMembers ? acceptedMembers.length + 1 : 1}/
-                {pod.max_players}
+                {t("myPodPanel.playersCount", {
+                  count: acceptedMembers ? acceptedMembers.length + 1 : 1,
+                  max: pod.max_players,
+                })}
               </span>
             </div>
 

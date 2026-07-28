@@ -24,7 +24,7 @@ const MotionFab = motion.create(Fab);
 // Length of one "searching" boxShadow pulse cycle (see the `isSearching`
 // animate/transition below) — reused so the post-create redirect can wait
 // for a couple of full cycles instead of cutting the animation off mid-pulse.
-const SEARCHING_PULSE_DURATION_MS = 500;
+const SEARCHING_PULSE_DURATION_MS = 650;
 
 interface LfgButtonProps {
   profile: Profile;
@@ -59,6 +59,14 @@ export function LfgButton({
   const [dialogOpen, setDialogOpen] = useState(false);
   const [blockedDialogOpen, setBlockedDialogOpen] = useState(false);
   const [burstKey, setBurstKey] = useState(0);
+
+  // The post-submit onSuccess flow below closes the dialog, refetches
+  // ownPod (which flips the Fab into "Cancel" mode), then waits out a
+  // pulse before navigating to /pods. If the user hits that "Cancel" Fab
+  // during the wait, handleClick cancels the pod but has no way to reach
+  // into onSuccess's already-running promise chain — this ref is that
+  // link, checked right before the navigation actually fires.
+  const navigationCancelledRef = useRef(false);
 
   const fetchOwnPod = useCallback(async () => {
     const supabase = createClient();
@@ -266,6 +274,10 @@ export function LfgButton({
     if (result.error) {
       setError(result.error);
     } else {
+      // Also stops a still-in-flight post-submit onSuccess (see its ref
+      // check before router.push) from navigating to /pods for a search
+      // that was just cancelled out from under it.
+      navigationCancelledRef.current = true;
       await fetchOwnPodRef.current();
       await fetchHasActiveJoinRef.current();
     }
@@ -491,6 +503,7 @@ export function LfgButton({
         onClose={() => setDialogOpen(false)}
         onSuccess={async () => {
           setDialogOpen(false);
+          navigationCancelledRef.current = false;
           // Kicks off the same queries MatchFeedList and OwnPodPanel will
           // need on /pods, well ahead of the redirect below — both pick
           // these up via their own consumePrefetched*() instead of
@@ -515,6 +528,7 @@ export function LfgButton({
               setTimeout(resolve, SEARCHING_PULSE_DURATION_MS * 2),
             );
           }
+          if (navigationCancelledRef.current) return;
           router.push("/pods?highlight=own");
         }}
         profile={profile}
