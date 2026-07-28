@@ -137,6 +137,7 @@
   "myPodPanel.copied": "Copied",
   "myPodPanel.remove": "Remove",
   "myPodPanel.copyLink": "Copy Link",
+  "myPodPanel.podUrlCopied": "Pod URL copied",
   "myPodPanel.yourNotes": "Your Notes",
   "myPodPanel.editPod": "Edit Pod",
   "myPodPanel.markAsMatched": "Mark as Matched",

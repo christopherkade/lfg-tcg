@@ -132,3 +132,49 @@ export async function fetchActivePodsData(
     ...filteredRows.filter((pod) => !joinedIds.has(pod.id)),
   ];
 }
+
+interface PrefetchedActivePods {
+  userId: string;
+  promise: Promise<PodWithRelations[]>;
+}
+
+// Module-level, so it survives the client-side transition from wherever the
+// prefetch was fired (e.g. LfgButton, right after creating a pod) through to
+// MatchFeedList mounting on /pods — both run in the same browser session,
+// just different route trees. Deliberately a single slot, not a keyed cache:
+// only one "we know where the user is headed next" prefetch is ever in
+// flight at a time in this app.
+let prefetchedActivePods: PrefetchedActivePods | null = null;
+
+/**
+ * Kicks off the active-pods fetch ahead of an imminent navigation to /pods
+ * (browser client, so this can run from any client component). Fire-and-
+ * forget from the caller's side — the result is only ever picked up via
+ * `consumePrefetchedActivePods`.
+ */
+export function prefetchActivePods(
+  supabase: SupabaseClient,
+  userId: string,
+  profile: Profile,
+) {
+  prefetchedActivePods = {
+    userId,
+    promise: fetchActivePodsData(supabase, userId, profile, getInitialFilters(profile)),
+  };
+}
+
+/**
+ * Consumed at most once, and only by the matching user — a stale or
+ * mismatched entry (e.g. a different account signed in, or /pods already
+ * visited once since the prefetch) is discarded rather than reused.
+ */
+export function consumePrefetchedActivePods(
+  userId: string,
+): Promise<PodWithRelations[]> | null {
+  if (!prefetchedActivePods || prefetchedActivePods.userId !== userId) {
+    return null;
+  }
+  const { promise } = prefetchedActivePods;
+  prefetchedActivePods = null;
+  return promise;
+}

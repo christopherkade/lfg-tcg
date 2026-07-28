@@ -9,6 +9,8 @@ import { useTheme, alpha, darken, lighten } from "@mui/material/styles";
 import { DEFAULT_GLOW_COLOR, GAMES_CONFIG } from "@/constants/gamesConfig";
 import { cancelPod } from "@/app/actions/pods";
 import { createClient } from "@/lib/supabase/client";
+import { prefetchActivePods } from "@/lib/pods/matchFeed";
+import { prefetchOwnPod } from "@/lib/pods/ownPod";
 import { usePodRealtime } from "@/components/PodRealtimeProvider";
 import { LfgDialog } from "@/components/LfgDialog";
 import { CantStartSearchDialog } from "@/components/CantStartSearchDialog";
@@ -18,6 +20,11 @@ import type { TranslationKey } from "@/lib/i18n";
 import type { Pod, Profile } from "@/types/database";
 
 const MotionFab = motion.create(Fab);
+
+// Length of one "searching" boxShadow pulse cycle (see the `isSearching`
+// animate/transition below) — reused so the post-create redirect can wait
+// for a couple of full cycles instead of cutting the animation off mid-pulse.
+const SEARCHING_PULSE_DURATION_MS = 500;
 
 interface LfgButtonProps {
   profile: Profile;
@@ -172,7 +179,11 @@ export function LfgButton({
   // its recessed skirt). `skirtOffset` is the vertical distance between
   // the cap and its skirt — paired 1:1 with how far the cap should
   // translate down in `whileTap`/press so the two layers meet exactly.
-  const restShadow = (skirtOffset: number, glowBlur: number, glowSpread: number) =>
+  const restShadow = (
+    skirtOffset: number,
+    glowBlur: number,
+    glowSpread: number,
+  ) =>
     [
       `inset 0 1.5px 0 0 ${alpha(glossColor, isDarkMode ? 0.22 : 0.9)}`,
       `inset 0 -3px 6px 0 ${innerShadowColor}`,
@@ -266,9 +277,15 @@ export function LfgButton({
       <div className="flex flex-col items-center gap-1 text-center">
         <Typography
           component="span"
-          sx={{ fontSize: "0.875rem", fontWeight: 500, color: "text.secondary" }}
+          sx={{
+            fontSize: "0.875rem",
+            fontWeight: 500,
+            color: "text.secondary",
+          }}
         >
-          {isSearching ? t("lfgButton.searchingFor") : t("lfgButton.lastSearch")}
+          {isSearching
+            ? t("lfgButton.searchingFor")
+            : t("lfgButton.lastSearch")}
         </Typography>
         <Typography
           component="span"
@@ -386,7 +403,11 @@ export function LfgButton({
                 }
               : isSearching
                 ? {
-                    boxShadow: { duration: 2, repeat: Infinity, ease: "easeInOut" },
+                    boxShadow: {
+                      duration: SEARCHING_PULSE_DURATION_MS / 1000,
+                      repeat: Infinity,
+                      ease: "easeInOut",
+                    },
                     y: { type: "spring", stiffness: 500, damping: 30 },
                     scale: { type: "spring", stiffness: 500, damping: 30 },
                   }
@@ -394,7 +415,11 @@ export function LfgButton({
                   ? { boxShadow: { duration: 0.3 } }
                   : {
                       y: { duration: 3, repeat: Infinity, ease: "easeInOut" },
-                      scale: { duration: 3, repeat: Infinity, ease: "easeInOut" },
+                      scale: {
+                        duration: 3,
+                        repeat: Infinity,
+                        ease: "easeInOut",
+                      },
                       boxShadow: {
                         duration: 3,
                         repeat: Infinity,
@@ -464,10 +489,32 @@ export function LfgButton({
       <LfgDialog
         open={dialogOpen}
         onClose={() => setDialogOpen(false)}
-        onSuccess={() => {
+        onSuccess={async () => {
           setDialogOpen(false);
-          void fetchOwnPodRef.current();
+          // Kicks off the same queries MatchFeedList and OwnPodPanel will
+          // need on /pods, well ahead of the redirect below — both pick
+          // these up via their own consumePrefetched*() instead of
+          // suspending on a freshly-issued fetch, so neither the match feed
+          // skeleton nor MyPodPanel's own pop-in lag behind the rest of the
+          // page. Also warms the destination route's JS via router.prefetch.
+          const supabase = createClient();
+          prefetchActivePods(supabase, profile.id, profile);
+          prefetchOwnPod(supabase, profile.id);
+          router.prefetch("/pods?highlight=own");
+
+          // Awaited so `isSearching` (and its boxShadow pulse) flips on
+          // before the delay below starts counting.
+          await fetchOwnPodRef.current();
           void fetchHasActiveJoinRef.current();
+          // Let the button pulse a couple of times as "search started"
+          // feedback before navigating away, instead of redirecting the
+          // instant the dialog closes. Skipped under reduced motion, since
+          // there's no pulse to wait out in that case.
+          if (!prefersReducedMotion) {
+            await new Promise((resolve) =>
+              setTimeout(resolve, SEARCHING_PULSE_DURATION_MS * 2),
+            );
+          }
           router.push("/pods?highlight=own");
         }}
         profile={profile}

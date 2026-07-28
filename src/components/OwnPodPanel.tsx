@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { usePodRealtime } from "@/components/PodRealtimeProvider";
 import { MyPodPanel } from "@/components/MyPodPanel";
+import { consumePrefetchedOwnPod, fetchOwnPodData } from "@/lib/pods/ownPod";
 import type { PodWithRelations } from "@/types/database";
 
 // Matches MyPodPanel's highlight animation length (4 segments × 0.9s) so the
@@ -44,7 +45,16 @@ export function OwnPodPanel({
 }: OwnPodPanelProps) {
   const router = useRouter();
   const { subscribePods, subscribePodJoins } = usePodRealtime();
-  const { data: initialPod } = use(initialPodPromise);
+  // Prefer an already-in-flight (likely already-resolved) prefetch — e.g.
+  // LfgButton kicks one off right after creating a pod, well before the
+  // redirect here — over the server-seeded `initialPodPromise`, so
+  // MyPodPanel doesn't suspend and pop in a beat after the rest of the page.
+  // Lazy-initialized so the check (and its one-time cache consumption) only
+  // ever runs once per mount, not on every render/retry.
+  const [initialPodSource] = useState(
+    () => consumePrefetchedOwnPod(currentUserId) ?? initialPodPromise,
+  );
+  const { data: initialPod } = use(initialPodSource);
   const [pod, setPod] = useState<PodWithRelations | null>(initialPod);
 
   // A freshly created pod arrives here via ?highlight=own (see LfgButton).
@@ -59,13 +69,7 @@ export function OwnPodPanel({
   }, [initialHighlight, router]);
 
   const fetchOwnPod = useCallback(async () => {
-    const supabase = createClient();
-    const { data } = await supabase
-      .from("pods")
-      .select("*, profiles(*), pod_joins(*, profiles(*))")
-      .eq("user_id", currentUserId)
-      .eq("status", "ACTIVE")
-      .maybeSingle();
+    const { data } = await fetchOwnPodData(createClient(), currentUserId);
     setPod((data as PodWithRelations) ?? null);
   }, [currentUserId]);
 

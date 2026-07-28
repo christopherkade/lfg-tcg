@@ -43,10 +43,10 @@ const BLOBS = [
 // Fixed screen-edge slots for the floating game logos, kept clear of the
 // centered content column. Hidden below `sm` where there isn't room.
 const LOGO_SLOTS = [
-  { className: "left-[5%] top-[8%]", size: 112, duration: 9, delay: 0 },
-  { className: "right-[6%] top-[14%]", size: 100, duration: 11, delay: 1.1 },
-  { className: "left-[7%] bottom-[12%]", size: 104, duration: 10, delay: 0.6 },
-  { className: "right-[5%] bottom-[7%]", size: 124, duration: 12, delay: 1.7 },
+  { className: "left-[5%] top-[8%]", size: 134, duration: 9, delay: 0 },
+  { className: "right-[6%] top-[14%]", size: 120, duration: 11, delay: 1.1 },
+  { className: "left-[7%] bottom-[12%]", size: 125, duration: 10, delay: 0.6 },
+  { className: "right-[5%] bottom-[7%]", size: 149, duration: 12, delay: 1.7 },
 ];
 
 const containerVariants = {

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { Check, ChevronDown, Copy, Pencil, UserX, X } from "lucide-react";
+import { Check, ChevronDown, Copy, Pencil, Share2, UserX, X } from "lucide-react";
 import { Alert, Avatar, Box, Button, useTheme } from "@mui/material";
 import { removeMember, respondToJoin } from "@/app/actions/joins";
 import { markPodMatched } from "@/app/actions/pods";
@@ -424,40 +424,62 @@ export function MyPodPanel({ pod, onChanged, highlight = false }: MyPodPanelProp
           )}
 
           <div className="flex justify-end gap-2">
-            <Button
-              type="button"
-              onClick={() =>
-                copyText("__link__", `${window.location.origin}/pods/${pod.id}`)
-              }
-              size="small"
-              aria-label={copied === "__link__" ? t("myPodPanel.copied") : t("myPodPanel.copyLink")}
-              sx={{
-                flexShrink: 0,
-                minWidth: 0,
-                px: 1.25,
-                py: 0.75,
-                bgcolor: "rgba(99, 102, 241, 0.1)",
-                color: "text.primary",
-                "&:hover": { bgcolor: "rgba(99, 102, 241, 0.2)" },
-              }}
-            >
-              <AnimatePresence mode="wait" initial={false}>
-                <motion.span
-                  key={copied === "__link__" ? "check" : "copy"}
-                  initial={{ scale: 0.5, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  exit={{ scale: 0.5, opacity: 0 }}
-                  transition={{ duration: 0.15, ease: "easeOut" }}
-                  className="inline-flex"
-                >
-                  {copied === "__link__" ? (
-                    <Check className="h-4 w-4" />
-                  ) : (
-                    <Copy className="h-4 w-4" />
-                  )}
-                </motion.span>
+            <div className="relative flex">
+              <AnimatePresence>
+                {copied === "__link__" && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 4 }}
+                    transition={{ duration: 0.15, ease: "easeOut" }}
+                    className="absolute right-0 z-10 whitespace-nowrap rounded px-2 py-1 text-xs"
+                    style={{
+                      bottom: "calc(100% + 6px)",
+                      pointerEvents: "none",
+                      backgroundColor: theme.palette.background.paper,
+                      color: theme.palette.text.primary,
+                      border: `1px solid ${theme.palette.divider}`,
+                    }}
+                  >
+                    {t("myPodPanel.podUrlCopied")}
+                  </motion.div>
+                )}
               </AnimatePresence>
-            </Button>
+              <Button
+                type="button"
+                onClick={() =>
+                  copyText("__link__", `${window.location.origin}/pods/${pod.id}`)
+                }
+                size="small"
+                aria-label={copied === "__link__" ? t("myPodPanel.podUrlCopied") : t("myPodPanel.copyLink")}
+                sx={{
+                  flexShrink: 0,
+                  minWidth: 0,
+                  px: 1.25,
+                  py: 0.75,
+                  bgcolor: "rgba(99, 102, 241, 0.1)",
+                  color: "text.primary",
+                  "&:hover": { bgcolor: "rgba(99, 102, 241, 0.2)" },
+                }}
+              >
+                <AnimatePresence mode="wait" initial={false}>
+                  <motion.span
+                    key={copied === "__link__" ? "check" : "share"}
+                    initial={{ scale: 0.5, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    exit={{ scale: 0.5, opacity: 0 }}
+                    transition={{ duration: 0.15, ease: "easeOut" }}
+                    className="inline-flex"
+                  >
+                    {copied === "__link__" ? (
+                      <Check className="h-4 w-4" />
+                    ) : (
+                      <Share2 className="h-4 w-4" />
+                    )}
+                  </motion.span>
+                </AnimatePresence>
+              </Button>
+            </div>
             <Button
               type="button"
               onClick={() => setEditOpen(true)}

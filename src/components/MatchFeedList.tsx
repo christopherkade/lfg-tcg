@@ -20,7 +20,7 @@ import { CITY_MAP } from "@/constants/citiesConfig";
 import { formatPodWhen } from "@/lib/date";
 import { useTranslation } from "@/lib/i18n/LocaleContext";
 import type { TranslationKey } from "@/lib/i18n";
-import { fetchActivePodsData } from "@/lib/pods/matchFeed";
+import { consumePrefetchedActivePods, fetchActivePodsData } from "@/lib/pods/matchFeed";
 import type { PodFiltersValue } from "@/components/PodFilters";
 import type { PodWithRelations, Profile } from "@/types/database";
 
@@ -55,7 +55,17 @@ export function MatchFeedList({
   const theme = useTheme();
   const isDark = theme.palette.mode === "dark";
 
-  const initialPods = use(initialPodsPromise);
+  // Prefer an already-in-flight (likely already-resolved) prefetch — e.g.
+  // LfgButton kicks one off right after creating a pod, well before the
+  // redirect here — over the server-seeded `initialPodsPromise`, so this
+  // doesn't suspend (and MatchFeed's skeleton never flashes) when we already
+  // know where the user was headed. Lazy-initialized so the check (and its
+  // one-time cache consumption) only ever runs once per mount, not on every
+  // render/retry.
+  const [initialPodsSource] = useState(
+    () => consumePrefetchedActivePods(currentUserId) ?? initialPodsPromise,
+  );
+  const initialPods = use(initialPodsSource);
   const initialSharedPodResult = use(initialSharedPodPromise);
   const initialSharedPod = initialSharedPodResult
     ? (initialSharedPodResult.data as PodWithRelations | null)

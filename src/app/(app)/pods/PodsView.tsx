@@ -3,7 +3,9 @@ import { Box } from "@mui/material";
 import type { createClient } from "@/lib/supabase/server";
 import { OwnPodPanel } from "@/components/OwnPodPanel";
 import { MatchFeed } from "@/components/MatchFeed";
+import { PodsTabTransition } from "@/components/PodsTabTransition";
 import { fetchActivePodsData, getInitialFilters } from "@/lib/pods/matchFeed";
+import { fetchOwnPodData } from "@/lib/pods/ownPod";
 import type { Profile } from "@/types/database";
 
 interface PodsViewProps {
@@ -26,17 +28,7 @@ export function PodsView({
   // filter bar / title chrome around them (MatchFeed) and the whole rest of
   // this page can render immediately instead of blocking on these Supabase
   // round-trips. See MatchFeed/MatchFeedList and OwnPodPanel.
-  // Wrapped in Promise.resolve() — Supabase's query builders are thenable
-  // but not real Promise instances (missing .catch/.finally), which
-  // React's use() and plain prop typing both expect.
-  const ownPodPromise = Promise.resolve(
-    supabase
-      .from("pods")
-      .select("*, profiles(*), pod_joins(*, profiles(*))")
-      .eq("user_id", userId)
-      .eq("status", "ACTIVE")
-      .maybeSingle(),
-  );
+  const ownPodPromise = fetchOwnPodData(supabase, userId);
 
   const sharedPodPromise = sharedPodId
     ? Promise.resolve(
@@ -56,23 +48,25 @@ export function PodsView({
   );
 
   return (
-    <Box
-      sx={{ bgcolor: "background.default" }}
-      className="flex flex-1 flex-col items-center gap-8 px-6 py-10"
-    >
-      <Suspense fallback={null}>
-        <OwnPodPanel
+    <PodsTabTransition slideIn={highlightOwn}>
+      <Box
+        sx={{ bgcolor: "background.default" }}
+        className="flex flex-1 flex-col items-center gap-8 px-6 py-10"
+      >
+        <Suspense fallback={null}>
+          <OwnPodPanel
+            currentUserId={userId}
+            initialPodPromise={ownPodPromise}
+            initialHighlight={highlightOwn}
+          />
+        </Suspense>
+        <MatchFeed
+          profile={profile}
           currentUserId={userId}
-          initialPodPromise={ownPodPromise}
-          initialHighlight={highlightOwn}
+          initialSharedPodPromise={sharedPodPromise}
+          initialPodsPromise={initialPodsPromise}
         />
-      </Suspense>
-      <MatchFeed
-        profile={profile}
-        currentUserId={userId}
-        initialSharedPodPromise={sharedPodPromise}
-        initialPodsPromise={initialPodsPromise}
-      />
-    </Box>
+      </Box>
+    </PodsTabTransition>
   );
 }
