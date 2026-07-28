@@ -509,15 +509,20 @@ export function MyPodPanel({ pod, onChanged, highlight = false }: MyPodPanelProp
               disabled={pendingId === pod.id || acceptedMembers.length === 0}
               variant="contained"
               size="small"
+              aria-label={t("myPodPanel.markAsMatched")}
+              startIcon={<Check className="h-4 w-4" />}
               sx={{
                 flexShrink: 0,
                 minWidth: 0,
                 px: 1.5,
                 py: 0.75,
                 fontSize: "0.75rem",
+                "& .MuiButton-startIcon": { mr: { xs: 0, sm: 1 }, ml: { xs: 0, sm: -0.5 } },
               }}
             >
-              {t("myPodPanel.markAsMatched")}
+              <Box component="span" sx={{ display: { xs: "none", sm: "inline" } }}>
+                {t("myPodPanel.markAsMatched")}
+              </Box>
             </Button>
           </div>
           </motion.div>
