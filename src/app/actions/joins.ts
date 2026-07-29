@@ -4,6 +4,12 @@ import { revalidatePath } from "next/cache";
 import { requireUser } from "@/lib/session";
 import { getServerLocale } from "@/lib/i18n/server";
 import { translate } from "@/lib/i18n";
+import {
+  canRemoveMember,
+  canRespondToJoin,
+  isGroupFull,
+  isPodJoinable,
+} from "@/lib/pods/joinRules";
 import type { PodActionResult } from "@/app/actions/pods";
 
 export async function requestJoin(
@@ -18,11 +24,12 @@ export async function requestJoin(
     .eq("id", podId)
     .maybeSingle();
 
-  if (!pod || pod.status !== "ACTIVE") {
+  if (!pod) {
     return { error: translate(locale, "errors.podNotActive") };
   }
-  if (pod.user_id === user.id) {
-    return { error: translate(locale, "errors.cantJoinOwnPod") };
+  const joinableError = isPodJoinable(pod, user.id);
+  if (joinableError) {
+    return { error: translate(locale, joinableError) };
   }
 
   const { data: ownActivePod } = await supabase
@@ -39,7 +46,7 @@ export async function requestJoin(
   const acceptedCount = pod.pod_joins.filter(
     (join) => join.status === "ACCEPTED",
   ).length;
-  if (acceptedCount + 1 >= pod.max_players) {
+  if (isGroupFull(acceptedCount, pod.max_players)) {
     return { error: translate(locale, "errors.groupFull") };
   }
 
@@ -122,11 +129,9 @@ export async function removeMember(
   const hostPod = Array.isArray(join.pods)
     ? join.pods[0]
     : join.pods;
-  if (!hostPod || hostPod.user_id !== user.id) {
-    return { error: translate(locale, "errors.onlyHostCanRemove") };
-  }
-  if (join.status !== "ACCEPTED") {
-    return { error: translate(locale, "errors.onlyAcceptedCanBeRemoved") };
+  const removeError = canRemoveMember(join, hostPod ?? null, user.id);
+  if (removeError) {
+    return { error: translate(locale, removeError) };
   }
 
   const { error } = await supabase
@@ -169,18 +174,16 @@ export async function respondToJoin(
   const hostPod = Array.isArray(join.pods)
     ? join.pods[0]
     : join.pods;
-  if (!hostPod) {
-    return { error: translate(locale, "errors.joinRequestNotFound") };
-  }
-  if (hostPod.user_id !== user.id) {
-    return { error: translate(locale, "errors.onlyHostCanRespond") };
+  const respondError = canRespondToJoin(hostPod ?? null, user.id);
+  if (respondError) {
+    return { error: translate(locale, respondError) };
   }
 
   if (decision === "ACCEPTED") {
     const acceptedCount = hostPod.pod_joins.filter(
       (j: { status: string }) => j.status === "ACCEPTED",
     ).length;
-    if (acceptedCount + 1 >= hostPod.max_players) {
+    if (isGroupFull(acceptedCount, hostPod.max_players)) {
       return { error: translate(locale, "errors.groupFull") };
     }
   }
