@@ -204,6 +204,7 @@
 
   "profilePage.editTitle": "Modifier le profil",
   "profilePage.setupTitle": "Configurez votre profil",
+  "profilePage.usernameRequiredInfo": "Choisissez un pseudo pour commencer à utiliser PodFinder.",
 
   "citySelector.label": "Ville",
   "citySelector.helperText": "Utilisé pour vous montrer uniquement les tables en personne près de chez vous. Les tables en ligne s'affichent toujours, quelle que soit la ville.",

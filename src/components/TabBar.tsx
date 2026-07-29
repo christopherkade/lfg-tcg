@@ -10,6 +10,7 @@ import { NotificationBell } from "@/components/NotificationBell";
 import { SettingsDialog } from "@/components/SettingsDialog";
 import { TutorialDialog } from "@/components/TutorialDialog";
 import { useTranslation } from "@/lib/i18n/LocaleContext";
+import { useProfileLock } from "@/lib/ProfileLockContext";
 import type { TranslationKey } from "@/lib/i18n";
 
 interface Tab {
@@ -33,6 +34,7 @@ export function TabBar({ currentUserId }: TabBarProps) {
   const pathname = usePathname();
   const { t } = useTranslation();
   const theme = useTheme();
+  const { usernameMissing, requestBlock } = useProfileLock();
 
   // Highlights the clicked tab immediately on click rather than waiting for
   // usePathname() to reflect the new route (which only happens once the
@@ -89,13 +91,22 @@ export function TabBar({ currentUserId }: TabBarProps) {
             <Box sx={{ display: "flex", gap: 1 }}>
               {TABS.map((tab) => {
                 const isActive = activeHref === tab.href;
+                const isLocked = usernameMissing && tab.href !== "/profile";
                 const Icon = tab.icon;
                 return (
                   <Button
                     key={tab.href}
                     component={Link}
                     href={tab.href}
-                    onClick={() => setPendingHref(tab.href)}
+                    onNavigate={(e: { preventDefault: () => void }) => {
+                      if (isLocked) {
+                        e.preventDefault();
+                        requestBlock();
+                      }
+                    }}
+                    onClick={() => {
+                      if (!isLocked) setPendingHref(tab.href);
+                    }}
                     startIcon={<Icon className="h-4 w-4" />}
                     sx={{
                       px: 2,
@@ -130,12 +141,21 @@ export function TabBar({ currentUserId }: TabBarProps) {
       >
         {TABS.map((tab) => {
           const isActive = activeHref === tab.href;
+          const isLocked = usernameMissing && tab.href !== "/profile";
           const Icon = tab.icon;
           return (
             <Link
               key={tab.href}
               href={tab.href}
-              onClick={() => setPendingHref(tab.href)}
+              onNavigate={(e) => {
+                if (isLocked) {
+                  e.preventDefault();
+                  requestBlock();
+                }
+              }}
+              onClick={() => {
+                if (!isLocked) setPendingHref(tab.href);
+              }}
               className={`flex flex-1 flex-col items-center gap-1 py-3 text-xs font-medium transition-colors ${
                 isActive ? "text-ember" : ""
               }`}

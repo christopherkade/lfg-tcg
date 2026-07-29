@@ -12,6 +12,7 @@ import {
 import { CitySelector } from "@/components/CitySelector";
 import { DeleteAccountDialog } from "@/components/DeleteAccountDialog";
 import { useTranslation } from "@/lib/i18n/LocaleContext";
+import { useProfileLock } from "@/lib/ProfileLockContext";
 import type { Profile } from "@/types/database";
 
 interface ProfileFormProps {
@@ -28,12 +29,14 @@ export function ProfileForm({
   defaultAvatarUrl,
 }: ProfileFormProps) {
   const { t } = useTranslation();
+  const { blocked, clearBlock } = useProfileLock();
   const [state, formAction, pending] = useActionState(
     upsertProfile,
     initialState,
   );
   const [city, setCity] = useState<string | null>(initialProfile?.city ?? null);
   const avatarUrl = initialProfile?.avatar_url ?? defaultAvatarUrl ?? undefined;
+  const isNewAccount = !initialProfile;
 
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
@@ -59,12 +62,20 @@ export function ProfileForm({
           {(initialProfile?.username ?? defaultDiscordHandle)?.[0]?.toUpperCase()}
         </Avatar>
       </div>
+      {isNewAccount && (
+        <Alert severity="info">{t("profilePage.usernameRequiredInfo")}</Alert>
+      )}
       <form action={formAction} className="flex flex-col gap-6">
         <TextField
           id="username"
           name="username"
           label={t("profileForm.username")}
           defaultValue={initialProfile?.username ?? ""}
+          onChange={() => {
+            if (blocked) clearBlock();
+          }}
+          error={blocked}
+          helperText={blocked ? t("errors.usernameRequired") : undefined}
           required
           fullWidth
           size="small"

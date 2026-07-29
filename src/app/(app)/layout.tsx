@@ -2,7 +2,9 @@ import { redirect } from "next/navigation";
 import { TabBar } from "@/components/TabBar";
 import { MatchedPodWatcher } from "@/components/MatchedPodWatcher";
 import { PodRealtimeProvider } from "@/components/PodRealtimeProvider";
-import { getTrustedUserId } from "@/lib/session";
+import { ProfileLockProvider } from "@/lib/ProfileLockContext";
+import { getTrustedUserId, getProfile } from "@/lib/session";
+import { createClient } from "@/lib/supabase/server";
 
 export default async function AppLayout({
   children,
@@ -19,13 +21,20 @@ export default async function AppLayout({
     redirect("/login");
   }
 
+  // Needed here (not just per-page) so the tab bar knows to lock navigation
+  // for brand-new accounts — see ProfileLockContext.
+  const supabase = await createClient();
+  const profile = await getProfile(supabase, userId);
+
   return (
     <PodRealtimeProvider>
-      <div className="flex flex-1 flex-col">
-        <TabBar currentUserId={userId} />
-        <div className="flex flex-1 flex-col pb-16 sm:pb-0">{children}</div>
-        <MatchedPodWatcher currentUserId={userId} />
-      </div>
+      <ProfileLockProvider usernameMissing={!profile}>
+        <div className="flex flex-1 flex-col">
+          <TabBar currentUserId={userId} />
+          <div className="flex flex-1 flex-col pb-16 sm:pb-0">{children}</div>
+          <MatchedPodWatcher currentUserId={userId} />
+        </div>
+      </ProfileLockProvider>
     </PodRealtimeProvider>
   );
 }

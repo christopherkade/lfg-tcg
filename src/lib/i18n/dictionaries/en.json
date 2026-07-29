@@ -204,6 +204,7 @@
 
   "profilePage.editTitle": "Edit Profile",
   "profilePage.setupTitle": "Set Up Your Profile",
+  "profilePage.usernameRequiredInfo": "Pick a username to start using PodFinder.",
 
   "citySelector.label": "City",
   "citySelector.helperText": "Used to only show you in-person pods near you. Online pods always show regardless of city.",
