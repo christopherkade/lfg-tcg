@@ -23,19 +23,19 @@ Never apply a new script to prod before it's been verified on staging.
 
 ## Applied scripts
 
-| Order | File | Prod applied | Staging applied | Notes |
-|---|---|---|---|---|
-| 1 | `schema.sql` | [x] 2026-07-27 | [ ] | Baseline DDL. Has `DROP ... IF EXISTS` guards — only safe to run in full against an **empty** project. |
-| 2 | `sql/account_deletion.sql` | [x] 2026-07-27 | [ ] | |
-| 3 | `sql/inactive_pod_cleanup.sql` | [x] 2026-07-27 | [ ] | Adds a `notification_type` enum value and uses it later in the same file — run statement 1 alone first, then the rest. Also schedules a `pg_cron` job; verify with `select * from cron.job;`. |
-| 4 | `sql/matched_notification_seen.sql` | [x] 2026-07-27 | [ ] | |
-| 5 | `sql/matched_pod_cleanup.sql` | [x] 2026-07-27 | [ ] | Schedules a `pg_cron` job; verify with `select * from cron.job;`. |
-| 6 | `sql/rate_limits.sql` | [x] 2026-07-28 | [ ] | |
-| 7 | `sql/notify_pending_joiners_on_pod_update.sql` | [x] 2026-07-29 | [ ] | Adds a `notification_type` enum value and uses it later in the same file — run statement 1 alone first, then the rest. |
-| 8 | `sql/notify_pod_destroyed.sql` | [x] 2026-07-29 | [ ] | Adds a `notification_type` enum value and uses it later in the same file — run statement 1 alone first, then the rest. |
-| 9 | `sql/pod_history.sql` | [x] 2026-07-29 | [ ] | |
-| 10 | `sql/scale_indexes.sql` | [x] 2026-07-29 | [ ] | |
-| 11 | `sql/fix_pod_join_delete_notify_actor.sql` | [x] 2026-07-29 | [ ] | `create or replace function` patch on `notify_on_pod_join_delete` (defined in `schema.sql`) — just needs to run after the baseline, no other ordering dependency. |
+| Order | File                                           | Prod applied   | Staging applied | Notes                                                                                                                                                                                         |
+| ----- | ---------------------------------------------- | -------------- | --------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1     | `schema.sql`                                   | [x] 2026-07-27 | [x]             | Baseline DDL. Has `DROP ... IF EXISTS` guards — only safe to run in full against an **empty** project.                                                                                        |
+| 2     | `sql/account_deletion.sql`                     | [x] 2026-07-27 | [x]             |                                                                                                                                                                                               |
+| 3     | `sql/inactive_pod_cleanup.sql`                 | [x] 2026-07-27 | [x]             | Adds a `notification_type` enum value and uses it later in the same file — run statement 1 alone first, then the rest. Also schedules a `pg_cron` job; verify with `select * from cron.job;`. |
+| 4     | `sql/matched_notification_seen.sql`            | [x] 2026-07-27 | [x]             |                                                                                                                                                                                               |
+| 5     | `sql/matched_pod_cleanup.sql`                  | [x] 2026-07-27 | [x]             | Schedules a `pg_cron` job; verify with `select * from cron.job;`.                                                                                                                             |
+| 6     | `sql/rate_limits.sql`                          | [x] 2026-07-28 | [x]             |                                                                                                                                                                                               |
+| 7     | `sql/notify_pending_joiners_on_pod_update.sql` | [x] 2026-07-29 | [x]             | Adds a `notification_type` enum value and uses it later in the same file — run statement 1 alone first, then the rest.                                                                        |
+| 8     | `sql/notify_pod_destroyed.sql`                 | [x] 2026-07-29 | [x]             | Adds a `notification_type` enum value and uses it later in the same file — run statement 1 alone first, then the rest.                                                                        |
+| 9     | `sql/pod_history.sql`                          | [x] 2026-07-29 | [x]             |                                                                                                                                                                                               |
+| 10    | `sql/scale_indexes.sql`                        | [x] 2026-07-29 | [x]             |                                                                                                                                                                                               |
+| 11    | `sql/fix_pod_join_delete_notify_actor.sql`     | [x] 2026-07-29 | [x]             | `create or replace function` patch on `notify_on_pod_join_delete` (defined in `schema.sql`) — just needs to run after the baseline, no other ordering dependency.                             |
 
 Dates above are the file's last-modified date at the time this manifest was
 created (2026-07-29), used as a best-effort proxy for real apply order/date since
