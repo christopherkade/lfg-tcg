@@ -1,8 +1,9 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import { MessageCircle, PlusCircle, Users, Swords, ChevronRight } from "lucide-react";
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import { Box, Button, Link, Typography } from "@mui/material";
 import { createClient } from "@/lib/supabase/client";
 import { LocaleSwitcher } from "@/components/LocaleSwitcher";
@@ -59,6 +60,28 @@ const itemVariants = {
   visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: "easeOut" as const } },
 };
 
+// Tailwind's `sm` breakpoint — the ambient blob/logo/glow animations below
+// are paused under it, since the continuous transform/opacity repaint cost
+// matters most on phone-class hardware and the motion adds the least there.
+const MOBILE_MEDIA_QUERY = "(max-width: 639px)";
+
+// Reactive (unlike the one-time check in PodsTabTransition) because phones
+// commonly rotate mid-session and the animations should pause/resume with it.
+function useIsMobileViewport() {
+  const [isMobile, setIsMobile] = useState(
+    () => typeof window !== "undefined" && window.matchMedia(MOBILE_MEDIA_QUERY).matches,
+  );
+
+  useEffect(() => {
+    const mediaQueryList = window.matchMedia(MOBILE_MEDIA_QUERY);
+    const handleChange = (event: MediaQueryListEvent) => setIsMobile(event.matches);
+    mediaQueryList.addEventListener("change", handleChange);
+    return () => mediaQueryList.removeEventListener("change", handleChange);
+  }, []);
+
+  return isMobile;
+}
+
 interface LoginViewProps {
   /** Path (e.g. a shared /pods/<id> link) to return to once login completes. */
   next?: string;
@@ -68,6 +91,9 @@ export function LoginView({ next }: LoginViewProps) {
   const { t } = useTranslation();
   const { mode } = useThemeMode();
   const isDark = mode === "dark";
+  const prefersReducedMotion = useReducedMotion();
+  const isMobileViewport = useIsMobileViewport();
+  const shouldAnimate = !prefersReducedMotion && !isMobileViewport;
   async function handleDiscordLogin() {
     const supabase = createClient();
     const callbackUrl = new URL("/auth/callback", window.location.origin);
@@ -96,8 +122,12 @@ export function LoginView({ next }: LoginViewProps) {
             background: `radial-gradient(circle, ${blob.color} 0%, transparent 70%)`,
             opacity: 0.22,
           }}
-          animate={{ x: [0, 24, 0], y: [0, 18, 0] }}
-          transition={{ duration: blob.duration, delay: blob.delay, repeat: Infinity, ease: "easeInOut" }}
+          animate={shouldAnimate ? { x: [0, 24, 0], y: [0, 18, 0] } : { x: 0, y: 0 }}
+          transition={
+            shouldAnimate
+              ? { duration: blob.duration, delay: blob.delay, repeat: Infinity, ease: "easeInOut" }
+              : { duration: 0 }
+          }
         />
       ))}
 
@@ -108,8 +138,12 @@ export function LoginView({ next }: LoginViewProps) {
             key={game.name}
             aria-hidden
             className={`pointer-events-none absolute hidden opacity-90 sm:block ${slot.className}`}
-            animate={{ y: [0, -12, 0], rotate: [0, 3, 0] }}
-            transition={{ duration: slot.duration, delay: slot.delay, repeat: Infinity, ease: "easeInOut" }}
+            animate={shouldAnimate ? { y: [0, -12, 0], rotate: [0, 3, 0] } : { y: 0, rotate: 0 }}
+            transition={
+              shouldAnimate
+                ? { duration: slot.duration, delay: slot.delay, repeat: Infinity, ease: "easeInOut" }
+                : { duration: 0 }
+            }
             style={{ width: slot.size, height: slot.size }}
           >
             {/* Dark-lined logo art (e.g. MTG, One Piece) is invisible against
@@ -205,21 +239,23 @@ export function LoginView({ next }: LoginViewProps) {
           ))}
         </motion.ol>
 
-        <motion.div variants={itemVariants}>
+        <motion.div variants={itemVariants} className="relative inline-block">
+          {/* Static box-shadow + animated opacity instead of animating
+              box-shadow directly — box-shadow isn't GPU-composited, so
+              looping it forces a full repaint every frame. Opacity is. */}
+          <motion.div
+            aria-hidden
+            className="pointer-events-none absolute inset-0 rounded-full"
+            style={{ boxShadow: "0 0 22px 8px rgba(88, 101, 242, 0.35)" }}
+            animate={shouldAnimate ? { opacity: [0.4, 1, 0.4] } : { opacity: 0.6 }}
+            transition={shouldAnimate ? { duration: 2.6, repeat: Infinity, ease: "easeInOut" } : { duration: 0 }}
+          />
           <MotionButton
             onClick={handleDiscordLogin}
             variant="contained"
             startIcon={<MessageCircle className="h-5 w-5" />}
             whileHover={{ y: -2 }}
             whileTap={{ y: 0, boxShadow: "0 0 12px 4px rgba(88, 101, 242, 0.4)" }}
-            animate={{
-              boxShadow: [
-                "0 0 10px 2px rgba(88, 101, 242, 0.35)",
-                "0 0 22px 8px rgba(88, 101, 242, 0.35)",
-                "0 0 10px 2px rgba(88, 101, 242, 0.35)",
-              ],
-            }}
-            transition={{ duration: 2.6, repeat: Infinity, ease: "easeInOut" }}
             sx={{
               px: 3,
               py: 1.5,
