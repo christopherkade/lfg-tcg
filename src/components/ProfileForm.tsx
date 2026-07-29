@@ -37,6 +37,7 @@ export function ProfileForm({
   const [city, setCity] = useState<string | null>(initialProfile?.city ?? null);
   const avatarUrl = initialProfile?.avatar_url ?? defaultAvatarUrl ?? undefined;
   const isNewAccount = !initialProfile;
+  const cityMissingInitially = !initialProfile?.city;
 
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
@@ -91,7 +92,7 @@ export function ProfileForm({
           helperText={t("profileForm.discordHandleHelper")}
         />
 
-        {!city && (
+        {cityMissingInitially && (
           <Alert severity="info">{t("profilePage.cityMissingInfo")}</Alert>
         )}
         <input type="hidden" name="city" value={city ?? ""} />
