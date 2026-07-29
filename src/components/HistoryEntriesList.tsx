@@ -10,6 +10,7 @@ import { formatPodWhen } from "@/lib/date";
 import { useTranslation } from "@/lib/i18n/LocaleContext";
 import type { TranslationKey } from "@/lib/i18n";
 import { deletePodHistoryEntry } from "@/app/actions/history";
+import { PodHistoryDetailDialog } from "@/components/PodHistoryDetailDialog";
 import type { PodHistoryEntryWithHost } from "@/components/HistoryList";
 
 export interface HistoryEntriesListHandle {
@@ -41,6 +42,8 @@ export function HistoryEntriesList({
   const [gamesPlayedCount, setGamesPlayedCount] = useState(
     initialGamesPlayedCount,
   );
+  const [selectedEntry, setSelectedEntry] =
+    useState<PodHistoryEntryWithHost | null>(null);
 
   const handleDelete = (entryId: string) => {
     setEntries((current) => current.filter((entry) => entry.id !== entryId));
@@ -99,11 +102,13 @@ export function HistoryEntriesList({
           return (
             <Box
               key={entry.id}
+              onClick={() => setSelectedEntry(entry)}
               sx={{
                 border: 1,
                 borderColor: "divider",
                 borderRadius: 2,
                 bgcolor: "background.paper",
+                cursor: "pointer",
               }}
               className="flex flex-col gap-3 p-5"
             >
@@ -136,7 +141,10 @@ export function HistoryEntriesList({
                   <IconButton
                     size="small"
                     aria-label={t("historyPage.delete")}
-                    onClick={() => handleDelete(entry.id)}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      handleDelete(entry.id);
+                    }}
                     sx={{ color: "text.secondary" }}
                   >
                     <Trash2 className="h-4 w-4" />
@@ -202,6 +210,11 @@ export function HistoryEntriesList({
           );
         })}
       </div>
+      <PodHistoryDetailDialog
+        entry={selectedEntry}
+        onClose={() => setSelectedEntry(null)}
+        onDelete={handleDelete}
+      />
     </>
   );
 }

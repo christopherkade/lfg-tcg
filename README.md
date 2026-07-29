@@ -23,20 +23,38 @@ PodFinder is a mobile-first Progressive Web App for finding people to play tradi
 
 ## Getting Started
 
-First, set up a Supabase project and run the schema in `supabase/schema.sql` (plus the scripts under `supabase/sql/`) via the SQL editor. Add your project credentials to `.env.local`:
-
-```bash
-NEXT_PUBLIC_SUPABASE_URL=your-supabase-url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
-```
+First, set up a Supabase project and run the schema in `supabase/schema.sql` (plus the scripts under `supabase/sql/`, in the order tracked in [`supabase/MANIFEST.md`](./supabase/MANIFEST.md)) via the SQL editor. Copy [`.env.example`](./.env.example) to `.env.local` and fill in your project credentials.
 
 Then run the development server:
 
 ```bash
-npm run dev
+yarn dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+
+## Environments
+
+- `main` -> production deployment, production Supabase project, production Discord OAuth app.
+- `staging` -> staging deployment, a separate Supabase project, a separate Discord OAuth app. Feature branches target `staging`; once verified there, `staging` is promoted to `main`.
+
+Schema/RLS changes are applied to staging first, then prod — see [`supabase/MANIFEST.md`](./supabase/MANIFEST.md) for the apply order and history.
+
+### Testing against staging or prod locally
+
+`next dev` always runs with `NODE_ENV=development`, so Next's usual `.env.production` convention doesn't help here — it never applies locally. Instead, two explicit env files let you point your local dev server at either backend without ever touching `.env.local`:
+
+- `.env.staging.local` — staging Supabase project credentials.
+- `.env.production.local` — production Supabase project credentials.
+
+Both are gitignored, same as `.env.local`. Then run:
+
+```bash
+yarn dev:staging   # local dev server against the staging Supabase project
+yarn dev:prod      # local dev server against the production Supabase project
+```
+
+Plain `yarn dev` keeps using `.env.local` as before. Since prod credentials in `.env.production.local` are real, prefer read-only testing against it and do write-testing on staging.
 
 ## Documentation
 

@@ -3,9 +3,9 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { requireUser } from "@/lib/session";
-import { CITY_MAP } from "@/constants/citiesConfig";
 import { getServerLocale } from "@/lib/i18n/server";
 import { translate } from "@/lib/i18n";
+import { validateProfileInput } from "@/lib/profile/validateProfile";
 
 export interface ProfileFormState {
   error?: string;
@@ -37,23 +37,21 @@ export async function upsertProfile(
     (user.user_metadata?.preferred_username as string | undefined) ??
     "";
 
-  if (!username) {
-    return { error: translate(locale, "errors.usernameRequired") };
-  }
-  if (!discordHandle) {
-    return { error: translate(locale, "errors.discordHandleRequired") };
-  }
-  if (cityInput && !CITY_MAP[cityInput]) {
-    return { error: translate(locale, "errors.invalidCity") };
+  const validated = validateProfileInput(
+    { username, discordHandle, city: cityInput },
+    locale,
+  );
+  if ("error" in validated) {
+    return { error: validated.error };
   }
 
   const { error } = await supabase.from("profiles").upsert(
     {
       id: user.id,
-      username,
-      discord_handle: discordHandle,
+      username: validated.data.username,
+      discord_handle: validated.data.discordHandle,
       avatar_url: avatarUrl,
-      city: cityInput || null,
+      city: validated.data.city,
       updated_at: new Date().toISOString(),
     },
     { onConflict: "id" },

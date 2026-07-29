@@ -103,6 +103,7 @@
   "podFilters.gameSectionLabel": "Game",
 
   "podDetailDialog.close": "Close",
+  "podDetailDialog.playersCountTotal": "{count} players",
   "podDetailDialog.game": "Game",
   "podDetailDialog.format": "Format",
   "podDetailDialog.playstyle": "Playstyle",
