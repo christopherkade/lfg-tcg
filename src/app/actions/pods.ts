@@ -41,6 +41,7 @@ interface NormalizedPodInput {
 function validateStartSearchInput(
   input: StartSearchInput,
   locale: Locale,
+  city: string | null,
 ): { error: string } | { data: NormalizedPodInput } {
   const game = GAMES_CONFIG[input.gameKey];
   if (!game) {
@@ -57,6 +58,9 @@ function validateStartSearchInput(
     input.brackets.some((tier) => tier < 1 || tier > 5)
   ) {
     return { error: translate(locale, "errors.powerBracketRange") };
+  }
+  if (input.matchType === "IRL" && !city) {
+    return { error: translate(locale, "errors.cityRequired") };
   }
   if (input.matchType === "IRL" && !input.locationName.trim()) {
     return { error: translate(locale, "errors.locationRequired") };
@@ -102,7 +106,7 @@ export async function createPod(
   const { supabase, user, profile } = await requireProfile();
   const locale = await getServerLocale();
 
-  const validated = validateStartSearchInput(input, locale);
+  const validated = validateStartSearchInput(input, locale, profile.city);
   if ("error" in validated) {
     return { error: validated.error };
   }
@@ -217,7 +221,7 @@ export async function updatePod(
   const { supabase, user, profile } = await requireProfile();
   const locale = await getServerLocale();
 
-  const validated = validateStartSearchInput(input, locale);
+  const validated = validateStartSearchInput(input, locale, profile.city);
   if ("error" in validated) {
     return { error: validated.error };
   }

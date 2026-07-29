@@ -8,6 +8,7 @@ import {
   Alert,
   Button,
   IconButton,
+  Link,
   TextField,
   Typography,
   ToggleButton,
@@ -305,6 +306,8 @@ export function LfgDialog({
     }
   }
 
+  const missingCity = selectedMatchType === "IRL" && !profile.city;
+
   const canSubmit =
     selectedGame !== "" &&
     selectedFormat !== "" &&
@@ -313,7 +316,8 @@ export function LfgDialog({
     maxPlayers > 0 &&
     (!hasPowerTiers || selectedBrackets.length > 0) &&
     (selectedMatchType !== "IRL" ||
-      (locationName.trim().length > 0 &&
+      (!missingCity &&
+        locationName.trim().length > 0 &&
         scheduledDate !== null &&
         scheduledTime !== null));
 
@@ -505,6 +509,16 @@ export function LfgDialog({
                     </ToggleButton>
                   ))}
                 </ToggleButtonGroup>
+
+                {missingCity && (
+                  <Alert severity="warning">
+                    {t("lfgDialog.cityRequiredError.pre")}
+                    <Link href="/profile" sx={{ color: "inherit", fontWeight: 600 }}>
+                      {t("lfgDialog.cityRequiredError.link")}
+                    </Link>
+                    {t("lfgDialog.cityRequiredError.post")}
+                  </Alert>
+                )}
 
                 {selectedMatchType === "IRL" && (
                   <div className="flex flex-col gap-2.5 sm:gap-3">

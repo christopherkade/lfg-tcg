@@ -91,6 +91,9 @@ export function ProfileForm({
           helperText={t("profileForm.discordHandleHelper")}
         />
 
+        {!city && (
+          <Alert severity="info">{t("profilePage.cityMissingInfo")}</Alert>
+        )}
         <input type="hidden" name="city" value={city ?? ""} />
         <CitySelector value={city} onChange={setCity} />
 
