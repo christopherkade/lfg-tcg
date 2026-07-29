@@ -150,6 +150,8 @@
   "notificationBell.loading": "Loading…",
   "notificationBell.empty": "No notifications yet.",
   "notificationBell.deleteAria": "Delete notification",
+  "notificationBell.bellAria": "Notifications",
+  "notificationBell.dismissToastAria": "Dismiss notification",
   "notificationBell.osTitle": "PodFinder",
   "notification.joinRequest": "{actor} wants to join your pod",
   "notification.joinAccepted": "You've been accepted into {actor}'s pod!",
@@ -293,5 +295,9 @@
 
   "notFound.title": "Looks like you're lost",
   "notFound.description": "This page doesn't exist, or it may have moved. Let's get you back on track.",
-  "notFound.cta": "Back to PodFinder"
+  "notFound.cta": "Back to PodFinder",
+  "error.title": "Something went wrong",
+  "error.description": "An unexpected error occurred. You can try again, or head back to PodFinder.",
+  "error.retry": "Try again",
+  "error.cta": "Back to PodFinder"
 }

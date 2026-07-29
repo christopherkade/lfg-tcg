@@ -1,6 +1,18 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { PodWithRelations } from "@/types/database";
 
+// Shared `select()` fragment for embedding a pod's host profile and its
+// pod_joins (each with the joiner's own profile) — used everywhere a pod
+// card/dialog is fetched (this file, matchFeed.ts, MatchFeedList.tsx's
+// pinned-pod lookup). Narrowed to the columns MatchFeedList/MyPodPanel/
+// PodDetailDialog actually render (avatar_url/username/discord_handle,
+// plus id for keys and status/user_id for join-state checks) instead of
+// `profiles(*)`/`pod_joins(*, profiles(*))`, which pulled every profile
+// column (preferred_*, last_pod_created_at, etc.) for every host and
+// joiner shown in the feed despite none of it ever being displayed.
+export const POD_RELATIONS_SELECT =
+  "profiles(id, username, avatar_url, discord_handle), pod_joins(id, status, user_id, profiles(id, username, avatar_url, discord_handle))";
+
 /**
  * The viewer's own active pod, with the relations MyPodPanel needs (member
  * profiles, join requests). Shared so PodsView can seed OwnPodPanel's
@@ -17,7 +29,7 @@ export function fetchOwnPodData(
   return Promise.resolve(
     supabase
       .from("pods")
-      .select("*, profiles(*), pod_joins(*, profiles(*))")
+      .select(`*, ${POD_RELATIONS_SELECT}`)
       .eq("user_id", userId)
       .eq("status", "ACTIVE")
       .maybeSingle(),

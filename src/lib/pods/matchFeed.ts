@@ -2,6 +2,7 @@ import { isSameDay } from "date-fns";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { PodFiltersValue } from "@/components/PodFilters";
 import type { PodWithRelations, Profile } from "@/types/database";
+import { POD_RELATIONS_SELECT } from "@/lib/pods/ownPod";
 
 // Shape of each row returned by the "joined pods" query below — a
 // pod_joins row with its parent pod (and that pod's own
@@ -53,7 +54,7 @@ export async function fetchActivePodsData(
   // always be shown, regardless of every filter/scoping rule below.
   const joinedQuery = supabase
     .from("pod_joins")
-    .select("pods!inner(*, profiles(*), pod_joins(*, profiles(*)))")
+    .select(`pods!inner(*, ${POD_RELATIONS_SELECT})`)
     .eq("user_id", currentUserId)
     .in("status", ["PENDING", "ACCEPTED"])
     .eq("pods.status", "ACTIVE")
@@ -69,7 +70,7 @@ export async function fetchActivePodsData(
   if (!skipFilteredQuery) {
     let query = supabase
       .from("pods")
-      .select("*, profiles(*), pod_joins(*, profiles(*))")
+      .select(`*, ${POD_RELATIONS_SELECT}`)
       .eq("status", "ACTIVE")
       .gt("expires_at", new Date().toISOString())
       .neq("user_id", currentUserId);

@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<title>PodFinder — En un coup d'œil</title>
+<style>
+  @font-face {
+    font-family: "Geist Fallback";
+    src: local("Helvetica Neue"), local("Arial");
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    padding: 0;
+    width: 1200px;
+    height: 630px;
+    background: #F5F5F4;
+    color: #2C3E50;
+    font-family: -apple-system, "Geist Fallback", Arial, sans-serif;
+  }
+  .page {
+    position: relative;
+    width: 1200px;
+    height: 630px;
+    display: flex;
+    align-items: center;
+    padding: 0 72px;
+    overflow: hidden;
+  }
+  .bg-glow {
+    position: absolute;
+    top: -140px;
+    left: -120px;
+    width: 520px;
+    height: 520px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(52,211,153,0.16), transparent 70%);
+  }
+
+  /* ---------- Mascot side ---------- */
+  .mascot-side {
+    position: relative;
+    flex-shrink: 0;
+    width: 340px;
+    height: 486px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .mascot-side svg { width: 260px; height: auto; }
+
+  /* ---------- Content side ---------- */
+  .content {
+    position: relative;
+    padding-left: 68px;
+    flex: 1;
+  }
+  .wordmark {
+    display: flex;
+    align-items: center;
+    font-size: 30px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    margin-bottom: 28px;
+  }
+  h1 {
+    font-size: 46px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    line-height: 1.12;
+    margin: 0 0 18px;
+  }
+  h1 em {
+    font-style: normal;
+    color: #059669;
+  }
+  .subtitle {
+    font-size: 19px;
+    font-weight: 500;
+    color: #57534E;
+    line-height: 1.5;
+    margin: 0 0 36px;
+    max-width: 560px;
+  }
+
+  .steps {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    margin-bottom: 34px;
+  }
+  .step {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+  .step .icon {
+    flex-shrink: 0;
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    background: rgba(52,211,153,0.14);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .step .icon svg { width: 20px; height: 20px; }
+  .step .text {
+    font-size: 18px;
+    font-weight: 600;
+    color: #2C3E50;
+  }
+
+  .footer {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding-top: 22px;
+    border-top: 1px solid #E7E5E4;
+  }
+  .footer .label {
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #A8A29E;
+  }
+  .footer .games {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .footer .games img {
+    width: 42px;
+    height: 42px;
+    object-fit: contain;
+  }
+</style>
+</head>
+<body>
+  <div class="page">
+    <div class="bg-glow"></div>
+
+    <div class="mascot-side">
+      <svg viewBox="0 0 120 166" role="img" aria-label="Mascotte PodFinder">
+        <g transform="translate(60,120)">
+          <rect x="-35" y="-110" width="70" height="110" rx="14" fill="#FBF5E6" stroke="#2C3E50" stroke-width="3"/>
+          <rect x="-27" y="-102" width="54" height="94" rx="8" fill="none" stroke="#34D399" stroke-width="1.5"/>
+          <path d="M -35,-55 L -50,-32 L -32,-15" fill="none" stroke="#2C3E50" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M 35,-55 L 50,-32 L 32,-15" fill="none" stroke="#2C3E50" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+          <circle cx="-9" cy="-78" r="3.2" fill="#2C3E50"/>
+          <circle cx="9" cy="-78" r="3.2" fill="#2C3E50"/>
+          <path d="M -7,-65 Q 0,-60 7,-65" fill="none" stroke="#2C3E50" stroke-width="2" stroke-linecap="round"/>
+          <path d="M -18,0 L -18,30" fill="none" stroke="#2C3E50" stroke-width="5" stroke-linecap="round"/>
+          <path d="M 18,0 L 18,30" fill="none" stroke="#2C3E50" stroke-width="5" stroke-linecap="round"/>
+          <ellipse cx="-18" cy="32" rx="6" ry="3.5" fill="#2C3E50"/>
+          <ellipse cx="18" cy="32" rx="6" ry="3.5" fill="#2C3E50"/>
+        </g>
+      </svg>
+    </div>
+
+    <div class="content">
+      <div class="wordmark">PodFinder</div>
+      <h1>Trouve <em>ta table</em>,<br />pas juste des joueurs.</h1>
+      <p class="subtitle">Crée ta propre table de JCC ou rejoins-en une, en personne ou en ligne, matché en quelques secondes.</p>
+
+      <div class="steps">
+        <div class="step">
+          <div class="icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M20 20 L16 16"/></svg>
+          </div>
+          <div class="text">Publie ta recherche de partie</div>
+        </div>
+        <div class="step">
+          <div class="icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 L4 14 h6 l-1 8 9-12 h-6 z"/></svg>
+          </div>
+          <div class="text">Reçois un match en temps réel</div>
+        </div>
+        <div class="step">
+          <div class="icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4 h16 v12 H8 l-4 4 z"/></svg>
+          </div>
+          <div class="text">Retrouvez-vous sur Discord</div>
+        </div>
+      </div>
+
+      <div class="footer">
+        <span class="label">JCC supportés</span>
+        <div class="games">
+          <img src="assets/mtg.png" alt="Magic: The Gathering" />
+          <img src="assets/pokemon.png" alt="Pokémon TCG" />
+          <img src="assets/lorcana.png" alt="Disney Lorcana" />
+          <img src="assets/op-tcg.png" alt="One Piece TCG" />
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

@@ -59,8 +59,27 @@ begin
 end;
 $$;
 
+-- WHEN mirrors the function body's own `if` above so Postgres skips the
+-- function call entirely (no SECURITY DEFINER invocation, no pod_joins
+-- subquery) on every pods UPDATE that isn't a live-detail edit — matching
+-- the WHEN-clause convention already used by schema.sql's own triggers
+-- (pod_joins_notify_update/delete, pods_notify_update).
 drop trigger if exists notify_pending_joiners_on_pod_update_trigger on pods;
 create trigger notify_pending_joiners_on_pod_update_trigger
   after update on pods
   for each row
+  when (
+    old.status = 'ACTIVE' and new.status = 'ACTIVE' and (
+      old.game_key is distinct from new.game_key
+      or old.format_key is distinct from new.format_key
+      or old.playstyle_key is distinct from new.playstyle_key
+      or old.power_tiers is distinct from new.power_tiers
+      or old.type is distinct from new.type
+      or old.location_name is distinct from new.location_name
+      or old.city is distinct from new.city
+      or old.scheduled_at is distinct from new.scheduled_at
+      or old.max_players is distinct from new.max_players
+      or old.notes is distinct from new.notes
+    )
+  )
   execute function notify_pending_joiners_on_pod_update();

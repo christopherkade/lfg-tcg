@@ -103,6 +103,7 @@ export function TutorialDialog() {
           <IconButton
             onClick={() => setOpen(false)}
             size="small"
+            aria-label={t("common.close")}
             sx={{
               color: "text.primary",
               "&:hover": { color: "text.secondary" },

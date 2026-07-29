@@ -19,10 +19,6 @@ interface Tab {
   icon: LucideIcon;
 }
 
-interface TabBarProps {
-  currentUserId: string;
-}
-
 const TABS: Tab[] = [
   { href: "/pods", labelKey: "tabBar.pods", icon: Users },
   { href: "/", labelKey: "tabBar.lfg", icon: Zap },
@@ -30,7 +26,7 @@ const TABS: Tab[] = [
   { href: "/profile", labelKey: "tabBar.profile", icon: UserCircle },
 ];
 
-export function TabBar({ currentUserId }: TabBarProps) {
+export function TabBar() {
   const pathname = usePathname();
   const { t } = useTranslation();
   const theme = useTheme();
@@ -68,7 +64,7 @@ export function TabBar({ currentUserId }: TabBarProps) {
         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
           <SettingsDialog />
           <TutorialDialog />
-          <NotificationBell currentUserId={currentUserId} />
+          <NotificationBell />
         </Box>
       </Box>
 
@@ -127,7 +123,7 @@ export function TabBar({ currentUserId }: TabBarProps) {
             <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
               <SettingsDialog />
               <TutorialDialog />
-              <NotificationBell currentUserId={currentUserId} />
+              <NotificationBell />
             </Box>
           </Box>
         </div>

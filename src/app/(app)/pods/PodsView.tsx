@@ -5,7 +5,7 @@ import { OwnPodPanel } from "@/components/OwnPodPanel";
 import { MatchFeed } from "@/components/MatchFeed";
 import { PodsTabTransition } from "@/components/PodsTabTransition";
 import { fetchActivePodsData, getInitialFilters } from "@/lib/pods/matchFeed";
-import { fetchOwnPodData } from "@/lib/pods/ownPod";
+import { fetchOwnPodData, POD_RELATIONS_SELECT } from "@/lib/pods/ownPod";
 import type { Profile } from "@/types/database";
 
 interface PodsViewProps {
@@ -34,7 +34,7 @@ export function PodsView({
     ? Promise.resolve(
         supabase
           .from("pods")
-          .select("*, profiles(*), pod_joins(*, profiles(*))")
+          .select(`*, ${POD_RELATIONS_SELECT}`)
           .eq("id", sharedPodId)
           .maybeSingle(),
       )

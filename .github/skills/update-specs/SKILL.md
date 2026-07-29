@@ -46,7 +46,7 @@ SPECS.md needs to say.
 | 3. Polymorphic Database Schema | Tables, RLS table, realtime | Any schema/RLS/trigger change (also update `supabase/schema.sql` itself if it exists) |
 | 4. Core Extensibility Architecture | `GAMES_CONFIG` | New game/format, tier behavior |
 | 5. UI/UX Interface Layout & Screen Flows | Screens, dialogs, step-by-step flows | New/changed screen, dialog, or user-facing flow |
-| 6. Match Feed Query Layout | The live filtering query | Changes to how beacons are matched/filtered |
+| 6. Match Feed Query Layout | The live filtering query | Changes to how pods are matched/filtered |
 | 7. Progressive Web App Scope | Manifest, notification delivery | PWA/notification behavior changes |
 | 8. Explicit Scope Exclusions | What's deliberately not built | Something exclusion-listed here just got implemented (remove/move it), or a new deliberate exclusion was decided |
 | 9. AI Agent Implementation Steps | Numbered build steps | A genuinely new feature (add the next numbered step); don't rewrite existing steps for minor tweaks |
@@ -94,7 +94,7 @@ new `preferred_max_players` CHECK constraint value and bumping the stepper's
 max in `LfgDialog`.
 
 Output: Edit the `CHECK (preferred_max_players BETWEEN 2 AND 6)` constraints
-in Section 3's SQL block (both `profiles` and `beacons`) to `BETWEEN 2 AND 8`,
+in Section 3's SQL block (both `profiles` and `pods`) to `BETWEEN 2 AND 8`,
 update the RLS table only if a policy referenced the old bound, and update
 Section 5's "Players Needed Stepper" bullet from "(2–6, default 2)" to
 "(2–8, default 2)". No new Section 9 step needed — this is a tuning change,

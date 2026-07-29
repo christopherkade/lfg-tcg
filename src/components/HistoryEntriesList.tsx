@@ -119,9 +119,18 @@ export function HistoryEntriesList({
                       ? t("podFilters.matchTypeIrl")
                       : t("podFilters.matchTypeOnline")}
                   </Typography>
+                  <Typography
+                    className="sm:hidden"
+                    sx={{ fontSize: "0.75rem", color: "text.secondary" }}
+                  >
+                    {when}
+                  </Typography>
                 </div>
                 <div className="flex items-center gap-1">
-                  <Typography sx={{ fontSize: "0.75rem", color: "text.secondary" }}>
+                  <Typography
+                    className="hidden sm:inline"
+                    sx={{ fontSize: "0.75rem", color: "text.secondary" }}
+                  >
                     {when}
                   </Typography>
                   <IconButton

@@ -21,6 +21,7 @@ import { formatPodWhen } from "@/lib/date";
 import { useTranslation } from "@/lib/i18n/LocaleContext";
 import type { TranslationKey } from "@/lib/i18n";
 import { consumePrefetchedActivePods, fetchActivePodsData } from "@/lib/pods/matchFeed";
+import { POD_RELATIONS_SELECT } from "@/lib/pods/ownPod";
 import type { PodFiltersValue } from "@/components/PodFilters";
 import type { PodWithRelations, Profile } from "@/types/database";
 
@@ -102,7 +103,7 @@ export function MatchFeedList({
         pinnedPodIdRef.current
           ? supabase
               .from("pods")
-              .select("*, profiles(*), pod_joins(*, profiles(*))")
+              .select(`*, ${POD_RELATIONS_SELECT}`)
               .eq("id", pinnedPodIdRef.current)
               .maybeSingle()
           : Promise.resolve(null),

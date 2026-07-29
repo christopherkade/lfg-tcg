@@ -150,6 +150,8 @@
   "notificationBell.loading": "Chargement…",
   "notificationBell.empty": "Aucune notification pour le moment.",
   "notificationBell.deleteAria": "Supprimer la notification",
+  "notificationBell.bellAria": "Notifications",
+  "notificationBell.dismissToastAria": "Ignorer la notification",
   "notificationBell.osTitle": "PodFinder",
   "notification.joinRequest": "{actor} souhaite rejoindre votre table",
   "notification.joinAccepted": "Vous avez été accepté dans la table de {actor} !",
@@ -293,5 +295,9 @@
 
   "notFound.title": "On dirait que vous êtes perdu",
   "notFound.description": "Cette page n'existe pas, ou elle a peut-être été déplacée. Revenons sur la bonne voie.",
-  "notFound.cta": "Retour à PodFinder"
+  "notFound.cta": "Retour à PodFinder",
+  "error.title": "Une erreur est survenue",
+  "error.description": "Une erreur inattendue s'est produite. Vous pouvez réessayer, ou retourner à PodFinder.",
+  "error.retry": "Réessayer",
+  "error.cta": "Retour à PodFinder"
 }

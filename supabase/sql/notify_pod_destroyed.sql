@@ -41,8 +41,14 @@ begin
 end;
 $$;
 
+-- WHEN mirrors the function body's own `if` above so Postgres skips the
+-- function call entirely on every pods UPDATE that isn't an ACTIVE -> EXPIRED
+-- transition — matching the WHEN-clause convention already used by
+-- schema.sql's own triggers (pod_joins_notify_update/delete,
+-- pods_notify_update).
 drop trigger if exists notify_on_pod_destroyed_trigger on pods;
 create trigger notify_on_pod_destroyed_trigger
   after update on pods
   for each row
+  when (old.status = 'ACTIVE' and new.status = 'EXPIRED')
   execute function notify_on_pod_destroyed();

@@ -54,20 +54,27 @@ export async function requireUser(path?: string) {
 
 /**
  * Fetches the profile row for a given user id, or null if the user
- * hasn't completed onboarding yet.
+ * hasn't completed onboarding yet. Wrapped in cache() for the same reason
+ * as getCachedAuthUser above: the layout and every page/action beneath it
+ * independently call requireProfile()/requireTrustedProfile() within the
+ * same request, so without this each would issue its own identical
+ * `profiles` SELECT. cache() dedupes by argument identity (userId), and
+ * resets per request.
  */
-export async function getProfile(
-  supabase: Awaited<ReturnType<typeof createClient>>,
-  userId: string,
-): Promise<Profile | null> {
-  const { data } = await supabase
-    .from("profiles")
-    .select("*")
-    .eq("id", userId)
-    .maybeSingle();
+export const getProfile = cache(
+  async (
+    supabase: Awaited<ReturnType<typeof createClient>>,
+    userId: string,
+  ): Promise<Profile | null> => {
+    const { data } = await supabase
+      .from("profiles")
+      .select("*")
+      .eq("id", userId)
+      .maybeSingle();
 
-  return data;
-}
+    return data;
+  },
+);
 
 /**
  * Requires both a session and a completed profile, redirecting to

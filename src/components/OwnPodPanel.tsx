@@ -91,7 +91,9 @@ export function OwnPodPanel({
   // staring at an already-focused /pods tab the whole time — a
   // focus/visibility listener alone would never fire, so this also polls
   // on an interval while the tab is visible, in addition to on mount and
-  // focus/visibility, mirroring MatchedPodWatcher/NotificationBell.
+  // focus/visibility, mirroring MatchedPodWatcher/NotificationBell. 25s
+  // (not 10s) since this is purely a safety net for realtime's own
+  // occasional delivery misses, not the primary update path.
   useEffect(() => {
     function handleFocusOrVisible() {
       if (document.visibilityState === "visible") {
@@ -105,7 +107,7 @@ export function OwnPodPanel({
       if (document.visibilityState === "visible") {
         fetchOwnPodRef.current();
       }
-    }, 10_000);
+    }, 25_000);
     return () => {
       document.removeEventListener("visibilitychange", handleFocusOrVisible);
       window.removeEventListener("focus", handleFocusOrVisible);

@@ -105,10 +105,16 @@ begin
 end;
 $$;
 
+-- WHEN mirrors the function body's own `if` above so Postgres skips the
+-- function call (and its pod_joins/profiles join + jsonb_agg) entirely on
+-- every pods UPDATE that isn't an ACTIVE -> MATCHED transition — matching
+-- the WHEN-clause convention already used by schema.sql's own triggers
+-- (pod_joins_notify_update/delete, pods_notify_update).
 drop trigger if exists snapshot_pod_history_trigger on pods;
 create trigger snapshot_pod_history_trigger
   after update on pods
   for each row
+  when (old.status = 'ACTIVE' and new.status = 'MATCHED')
   execute function snapshot_pod_history();
 
 -- 4. RPC: lets a viewer delete an entry from their own "Past Pods" list

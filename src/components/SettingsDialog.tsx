@@ -56,6 +56,7 @@ export function SettingsDialog() {
           <IconButton
             onClick={() => setOpen(false)}
             size="small"
+            aria-label={t("common.close")}
             sx={{ color: "text.primary", "&:hover": { color: "text.secondary" } }}
           >
             <X className="h-4 w-4" />

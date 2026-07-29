@@ -1,7 +1,15 @@
+import { cache } from "react";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 
-export async function createClient() {
+// Memoized per request: every requireUser()/requireProfile()/
+// requireTrustedProfile() call (and any direct caller) within the same
+// render pass gets the exact same client instance instead of each
+// constructing its own. This is what lets getProfile()'s own cache()
+// wrapping (src/lib/session.ts) actually dedupe — without it, two calls
+// passing "the current client" would be passing two different object
+// references, which cache() treats as different arguments.
+export const createClient = cache(async function createClient() {
   const cookieStore = await cookies();
 
   return createServerClient(
@@ -25,4 +33,4 @@ export async function createClient() {
       },
     },
   );
-}
+});

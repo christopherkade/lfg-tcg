@@ -27,6 +27,25 @@ CHROME="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
 
 Edit `kit.html` directly for copy/color changes, then rerun.
 
+`overview.html` — a light, "at a glance" summary card (1200×630, README/OG-card
+size): the mascot (`public/mascot.svg`, inlined) next to the wordmark,
+tagline, a 3-step value prop, and the 4 supported games. Unlike `kit.html`,
+this one uses the light/paper palette instead of the dark obsidian
+background, with emerald as the only accent color.
+
+To regenerate `output/podfinder-overview.png`:
+
+```bash
+CHROME="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
+"$CHROME" --headless --disable-gpu --force-device-scale-factor=2 \
+  --window-size=1200,630 --screenshot=brand/output/podfinder-overview.png \
+  --virtual-time-budget=2000 "file://$(pwd)/brand/overview.html"
+```
+
+Edit `overview.html` directly for copy/color changes, then rerun. If
+`public/mascot.svg` changes, copy its `<g>...</g>` markup back into the
+inlined `<svg>` here.
+
 ## video/
 
 A 1080×1920 (vertical, Reels/TikTok) walkthrough video assembled from real

@@ -61,7 +61,9 @@ export function MatchedPodWatcher({ currentUserId }: MatchedPodWatcherProps) {
   // focus/visibility listener alone would never fire, so this also polls on
   // an interval while the tab is visible, in addition to on mount and
   // focus/visibility, so a missed UPDATE event self-heals within seconds
-  // instead of requiring a manual reload.
+  // instead of requiring a manual reload. 25s (not 10s) since this is purely
+  // a safety net for realtime's own occasional delivery misses, not the
+  // primary update path.
   useEffect(() => {
     const supabase = createClient();
     const notifying = notifyingPodJoinIdsRef.current;
@@ -122,7 +124,7 @@ export function MatchedPodWatcher({ currentUserId }: MatchedPodWatcherProps) {
       if (document.visibilityState === "visible") {
         checkForMatchedPods();
       }
-    }, 10_000);
+    }, 25_000);
     return () => {
       document.removeEventListener("visibilitychange", handleFocusOrVisible);
       window.removeEventListener("focus", handleFocusOrVisible);

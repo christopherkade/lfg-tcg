@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { TabBar } from "@/components/TabBar";
 import { MatchedPodWatcher } from "@/components/MatchedPodWatcher";
 import { PodRealtimeProvider } from "@/components/PodRealtimeProvider";
+import { NotificationCenterProvider } from "@/components/NotificationCenterProvider";
 import { ProfileLockProvider } from "@/lib/ProfileLockContext";
 import { getTrustedUserId, getProfile } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
@@ -28,13 +29,15 @@ export default async function AppLayout({
 
   return (
     <PodRealtimeProvider>
-      <ProfileLockProvider usernameMissing={!profile}>
-        <div className="flex flex-1 flex-col">
-          <TabBar currentUserId={userId} />
-          <div className="flex flex-1 flex-col pb-16 sm:pb-0">{children}</div>
-          <MatchedPodWatcher currentUserId={userId} />
-        </div>
-      </ProfileLockProvider>
+      <NotificationCenterProvider currentUserId={userId}>
+        <ProfileLockProvider usernameMissing={!profile}>
+          <div className="flex flex-1 flex-col">
+            <TabBar />
+            <div className="flex flex-1 flex-col pb-16 sm:pb-0">{children}</div>
+            <MatchedPodWatcher currentUserId={userId} />
+          </div>
+        </ProfileLockProvider>
+      </NotificationCenterProvider>
     </PodRealtimeProvider>
   );
 }
