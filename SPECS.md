@@ -315,25 +315,22 @@ export interface CitySetting {
   label: string;
 }
 
-// Adding a new city is a one-line addition here — no schema/migration
-// needed. `key` is the stable slug persisted on profiles.city/pods.city.
 export const CITIES_CONFIG: CitySetting[] = [
-  { key: "new_york", label: "New York City" },
-  { key: "los_angeles", label: "Los Angeles" },
-  { key: "chicago", label: "Chicago" },
-  { key: "toronto", label: "Toronto" },
-  { key: "montreal", label: "Montreal" },
-  { key: "vancouver", label: "Vancouver" },
-  { key: "london", label: "London" },
-  { key: "paris", label: "Paris" },
-  { key: "berlin", label: "Berlin" },
-  { key: "sydney", label: "Sydney" },
+  { key: "abbeville", label: "Abbeville" },
+  { key: "ablon-sur-seine", label: "Ablon-sur-Seine" },
+  // …
 ];
 
 export const CITY_MAP: Record<string, CitySetting> = Object.fromEntries(
   CITIES_CONFIG.map((city) => [city.key, city]),
 );
 ```
+
+Scoped to a France launch, `CITIES_CONFIG` holds ~2,280 entries: every French commune with population ≥ 5,000 per INSEE's official commune dataset, covering essentially anywhere an IRL meetup would realistically happen. The list is machine-generated (not hand-typed) by `scripts/generate-cities-config.mjs`, which fetches `https://geo.api.gouv.fr/communes` (INSEE data via the French government's open geo API), filters by the population threshold, ASCII-slugifies each commune name into `key` (disambiguating same-named communes in different departments with a department-code suffix, e.g. `valence-26` / `valence-82`), and keeps the official `nom` as `label` — so spelling/accents are authoritative rather than manually verified. Re-run the script to regenerate the file if the threshold or dataset changes; adding a single one-off city still only needs a one-line addition, no schema/migration.
+
+> **City stays a config-driven slug rather than free text, even at this scale.** Match Feed IRL scoping (Section 6) filters pods by exact equality on `city` (`city.eq.<value>`). A free-text city field would let typos, casing, or accent variants ("Aix en Provence" vs "Aix-en-Provence") silently split what should be the same city into different values, so two nearby players would never match — the constrained `Autocomplete` picker is what keeps the equality check reliable.
+
+Because the option list is much larger than a hand-picked shortlist, `CitySelector.tsx` virtualizes the Autocomplete's listbox with `react-window` (a custom `slots.listbox` rendering only the visible rows) instead of rendering every `<li>` up front.
 
 ---
 
