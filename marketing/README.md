@@ -10,6 +10,21 @@ Rendering works by pointing headless Chrome at a local HTML file
 stays pixel-consistent with the actual app and is one command away from a
 fresh version.
 
+**All commands below use paths relative to `marketing/`** — `cd marketing`
+first (the repo root's `marketing/` directory), or the ones below with
+`--screenshot=brand/output/...` and `file://$(pwd)/brand/...` will fail with
+`Failed to write file ...: No such file or directory` since headless Chrome
+won't create a missing/mismatched relative directory. If you'd rather not
+`cd`, swap in absolute paths, e.g.:
+
+```bash
+CHROME="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
+BRAND="/Users/christopher.kade/Projects/Personal/lfg-tcg/marketing/brand"
+"$CHROME" --headless --disable-gpu --force-device-scale-factor=2 \
+  --window-size=1200,630 --screenshot="$BRAND/output/podfinder-overview-fr.png" \
+  --virtual-time-budget=2000 "file://$BRAND/overview-fr.html"
+```
+
 ## brand/
 
 `kit.html` — the brand reference sheet: palette (obsidian/ember/spark, pulled
@@ -27,24 +42,28 @@ CHROME="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
 
 Edit `kit.html` directly for copy/color changes, then rerun.
 
-`overview.html` — a light, "at a glance" summary card (1200×630, README/OG-card
-size): the mascot (`public/mascot.svg`, inlined) next to the wordmark,
-tagline, a 3-step value prop, and the 4 supported games. Unlike `kit.html`,
-this one uses the light/paper palette instead of the dark obsidian
-background, with emerald as the only accent color.
+`overview-fr.html` / `overview-en.html` — a light, "at a glance" summary card
+(1200×630, README/OG-card size): the mascot (`public/mascot.svg`, inlined)
+next to the wordmark, tagline, a 3-step value prop, and the 4 supported
+games. Unlike `kit.html`, this one uses the light/paper palette instead of
+the dark obsidian background, with emerald as the only accent color. The two
+files are identical except for copy — keep them in sync when editing one.
 
-To regenerate `output/podfinder-overview.png`:
+To regenerate `output/podfinder-overview-fr.png` and `-en.png`:
 
 ```bash
 CHROME="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
 "$CHROME" --headless --disable-gpu --force-device-scale-factor=2 \
-  --window-size=1200,630 --screenshot=brand/output/podfinder-overview.png \
-  --virtual-time-budget=2000 "file://$(pwd)/brand/overview.html"
+  --window-size=1200,630 --screenshot=brand/output/podfinder-overview-fr.png \
+  --virtual-time-budget=2000 "file://$(pwd)/brand/overview-fr.html"
+"$CHROME" --headless --disable-gpu --force-device-scale-factor=2 \
+  --window-size=1200,630 --screenshot=brand/output/podfinder-overview-en.png \
+  --virtual-time-budget=2000 "file://$(pwd)/brand/overview-en.html"
 ```
 
-Edit `overview.html` directly for copy/color changes, then rerun. If
-`public/mascot.svg` changes, copy its `<g>...</g>` markup back into the
-inlined `<svg>` here.
+Edit the relevant `overview-*.html` directly for copy/color changes, then
+rerun. If `public/mascot.svg` changes, copy its `<g>...</g>` markup back into
+the inlined `<svg>` in both files.
 
 ## video/
 
@@ -109,8 +128,10 @@ handling.
 
 ## Notes
 
-- All copy is in French — PodFinder's own UI copy (`src/lib/i18n/dictionaries/fr.json`)
-  is the source of truth for terminology (e.g. "table", not "pod" or "party").
+- All copy is in French, except `brand/overview-en.html` which has an English
+  counterpart (`brand/overview-fr.html`) — PodFinder's own UI copy
+  (`src/lib/i18n/dictionaries/fr.json`) is the source of truth for French
+  terminology (e.g. "table", not "pod" or "party").
 - The video's `frames/shot10_history.jpg` shows a real Discord handle from
   the account used to capture it — check before publishing whether it needs
   blurring.

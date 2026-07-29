@@ -4,7 +4,7 @@ import fr from "@/lib/i18n/dictionaries/fr.json";
 export type Locale = "en" | "fr";
 
 export const LOCALES: Locale[] = ["en", "fr"];
-export const DEFAULT_LOCALE: Locale = "en";
+export const DEFAULT_LOCALE: Locale = "fr";
 export const LOCALE_COOKIE = "pm_locale";
 
 type Dictionary = typeof en;
