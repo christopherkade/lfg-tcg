@@ -190,6 +190,7 @@ export function PlatformActivityTicker() {
       <div className="flex min-w-0 flex-1 items-center gap-1.5 overflow-hidden whitespace-nowrap">
         <Typography
           component="span"
+          className="hidden sm:inline"
           sx={{
             fontSize: "0.8125rem",
             fontWeight: 600,
@@ -205,6 +206,7 @@ export function PlatformActivityTicker() {
           <>
             <Typography
               component="span"
+              className="hidden sm:inline"
               sx={{
                 fontSize: "0.8125rem",
                 color: "text.secondary",
