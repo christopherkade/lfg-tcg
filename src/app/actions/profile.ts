@@ -88,10 +88,13 @@ export async function updateUsername(
 }
 
 /**
- * Saves the city only, via `ProfileForm`'s save button. Only ever called
- * once a `profiles` row already exists (that section is gated on
- * `initialProfile` — see `ProfileForm`), so a plain `update` is enough; it
- * never needs to create the row the way `updateUsername` does.
+ * Saves the city only, auto-triggered by `ProfileForm` every time
+ * `CitySelector` selects or clears a value (no manual save button). Only
+ * ever called once a `profiles` row already exists (that section is gated
+ * on `initialProfile` — see `ProfileForm`), so a plain `update` is enough;
+ * it never needs to create the row the way `updateUsername` does. Doesn't
+ * redirect — the user stays on the Profile screen and `ProfileForm` shows
+ * inline saving/saved/error feedback next to the selector instead.
  */
 export async function updateCity(
   _prevState: ProfileFormState | undefined,
@@ -125,7 +128,8 @@ export async function updateCity(
 
   revalidatePath("/");
   revalidatePath("/pods");
-  redirect("/");
+  revalidatePath("/profile");
+  return {};
 }
 
 export async function signOut() {

@@ -26,6 +26,16 @@ const TABS: Tab[] = [
   { href: "/profile", labelKey: "tabBar.profile", icon: UserCircle },
 ];
 
+// A direct/shared /profile/<username> visit (SharedProfilePanel, rendered
+// over PodsView by that route) is anchored to the Active Pods tab — closing
+// the panel returns there — so this treats that route as if /pods were the
+// current path, rather than leaving every tab unhighlighted. Only matches
+// the public profile route (a segment after /profile/), not the plain
+// /profile screen itself, which is its own tab and shouldn't be remapped.
+function effectiveActiveHref(pathname: string): string {
+  return /^\/profile\/[^/]+$/.test(pathname) ? "/pods" : pathname;
+}
+
 export function TabBar() {
   const pathname = usePathname();
   const { t } = useTranslation();
@@ -40,7 +50,7 @@ export function TabBar() {
   useEffect(() => {
     setPendingHref(null);
   }, [pathname]);
-  const activeHref = pendingHref ?? pathname;
+  const activeHref = pendingHref ?? effectiveActiveHref(pathname);
 
   return (
     <>

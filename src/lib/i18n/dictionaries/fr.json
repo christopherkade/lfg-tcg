@@ -84,8 +84,9 @@
   "matchFeed.empty.subtitle": "Essayez d'élargir vos filtres, ou revenez un peu plus tard.",
   "platformActivity.activeNow": "{count} actifs en ce moment",
   "platformActivity.matchedToday": "{count} matchés aujourd'hui",
-  "platformActivity.eventCreated": "Nouvelle table {game} {format} créée {duration}",
-  "platformActivity.eventMatched": "Un groupe {game} {format} vient de matcher {duration}",
+  "platformActivity.eventCreated": "Table {format} créée {duration}",
+  "platformActivity.eventMatched": "Groupe {format} matché {duration}",
+  "platformActivity.dismissAria": "Ignorer la bannière d'activité",
 
   "matchFeed.joined": "REJOINT",
   "matchFeed.bracket": "Bracket {brackets}",
@@ -214,8 +215,8 @@
   "login.continueWithDiscord": "Continuer avec Discord",
 
   "profileForm.username": "Pseudo",
-  "profileForm.save.idle": "Enregistrer le profil",
-  "profileForm.save.pending": "Enregistrement...",
+  "profileForm.city.saving": "Enregistrement...",
+  "profileForm.city.saved": "Enregistré",
   "profileForm.signOut": "Se déconnecter",
 
   "profilePage.usernameRequiredInfo": "Choisissez un pseudo pour commencer à utiliser PodFinder.",
@@ -227,10 +228,13 @@
 
   "profileStats.sectionLabel": "Statistiques",
   "profileStats.gamesPlayed": "Parties jouées",
-  "profileStats.podsHosted": "Tables organisées",
+  "profileStats.peopleMet": "Personnes rencontrées",
   "profileStats.irlGames": "Parties en personne",
   "profileStats.onlineGames": "Parties en ligne",
   "profileStats.trendsComingSoon": "Les tendances et graphiques d'historique arrivent bientôt",
+
+  "userProfilePanel.close": "Fermer le profil",
+  "userProfilePanel.viewProfile": "Voir le profil de {username}",
 
   "citySelector.label": "Ville",
   "citySelector.helperText": "Utilisé pour vous montrer uniquement les tables en personne près de chez vous. Les tables en ligne s'affichent toujours, quelle que soit la ville.",

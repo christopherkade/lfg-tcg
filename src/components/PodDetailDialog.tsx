@@ -1,11 +1,13 @@
 "use client";
 
+import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Alert, Avatar, Button, Chip, useTheme } from "@mui/material";
 import { GAMES_CONFIG } from "@/constants/gamesConfig";
 import { CITY_MAP } from "@/constants/citiesConfig";
 import { formatPodWhen } from "@/lib/date";
 import { useTranslation } from "@/lib/i18n/LocaleContext";
+import { useUserProfilePanel } from "@/lib/UserProfilePanelContext";
 import type { TranslationKey } from "@/lib/i18n";
 import type { PodWithRelations } from "@/types/database";
 
@@ -30,6 +32,20 @@ export function PodDetailDialog({
 }: PodDetailDialogProps) {
   const { t, locale } = useTranslation();
   const theme = useTheme();
+  const { openUserProfile } = useUserProfilePanel();
+  // Clicking a username here must close this dialog first (playing its own
+  // exit animation) and only then open the profile panel — not stack both
+  // at once. onExitComplete below fires once that animation genuinely
+  // finishes, regardless of what triggered the close.
+  const [pendingProfileUsername, setPendingProfileUsername] = useState<
+    string | null
+  >(null);
+
+  function handleViewProfile(username: string) {
+    setPendingProfileUsername(username);
+    onClose();
+  }
+
   const acceptedMembers = pod?.pod_joins.filter(
     (join) => join.status === "ACCEPTED",
   );
@@ -40,7 +56,14 @@ export function PodDetailDialog({
   const scheduledLabel = pod ? formatPodWhen(pod, locale, t) : null;
 
   return (
-    <AnimatePresence>
+    <AnimatePresence
+      onExitComplete={() => {
+        if (pendingProfileUsername) {
+          openUserProfile(pendingProfileUsername);
+          setPendingProfileUsername(null);
+        }
+      }}
+    >
       {pod && (
         <motion.div
           initial={{ opacity: 0 }}
@@ -62,7 +85,14 @@ export function PodDetailDialog({
             }}
           >
             <div className="flex items-start justify-between gap-4">
-              <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => handleViewProfile(pod.profiles.username)}
+                aria-label={t("userProfilePanel.viewProfile", {
+                  username: pod.profiles.username,
+                })}
+                className="group flex items-center gap-3 text-left"
+              >
                 <Avatar
                   src={pod.profiles.avatar_url ?? undefined}
                   sx={{ width: 40, height: 40 }}
@@ -70,14 +100,17 @@ export function PodDetailDialog({
                   {pod.profiles.username[0]?.toUpperCase()}
                 </Avatar>
                 <div className="flex flex-col">
-                  <h2 className="text-lg font-semibold" style={{ color: theme.palette.text.primary }}>
+                  <h2
+                    className="text-lg font-semibold group-hover:underline group-focus-visible:underline"
+                    style={{ color: theme.palette.text.primary }}
+                  >
                     {pod.profiles.username}
                   </h2>
                   <span className="text-sm" style={{ color: theme.palette.text.secondary }}>
                     {pod.profiles.discord_handle}
                   </span>
                 </div>
-              </div>
+              </button>
               <span
                 className="rounded-full px-3 py-1 text-xs font-medium"
                 style={{
@@ -162,15 +195,24 @@ export function PodDetailDialog({
                     className="flex items-center justify-between text-sm"
                     style={{ color: theme.palette.text.primary }}
                   >
-                    <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => handleViewProfile(join.profiles.username)}
+                      aria-label={t("userProfilePanel.viewProfile", {
+                        username: join.profiles.username,
+                      })}
+                      className="group flex items-center gap-2 text-left"
+                    >
                       <Avatar
                         src={join.profiles.avatar_url ?? undefined}
                         sx={{ width: 24, height: 24, fontSize: "0.75rem" }}
                       >
                         {join.profiles.username[0]?.toUpperCase()}
                       </Avatar>
-                      <span>{join.profiles.username}</span>
-                    </div>
+                      <span className="group-hover:underline group-focus-visible:underline">
+                        {join.profiles.username}
+                      </span>
+                    </button>
                     <span style={{ color: theme.palette.text.secondary }}>
                       {join.profiles.discord_handle}
                     </span>

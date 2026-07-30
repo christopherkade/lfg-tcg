@@ -14,7 +14,7 @@ export default async function ProfilePage() {
       .rpc("get_profile_pod_stats")
       .then(
         ({ data }) =>
-          data?.[0] ?? { pods_hosted: 0, irl_count: 0, online_count: 0 },
+          data?.[0] ?? { people_met: 0, irl_count: 0, online_count: 0 },
       ),
   ]);
 
@@ -38,7 +38,7 @@ export default async function ProfilePage() {
       />
       <ProfileStats
         gamesPlayedCount={gamesPlayedCount}
-        podsHosted={profilePodStats.pods_hosted}
+        peopleMet={profilePodStats.people_met}
         irlCount={profilePodStats.irl_count}
         onlineCount={profilePodStats.online_count}
       />

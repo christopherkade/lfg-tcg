@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Avatar, Button, useTheme } from "@mui/material";
 import { Trash2 } from "lucide-react";
@@ -7,6 +8,7 @@ import { GAMES_CONFIG } from "@/constants/gamesConfig";
 import { CITY_MAP } from "@/constants/citiesConfig";
 import { formatPodWhen } from "@/lib/date";
 import { useTranslation } from "@/lib/i18n/LocaleContext";
+import { useUserProfilePanel } from "@/lib/UserProfilePanelContext";
 import type { TranslationKey } from "@/lib/i18n";
 import type { PodHistoryEntryWithHost } from "@/components/HistoryList";
 
@@ -23,6 +25,18 @@ export function PodHistoryDetailDialog({
 }: PodHistoryDetailDialogProps) {
   const { t, locale } = useTranslation();
   const theme = useTheme();
+  const { openUserProfile } = useUserProfilePanel();
+  // Same close-then-open sequencing as PodDetailDialog: closing this dialog
+  // must finish its own exit animation before the profile panel opens.
+  const [pendingProfileUsername, setPendingProfileUsername] = useState<
+    string | null
+  >(null);
+
+  function handleViewProfile(username: string) {
+    setPendingProfileUsername(username);
+    onClose();
+  }
+
   const game = entry ? GAMES_CONFIG[entry.game_key] : undefined;
   const scheduledLabel = entry
     ? formatPodWhen(
@@ -33,7 +47,14 @@ export function PodHistoryDetailDialog({
     : null;
 
   return (
-    <AnimatePresence>
+    <AnimatePresence
+      onExitComplete={() => {
+        if (pendingProfileUsername) {
+          openUserProfile(pendingProfileUsername);
+          setPendingProfileUsername(null);
+        }
+      }}
+    >
       {entry && (
         <motion.div
           initial={{ opacity: 0 }}
@@ -55,7 +76,14 @@ export function PodHistoryDetailDialog({
             }}
           >
             <div className="flex items-start justify-between gap-4">
-              <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => handleViewProfile(entry.host.username)}
+                aria-label={t("userProfilePanel.viewProfile", {
+                  username: entry.host.username,
+                })}
+                className="group flex items-center gap-3 text-left"
+              >
                 <Avatar
                   src={entry.host.avatar_url ?? undefined}
                   sx={{ width: 40, height: 40 }}
@@ -63,14 +91,17 @@ export function PodHistoryDetailDialog({
                   {entry.host.username[0]?.toUpperCase()}
                 </Avatar>
                 <div className="flex flex-col">
-                  <h2 className="text-lg font-semibold" style={{ color: theme.palette.text.primary }}>
+                  <h2
+                    className="text-lg font-semibold group-hover:underline group-focus-visible:underline"
+                    style={{ color: theme.palette.text.primary }}
+                  >
                     {entry.host.username}
                   </h2>
                   <span className="text-sm" style={{ color: theme.palette.text.secondary }}>
                     {entry.host.discord_handle}
                   </span>
                 </div>
-              </div>
+              </button>
               <span
                 className="rounded-full px-3 py-1 text-xs font-medium"
                 style={{
@@ -138,13 +169,24 @@ export function PodHistoryDetailDialog({
               </span>
               <div className="flex items-center justify-between text-sm" style={{ color: theme.palette.text.primary }}>
                 <div className="flex items-center gap-2">
-                  <Avatar
-                    src={entry.host.avatar_url ?? undefined}
-                    sx={{ width: 24, height: 24, fontSize: "0.75rem" }}
+                  <button
+                    type="button"
+                    onClick={() => handleViewProfile(entry.host.username)}
+                    aria-label={t("userProfilePanel.viewProfile", {
+                      username: entry.host.username,
+                    })}
+                    className="group flex items-center gap-2 text-left"
                   >
-                    {entry.host.username[0]?.toUpperCase()}
-                  </Avatar>
-                  <span>{entry.host.username}</span>
+                    <Avatar
+                      src={entry.host.avatar_url ?? undefined}
+                      sx={{ width: 24, height: 24, fontSize: "0.75rem" }}
+                    >
+                      {entry.host.username[0]?.toUpperCase()}
+                    </Avatar>
+                    <span className="group-hover:underline group-focus-visible:underline">
+                      {entry.host.username}
+                    </span>
+                  </button>
                   <span style={{ color: theme.palette.text.secondary }}>
                     ({t("historyPage.host")})
                   </span>
@@ -153,26 +195,54 @@ export function PodHistoryDetailDialog({
                   {entry.host.discord_handle}
                 </span>
               </div>
-              {entry.members.map((member) => (
-                <div
-                  key={member.id}
-                  className="flex items-center justify-between text-sm"
-                  style={{ color: theme.palette.text.primary }}
-                >
-                  <div className="flex items-center gap-2">
-                    <Avatar
-                      src={member.avatar_url ?? undefined}
-                      sx={{ width: 24, height: 24, fontSize: "0.75rem" }}
-                    >
-                      {member.username[0]?.toUpperCase()}
-                    </Avatar>
-                    <span>{member.username}</span>
+              {entry.members.map((member) => {
+                // A deleted account's snapshot here has discord_handle: ""
+                // (supabase/sql/account_deletion.sql's anonymization) — a
+                // live profile's handle can never be empty (NOT NULL,
+                // Discord-synced), so this is a reliable "no profile to
+                // view" signal, unlike checking the username text itself.
+                const isLive = Boolean(member.discord_handle);
+                const avatar = (
+                  <Avatar
+                    src={member.avatar_url ?? undefined}
+                    sx={{ width: 24, height: 24, fontSize: "0.75rem" }}
+                  >
+                    {member.username[0]?.toUpperCase()}
+                  </Avatar>
+                );
+
+                return (
+                  <div
+                    key={member.id}
+                    className="flex items-center justify-between text-sm"
+                    style={{ color: theme.palette.text.primary }}
+                  >
+                    {isLive ? (
+                      <button
+                        type="button"
+                        onClick={() => handleViewProfile(member.username)}
+                        aria-label={t("userProfilePanel.viewProfile", {
+                          username: member.username,
+                        })}
+                        className="group flex items-center gap-2 text-left"
+                      >
+                        {avatar}
+                        <span className="group-hover:underline group-focus-visible:underline">
+                          {member.username}
+                        </span>
+                      </button>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        {avatar}
+                        <span>{member.username}</span>
+                      </div>
+                    )}
+                    <span style={{ color: theme.palette.text.secondary }}>
+                      {member.discord_handle}
+                    </span>
                   </div>
-                  <span style={{ color: theme.palette.text.secondary }}>
-                    {member.discord_handle}
-                  </span>
-                </div>
-              ))}
+                );
+              })}
             </div>
 
             <div className="mt-2 flex gap-3">

@@ -14,6 +14,7 @@ import { NoUsersFoundDialog } from "@/components/NoUsersFoundDialog";
 import { GAMES_CONFIG } from "@/constants/gamesConfig";
 import { formatPodWhen } from "@/lib/date";
 import { useTranslation } from "@/lib/i18n/LocaleContext";
+import { useUserProfilePanel } from "@/lib/UserProfilePanelContext";
 import type { TranslationKey } from "@/lib/i18n";
 import type { PodJoinWithProfile, PodWithRelations } from "@/types/database";
 
@@ -27,6 +28,7 @@ interface MyPodPanelProps {
 export function MyPodPanel({ pod, onChanged, highlight = false }: MyPodPanelProps) {
   const { t, locale } = useTranslation();
   const theme = useTheme();
+  const { openUserProfile } = useUserProfilePanel();
   const [error, setError] = useState<string | null>(null);
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [confirmMatchedOpen, setConfirmMatchedOpen] = useState(false);
@@ -233,7 +235,14 @@ export function MyPodPanel({ pod, onChanged, highlight = false }: MyPodPanelProp
               className="flex items-center justify-between rounded-lg px-3 py-2"
               style={{ border: `1px solid ${theme.palette.divider}` }}
             >
-              <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => openUserProfile(join.profiles.username)}
+                aria-label={t("userProfilePanel.viewProfile", {
+                  username: join.profiles.username,
+                })}
+                className="group flex items-center gap-2 text-left"
+              >
                 <Avatar
                   src={join.profiles.avatar_url ?? undefined}
                   sx={{ width: 32, height: 32 }}
@@ -241,14 +250,17 @@ export function MyPodPanel({ pod, onChanged, highlight = false }: MyPodPanelProp
                   {join.profiles.username[0]?.toUpperCase()}
                 </Avatar>
                 <div className="flex flex-col">
-                  <span style={{ color: theme.palette.text.primary }}>
+                  <span
+                    className="group-hover:underline group-focus-visible:underline"
+                    style={{ color: theme.palette.text.primary }}
+                  >
                     {join.profiles.username}
                   </span>
                   <span className="text-xs" style={{ color: theme.palette.text.secondary }}>
                     {join.profiles.discord_handle}
                   </span>
                 </div>
-              </div>
+              </button>
               <div className="flex gap-2">
                 <Button
                   type="button"
@@ -371,7 +383,14 @@ export function MyPodPanel({ pod, onChanged, highlight = false }: MyPodPanelProp
                     style={{ overflow: "hidden", border: `1px solid ${theme.palette.divider}` }}
                     className="flex items-center justify-between gap-2 rounded-lg px-3 py-2"
                   >
-                  <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => openUserProfile(join.profiles.username)}
+                    aria-label={t("userProfilePanel.viewProfile", {
+                      username: join.profiles.username,
+                    })}
+                    className="group flex items-center gap-2 text-left"
+                  >
                     <Avatar
                       src={join.profiles.avatar_url ?? undefined}
                       sx={{ width: 32, height: 32 }}
@@ -379,14 +398,17 @@ export function MyPodPanel({ pod, onChanged, highlight = false }: MyPodPanelProp
                       {join.profiles.username[0]?.toUpperCase()}
                     </Avatar>
                     <div className="flex flex-col">
-                      <span style={{ color: theme.palette.text.primary }}>
+                      <span
+                        className="group-hover:underline group-focus-visible:underline"
+                        style={{ color: theme.palette.text.primary }}
+                      >
                         {join.profiles.username}
                       </span>
                       <span className="text-sm" style={{ color: theme.palette.text.secondary }}>
                         {join.profiles.discord_handle}
                       </span>
                     </div>
-                  </div>
+                  </button>
                   <div className="flex shrink-0 gap-2">
                     <Button
                       type="button"
