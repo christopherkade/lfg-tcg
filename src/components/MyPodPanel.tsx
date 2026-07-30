@@ -5,11 +5,12 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Check, ChevronDown, Copy, Pencil, Share2, UserX, X } from "lucide-react";
 import { Alert, Avatar, Box, Button, useTheme } from "@mui/material";
 import { removeMember, respondToJoin } from "@/app/actions/joins";
-import { markPodMatched } from "@/app/actions/pods";
+import { cancelPod, extendPodSearch, markPodMatched } from "@/app/actions/pods";
 import { openDiscordAddFriend } from "@/lib/discord";
 import { ConfirmMarkMatchedDialog } from "@/components/ConfirmMarkMatchedDialog";
 import { ConfirmRemoveMemberDialog } from "@/components/ConfirmRemoveMemberDialog";
 import { LfgDialog } from "@/components/LfgDialog";
+import { NoUsersFoundDialog } from "@/components/NoUsersFoundDialog";
 import { GAMES_CONFIG } from "@/constants/gamesConfig";
 import { formatPodWhen } from "@/lib/date";
 import { useTranslation } from "@/lib/i18n/LocaleContext";
@@ -37,6 +38,12 @@ export function MyPodPanel({ pod, onChanged, highlight = false }: MyPodPanelProp
   );
   const [removeError, setRemoveError] = useState<string | null>(null);
   const [removePending, setRemovePending] = useState(false);
+  const [noUsersFoundPending, setNoUsersFoundPending] = useState<
+    "unlist" | "extend" | null
+  >(null);
+  const [noUsersFoundError, setNoUsersFoundError] = useState<string | null>(
+    null,
+  );
 
   const pendingRequests = pod.pod_joins.filter(
     (join) => join.status === "PENDING",
@@ -45,6 +52,14 @@ export function MyPodPanel({ pod, onChanged, highlight = false }: MyPodPanelProp
     (join) => join.status === "ACCEPTED",
   );
   const isFull = acceptedMembers.length + 1 >= pod.max_players;
+  // The Match Feed hides any pod once expires_at lapses, so a pod that
+  // never drew a single join request by then is already invisible to
+  // every other searcher — surface that instead of leaving the host
+  // staring at a dead "Searching..." state.
+  const noUsersFound =
+    pod.status === "ACTIVE" &&
+    pod.pod_joins.length === 0 &&
+    new Date(pod.expires_at) <= new Date();
   const game = GAMES_CONFIG[pod.game_key];
   const scheduledLabel = formatPodWhen(pod, locale, t);
 
@@ -119,6 +134,32 @@ export function MyPodPanel({ pod, onChanged, highlight = false }: MyPodPanelProp
     setRemovePending(false);
     if (!result.error) {
       setRemoveTarget(null);
+      onChanged?.();
+    }
+  }
+
+  async function handleUnlistFromNoUsersFound() {
+    setNoUsersFoundPending("unlist");
+    setNoUsersFoundError(null);
+    const result = await cancelPod(pod.id);
+    if (result.error) {
+      setNoUsersFoundError(result.error);
+    }
+    setNoUsersFoundPending(null);
+    if (!result.error) {
+      onChanged?.();
+    }
+  }
+
+  async function handleKeepSearching() {
+    setNoUsersFoundPending("extend");
+    setNoUsersFoundError(null);
+    const result = await extendPodSearch(pod.id);
+    if (result.error) {
+      setNoUsersFoundError(result.error);
+    }
+    setNoUsersFoundPending(null);
+    if (!result.error) {
       onChanged?.();
     }
   }
@@ -544,6 +585,14 @@ export function MyPodPanel({ pod, onChanged, highlight = false }: MyPodPanelProp
         onConfirm={handleRemoveMember}
         pending={removePending}
         error={removeError}
+      />
+
+      <NoUsersFoundDialog
+        open={noUsersFound}
+        onUnlist={handleUnlistFromNoUsersFound}
+        onKeepSearching={handleKeepSearching}
+        pendingAction={noUsersFoundPending}
+        error={noUsersFoundError}
       />
 
       <LfgDialog

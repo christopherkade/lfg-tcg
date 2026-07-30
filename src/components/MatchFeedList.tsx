@@ -16,6 +16,7 @@ import { createClient } from "@/lib/supabase/client";
 import { usePodRealtime } from "@/components/PodRealtimeProvider";
 import { requestJoin, leavePod } from "@/app/actions/joins";
 import { PodDetailDialog } from "@/components/PodDetailDialog";
+import { PlatformActivityTicker } from "@/components/PlatformActivityTicker";
 import { CITY_MAP } from "@/constants/citiesConfig";
 import { formatPodWhen } from "@/lib/date";
 import { useTranslation } from "@/lib/i18n/LocaleContext";
@@ -253,6 +254,9 @@ export function MatchFeedList({
           <Typography sx={{ fontSize: "0.75rem", color: "text.secondary" }}>
             {t("matchFeed.empty.subtitle")}
           </Typography>
+          <div className="mt-2">
+            <PlatformActivityTicker />
+          </div>
         </div>
       ) : (
         <AnimatePresence mode="popLayout">
