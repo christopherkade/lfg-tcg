@@ -8,10 +8,15 @@ import { Box, Button, Link, Typography } from "@mui/material";
 import { createClient } from "@/lib/supabase/client";
 import { LocaleSwitcher } from "@/components/LocaleSwitcher";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { PlatformActivityTicker } from "@/components/PlatformActivityTicker";
 import { useThemeMode } from "@/lib/theme/ThemeModeContext";
 import { useTranslation } from "@/lib/i18n/LocaleContext";
 import type { TranslationKey } from "@/lib/i18n";
 import { GAMES_CONFIG } from "@/constants/gamesConfig";
+import type {
+  PlatformActivityEvent,
+  PlatformActivityStats,
+} from "@/app/actions/platformActivity";
 
 const MotionButton = motion.create(Button);
 
@@ -85,9 +90,17 @@ function useIsMobileViewport() {
 interface LoginViewProps {
   /** Path (e.g. a shared /pods/<id> link) to return to once login completes. */
   next?: string;
+  /** Server-fetched (anon role, no session here) so the ticker below paints
+   *  instantly instead of flashing in client-side — see login/page.tsx. */
+  initialStats?: PlatformActivityStats | null;
+  initialEvents?: PlatformActivityEvent[];
 }
 
-export function LoginView({ next }: LoginViewProps) {
+export function LoginView({
+  next,
+  initialStats,
+  initialEvents,
+}: LoginViewProps) {
   const { t } = useTranslation();
   const { mode } = useThemeMode();
   const isDark = mode === "dark";
@@ -238,6 +251,13 @@ export function LoginView({ next }: LoginViewProps) {
             </div>
           ))}
         </motion.ol>
+
+        <motion.div variants={itemVariants}>
+          <PlatformActivityTicker
+            initialStats={initialStats}
+            initialEvents={initialEvents}
+          />
+        </motion.div>
 
         <motion.div variants={itemVariants} className="relative inline-block">
           {/* Static box-shadow + animated opacity instead of animating

@@ -82,6 +82,11 @@
   "matchFeed.loading": "Chargement du fil des tables...",
   "matchFeed.empty.title": "Aucune table ne correspond à vos filtres",
   "matchFeed.empty.subtitle": "Essayez d'élargir vos filtres, ou revenez un peu plus tard.",
+  "platformActivity.activeNow": "{count} actifs en ce moment",
+  "platformActivity.matchedToday": "{count} matchés aujourd'hui",
+  "platformActivity.eventCreated": "Nouvelle table {game} {format} créée {duration}",
+  "platformActivity.eventMatched": "Un groupe {game} {format} vient de matcher {duration}",
+
   "matchFeed.joined": "REJOINT",
   "matchFeed.bracket": "Bracket {brackets}",
   "matchFeed.requestRejected": "Demande refusée",
@@ -191,6 +196,13 @@
   "matchedDialog.body": "L'hôte a marqué cette table comme complète. Vérifiez vos messages privés Discord, l'hôte devrait vous contacter (ou vous envoyer une demande d'ami) sous peu. Ne soyez pas surpris de voir sa carte disparaître du fil des tables, elle a été retirée maintenant que le groupe est formé.",
   "matchedDialog.gotIt": "Compris",
 
+  "noUsersFoundDialog.title": "Personne n'a encore trouvé cette table",
+  "noUsersFoundDialog.body": "Cela fait un moment que personne n'a demandé à rejoindre, elle n'apparaît donc plus dans le fil des tables. Retirez-la, ou continuez à chercher pour la remettre devant les autres joueurs.",
+  "noUsersFoundDialog.unlistPod": "Retirer la table",
+  "noUsersFoundDialog.unlisting": "Retrait...",
+  "noUsersFoundDialog.keepSearching": "Continuer à chercher",
+  "noUsersFoundDialog.extending": "Prolongation...",
+
   "login.title": "PodFinder",
   "login.subtitle": "Formez une table de JCC en quelques clics !",
   "login.step1.title": "Créez une table",
@@ -262,6 +274,7 @@
   "errors.maxPlayersBelowGroupSize": "Le nombre de joueurs recherchés ne peut pas être inférieur à la taille actuelle de votre groupe ({count}).",
   "errors.podUpdateFailed": "Impossible de mettre à jour votre table : {reason}",
   "errors.podCancelFailed": "Impossible d'annuler votre recherche : {reason}",
+  "errors.podExtendSearchFailed": "Impossible de prolonger votre recherche : {reason}",
   "errors.podMarkMatchedFailed": "Impossible de marquer cette table comme complète : {reason}",
 
   "errors.podNotActive": "Cette table n'est plus active.",

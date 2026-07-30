@@ -237,6 +237,41 @@ export async function cancelPod(
   return {};
 }
 
+/**
+ * Restarts a stale pod's search window (bumps `expires_at` forward by
+ * another 4h, matching createPod's own default) — the "Keep Searching"
+ * choice on NoUsersFoundDialog, shown once a pod's original window lapses
+ * with zero pod_joins ever recorded on it.
+ */
+export async function extendPodSearch(
+  podId: string,
+): Promise<PodActionResult> {
+  const { supabase, user } = await requireProfile();
+  const locale = await getServerLocale();
+
+  const { error } = await supabase
+    .from("pods")
+    .update({
+      expires_at: new Date(Date.now() + 4 * 60 * 60 * 1000).toISOString(),
+    })
+    .eq("id", podId)
+    .eq("user_id", user.id)
+    .eq("status", "ACTIVE");
+
+  if (error) {
+    console.error("extendPodSearch failed:", error);
+    return {
+      error: translate(locale, "errors.podExtendSearchFailed", {
+        reason: error.message,
+      }),
+    };
+  }
+
+  revalidatePath("/");
+  revalidatePath("/pods");
+  return {};
+}
+
 export async function markPodMatched(
   podId: string,
 ): Promise<PodActionResult> {
