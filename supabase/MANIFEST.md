@@ -36,6 +36,7 @@ Never apply a new script to prod before it's been verified on staging.
 | 9     | `sql/pod_history.sql`                          | [x] 2026-07-29 | [x]             |                                                                                                                                                                                               |
 | 10    | `sql/scale_indexes.sql`                        | [x] 2026-07-29 | [x]             |                                                                                                                                                                                               |
 | 11    | `sql/fix_pod_join_delete_notify_actor.sql`     | [x] 2026-07-29 | [x]             | `create or replace function` patch on `notify_on_pod_join_delete` (defined in `schema.sql`) — just needs to run after the baseline, no other ordering dependency.                             |
+| 12    | `sql/profile_pod_stats.sql`                    | [x] 2026-07-30 | [x]             | Adds `get_profile_pod_stats()` only — no table/RLS change. Depends on `pod_history` existing (order 9).                                                                                       |
 
 Dates above are the file's last-modified date at the time this manifest was
 created (2026-07-29), used as a best-effort proxy for real apply order/date since

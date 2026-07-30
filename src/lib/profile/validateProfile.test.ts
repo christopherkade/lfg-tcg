@@ -1,54 +1,31 @@
 import { describe, expect, it } from "vitest";
-import { validateProfileInput } from "@/lib/profile/validateProfile";
+import { validateCity, validateUsername } from "@/lib/profile/validateProfile";
 
-describe("validateProfileInput", () => {
+describe("validateUsername", () => {
   it("requires a username", () => {
-    const result = validateProfileInput(
-      { username: "", discordHandle: "user#1234", city: "" },
-      "en",
-    );
+    const result = validateUsername("", "en");
     expect(result).toEqual({ error: "Username is required." });
   });
 
-  it("requires a discord handle", () => {
-    const result = validateProfileInput(
-      { username: "player1", discordHandle: "", city: "" },
-      "en",
-    );
-    expect(result).toEqual({
-      error: "Couldn't read your Discord identity. Please sign out and back in.",
-    });
+  it("passes through a non-empty username", () => {
+    const result = validateUsername("player1", "en");
+    expect(result).toEqual({ data: { username: "player1" } });
   });
+});
 
+describe("validateCity", () => {
   it("rejects a city that isn't a known slug", () => {
-    const result = validateProfileInput(
-      { username: "player1", discordHandle: "user#1234", city: "atlantis" },
-      "en",
-    );
+    const result = validateCity("atlantis", "en");
     expect(result).toEqual({ error: "Please select a valid city." });
   });
 
   it("allows an empty city (optional field)", () => {
-    const result = validateProfileInput(
-      { username: "player1", discordHandle: "user#1234", city: "" },
-      "en",
-    );
-    expect(result).toEqual({
-      data: { username: "player1", discordHandle: "user#1234", city: null },
-    });
+    const result = validateCity("", "en");
+    expect(result).toEqual({ data: { city: null } });
   });
 
   it("normalizes a valid known city slug through unchanged", () => {
-    const result = validateProfileInput(
-      { username: "player1", discordHandle: "user#1234", city: "abbeville" },
-      "en",
-    );
-    expect(result).toEqual({
-      data: {
-        username: "player1",
-        discordHandle: "user#1234",
-        city: "abbeville",
-      },
-    });
+    const result = validateCity("abbeville", "en");
+    expect(result).toEqual({ data: { city: "abbeville" } });
   });
 });

@@ -46,8 +46,9 @@ export async function GET(request: NextRequest) {
             (user.user_metadata?.avatar_url as string | undefined) ?? null;
 
           if (discordHandle) {
-            // Only updates an existing profile row — onboarding (upsertProfile)
-            // is what creates the row for first-time users. This keeps an
+            // Only updates an existing profile row — onboarding (updateUsername,
+            // see src/app/actions/profile.ts) is what creates the row for
+            // first-time users. This keeps an
             // already-onboarded user's Discord identity fresh on every login
             // without requiring them to revisit /profile.
             await supabase
