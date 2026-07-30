@@ -1,13 +1,22 @@
-import { Box, Typography } from "@mui/material";
+import { Box } from "@mui/material";
 import { requireUser, getProfile } from "@/lib/session";
 import { ProfileForm } from "@/components/ProfileForm";
-import { getServerLocale } from "@/lib/i18n/server";
-import { translate } from "@/lib/i18n";
+import { ProfileHeader } from "@/components/ProfileHeader";
+import { ProfileStats } from "@/components/ProfileStats";
 
 export default async function ProfilePage() {
   const { supabase, user } = await requireUser();
-  const profile = await getProfile(supabase, user.id);
-  const locale = await getServerLocale();
+
+  const [profile, gamesPlayedCount, profilePodStats] = await Promise.all([
+    getProfile(supabase, user.id),
+    supabase.rpc("get_games_played_count").then(({ data }) => data ?? 0),
+    supabase
+      .rpc("get_profile_pod_stats")
+      .then(
+        ({ data }) =>
+          data?.[0] ?? { pods_hosted: 0, irl_count: 0, online_count: 0 },
+      ),
+  ]);
 
   const defaultDiscordHandle =
     (user.user_metadata?.full_name as string | undefined) ??
@@ -22,21 +31,18 @@ export default async function ProfilePage() {
       sx={{ bgcolor: "background.default" }}
       className="flex flex-1 flex-col items-center gap-8 px-6 py-16"
     >
-      <div className="flex flex-col items-center gap-2 text-center">
-        <Typography
-          component="h1"
-          sx={{ fontSize: "1.5rem", fontWeight: 700, color: "text.primary" }}
-        >
-          {profile
-            ? translate(locale, "profilePage.editTitle")
-            : translate(locale, "profilePage.setupTitle")}
-        </Typography>
-      </div>
-      <ProfileForm
-        initialProfile={profile}
-        defaultDiscordHandle={defaultDiscordHandle}
-        defaultAvatarUrl={defaultAvatarUrl}
+      <ProfileHeader
+        username={profile?.username ?? null}
+        discordHandle={profile?.discord_handle ?? defaultDiscordHandle}
+        avatarUrl={profile?.avatar_url ?? defaultAvatarUrl}
       />
+      <ProfileStats
+        gamesPlayedCount={gamesPlayedCount}
+        podsHosted={profilePodStats.pods_hosted}
+        irlCount={profilePodStats.irl_count}
+        onlineCount={profilePodStats.online_count}
+      />
+      <ProfileForm initialProfile={profile} />
     </Box>
   );
 }

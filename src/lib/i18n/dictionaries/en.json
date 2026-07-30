@@ -202,16 +202,23 @@
   "login.continueWithDiscord": "Continue with Discord",
 
   "profileForm.username": "Username",
-  "profileForm.discordHandle": "Discord Handle",
-  "profileForm.discordHandleHelper": "Synced automatically from your Discord account.",
   "profileForm.save.idle": "Save Profile",
   "profileForm.save.pending": "Saving...",
   "profileForm.signOut": "Sign Out",
 
-  "profilePage.editTitle": "Edit Profile",
-  "profilePage.setupTitle": "Set Up Your Profile",
   "profilePage.usernameRequiredInfo": "Pick a username to start using PodFinder.",
   "profilePage.cityMissingInfo": "Add your city to create and join in-person pods near you.",
+
+  "profileHeader.discordSynced": "Synced from Discord",
+  "profileHeader.editUsername": "Edit username",
+  "profileHeader.saveUsername": "Save username",
+
+  "profileStats.sectionLabel": "Stats",
+  "profileStats.gamesPlayed": "Games Played",
+  "profileStats.podsHosted": "Pods Hosted",
+  "profileStats.irlGames": "IRL Games",
+  "profileStats.onlineGames": "Online Games",
+  "profileStats.trendsComingSoon": "Trends and match history graphs are coming soon",
 
   "citySelector.label": "City",
   "citySelector.helperText": "Used to only show you in-person pods near you. Online pods always show regardless of city.",

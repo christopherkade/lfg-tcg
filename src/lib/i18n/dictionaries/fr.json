@@ -202,16 +202,23 @@
   "login.continueWithDiscord": "Continuer avec Discord",
 
   "profileForm.username": "Pseudo",
-  "profileForm.discordHandle": "Identifiant Discord",
-  "profileForm.discordHandleHelper": "Synchronisé automatiquement depuis votre compte Discord.",
   "profileForm.save.idle": "Enregistrer le profil",
   "profileForm.save.pending": "Enregistrement...",
   "profileForm.signOut": "Se déconnecter",
 
-  "profilePage.editTitle": "Modifier le profil",
-  "profilePage.setupTitle": "Configurez votre profil",
   "profilePage.usernameRequiredInfo": "Choisissez un pseudo pour commencer à utiliser PodFinder.",
   "profilePage.cityMissingInfo": "Renseignez votre ville pour créer et rejoindre des tables en personne près de chez vous.",
+
+  "profileHeader.discordSynced": "Synchronisé depuis Discord",
+  "profileHeader.editUsername": "Modifier le pseudo",
+  "profileHeader.saveUsername": "Enregistrer le pseudo",
+
+  "profileStats.sectionLabel": "Statistiques",
+  "profileStats.gamesPlayed": "Parties jouées",
+  "profileStats.podsHosted": "Tables organisées",
+  "profileStats.irlGames": "Parties en personne",
+  "profileStats.onlineGames": "Parties en ligne",
+  "profileStats.trendsComingSoon": "Les tendances et graphiques d'historique arrivent bientôt",
 
   "citySelector.label": "Ville",
   "citySelector.helperText": "Utilisé pour vous montrer uniquement les tables en personne près de chez vous. Les tables en ligne s'affichent toujours, quelle que soit la ville.",

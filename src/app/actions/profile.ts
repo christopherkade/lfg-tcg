@@ -5,22 +5,24 @@ import { revalidatePath } from "next/cache";
 import { requireUser } from "@/lib/session";
 import { getServerLocale } from "@/lib/i18n/server";
 import { translate } from "@/lib/i18n";
-import { validateProfileInput } from "@/lib/profile/validateProfile";
+import { validateCity, validateUsername } from "@/lib/profile/validateProfile";
 
 export interface ProfileFormState {
   error?: string;
 }
 
 /**
- * Saves identity fields only (username, discord handle, city). Game/search
- * settings are edited via the "Search" dialog on the LFG tab instead —
- * see src/app/actions/pods.ts `createPod`. `city` is optional (a
- * user who only ever plays Online doesn't need one) but, when provided,
- * must be one of `CITIES_CONFIG`'s slugs — this is what lets the Match
- * Feed (Section 6) filter IRL pods by plain equality instead of fuzzy
- * free-text matching.
+ * Saves the username only — edited inline in `ProfileHeader` (pencil icon).
+ * No `profiles` row exists yet for a first-time user (nothing inserts one on
+ * signup), so this both creates the row on first save (`insert`, with
+ * `discord_handle`/`avatar_url` sourced from Discord OAuth metadata, same as
+ * `updateCity` relies on already existing) and renames it on every later
+ * save (`update`, touching only `username`) — city/search-preference columns
+ * are never touched here either way. Doesn't redirect: the header stays
+ * open on the same page, and Next re-renders the current route (including
+ * `(app)/layout.tsx`'s onboarding lock) automatically once this resolves.
  */
-export async function upsertProfile(
+export async function updateUsername(
   _prevState: ProfileFormState | undefined,
   formData: FormData,
 ): Promise<ProfileFormState> {
@@ -28,40 +30,92 @@ export async function upsertProfile(
   const locale = await getServerLocale();
 
   const username = String(formData.get("username") ?? "").trim();
-  const cityInput = String(formData.get("city") ?? "").trim();
-  const avatarUrl =
-    (user.user_metadata?.avatar_url as string | undefined) ?? null;
-  const discordHandle =
-    (user.user_metadata?.full_name as string | undefined) ??
-    (user.user_metadata?.name as string | undefined) ??
-    (user.user_metadata?.preferred_username as string | undefined) ??
-    "";
-
-  const validated = validateProfileInput(
-    { username, discordHandle, city: cityInput },
-    locale,
-  );
+  const validated = validateUsername(username, locale);
   if ("error" in validated) {
     return { error: validated.error };
   }
 
-  const { error } = await supabase.from("profiles").upsert(
-    {
+  const { data: existingProfile } = await supabase
+    .from("profiles")
+    .select("id")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  let error;
+  if (existingProfile) {
+    ({ error } = await supabase
+      .from("profiles")
+      .update({
+        username: validated.data.username,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", user.id));
+  } else {
+    const discordHandle =
+      (user.user_metadata?.full_name as string | undefined) ??
+      (user.user_metadata?.name as string | undefined) ??
+      (user.user_metadata?.preferred_username as string | undefined) ??
+      "";
+    if (!discordHandle) {
+      return { error: translate(locale, "errors.discordHandleRequired") };
+    }
+    ({ error } = await supabase.from("profiles").insert({
       id: user.id,
       username: validated.data.username,
-      discord_handle: validated.data.discordHandle,
-      avatar_url: avatarUrl,
-      city: validated.data.city,
+      discord_handle: discordHandle,
+      avatar_url: (user.user_metadata?.avatar_url as string | undefined) ?? null,
       updated_at: new Date().toISOString(),
-    },
-    { onConflict: "id" },
-  );
+    }));
+  }
 
   if (error) {
-    console.error("upsertProfile failed:", error);
+    console.error("updateUsername failed:", error);
     if (error.code === "23505") {
       return { error: translate(locale, "errors.usernameTaken") };
     }
+    return {
+      error: translate(locale, "errors.profileSaveFailed", {
+        reason: error.message,
+      }),
+    };
+  }
+
+  revalidatePath("/");
+  revalidatePath("/pods");
+  revalidatePath("/history");
+  revalidatePath("/profile");
+  return {};
+}
+
+/**
+ * Saves the city only, via `ProfileForm`'s save button. Only ever called
+ * once a `profiles` row already exists (that section is gated on
+ * `initialProfile` — see `ProfileForm`), so a plain `update` is enough; it
+ * never needs to create the row the way `updateUsername` does.
+ */
+export async function updateCity(
+  _prevState: ProfileFormState | undefined,
+  formData: FormData,
+): Promise<ProfileFormState> {
+  const { supabase, user } = await requireUser();
+  const locale = await getServerLocale();
+
+  const cityInput = String(formData.get("city") ?? "").trim();
+  const validated = validateCity(cityInput, locale);
+  if ("error" in validated) {
+    return { error: validated.error };
+  }
+
+  const { error } = await supabase
+    .from("profiles")
+    .update({
+      city: validated.data.city,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", user.id);
+
+  if (error) {
+    console.error("updateCity failed:", error);
     return {
       error: translate(locale, "errors.profileSaveFailed", {
         reason: error.message,

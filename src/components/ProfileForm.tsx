@@ -2,9 +2,9 @@
 
 import { useActionState, useState, useTransition } from "react";
 import { LogOut, Trash2 } from "lucide-react";
-import { Alert, Avatar, Button, TextField } from "@mui/material";
+import { Alert, Button } from "@mui/material";
 import {
-  upsertProfile,
+  updateCity,
   signOut,
   deleteAccount,
   type ProfileFormState,
@@ -12,31 +12,21 @@ import {
 import { CitySelector } from "@/components/CitySelector";
 import { DeleteAccountDialog } from "@/components/DeleteAccountDialog";
 import { useTranslation } from "@/lib/i18n/LocaleContext";
-import { useProfileLock } from "@/lib/ProfileLockContext";
 import type { Profile } from "@/types/database";
 
 interface ProfileFormProps {
   initialProfile: Profile | null;
-  defaultDiscordHandle: string;
-  defaultAvatarUrl: string | null;
 }
 
 const initialState: ProfileFormState = {};
 
-export function ProfileForm({
-  initialProfile,
-  defaultDiscordHandle,
-  defaultAvatarUrl,
-}: ProfileFormProps) {
+export function ProfileForm({ initialProfile }: ProfileFormProps) {
   const { t } = useTranslation();
-  const { blocked, clearBlock } = useProfileLock();
   const [state, formAction, pending] = useActionState(
-    upsertProfile,
+    updateCity,
     initialState,
   );
   const [city, setCity] = useState<string | null>(initialProfile?.city ?? null);
-  const avatarUrl = initialProfile?.avatar_url ?? defaultAvatarUrl ?? undefined;
-  const isNewAccount = !initialProfile;
   const cityMissingInitially = !initialProfile?.city;
 
   const [deleteOpen, setDeleteOpen] = useState(false);
@@ -55,61 +45,29 @@ export function ProfileForm({
 
   return (
     <div className="flex w-full max-w-md flex-col gap-8">
-      <div className="flex justify-center">
-        <Avatar
-          src={avatarUrl}
-          sx={{ width: 72, height: 72 }}
-        >
-          {(initialProfile?.username ?? defaultDiscordHandle)?.[0]?.toUpperCase()}
-        </Avatar>
-      </div>
-      {isNewAccount && (
+      {initialProfile ? (
+        <form action={formAction} className="flex flex-col gap-6">
+          {cityMissingInitially && (
+            <Alert severity="info">{t("profilePage.cityMissingInfo")}</Alert>
+          )}
+          <input type="hidden" name="city" value={city ?? ""} />
+          <CitySelector value={city} onChange={setCity} />
+
+          {state?.error && <Alert severity="error">{state.error}</Alert>}
+
+          <Button
+            type="submit"
+            disabled={pending}
+            variant="contained"
+            fullWidth
+            sx={{ py: 1.5 }}
+          >
+            {pending ? t("profileForm.save.pending") : t("profileForm.save.idle")}
+          </Button>
+        </form>
+      ) : (
         <Alert severity="info">{t("profilePage.usernameRequiredInfo")}</Alert>
       )}
-      <form action={formAction} className="flex flex-col gap-6">
-        <TextField
-          id="username"
-          name="username"
-          label={t("profileForm.username")}
-          defaultValue={initialProfile?.username ?? ""}
-          onChange={() => {
-            if (blocked) clearBlock();
-          }}
-          error={blocked}
-          helperText={blocked ? t("errors.usernameRequired") : undefined}
-          required
-          fullWidth
-          size="small"
-        />
-
-        <TextField
-          id="discord_handle"
-          label={t("profileForm.discordHandle")}
-          value={initialProfile?.discord_handle ?? defaultDiscordHandle}
-          disabled
-          fullWidth
-          size="small"
-          helperText={t("profileForm.discordHandleHelper")}
-        />
-
-        {cityMissingInitially && (
-          <Alert severity="info">{t("profilePage.cityMissingInfo")}</Alert>
-        )}
-        <input type="hidden" name="city" value={city ?? ""} />
-        <CitySelector value={city} onChange={setCity} />
-
-        {state?.error && <Alert severity="error">{state.error}</Alert>}
-
-        <Button
-          type="submit"
-          disabled={pending}
-          variant="contained"
-          fullWidth
-          sx={{ py: 1.5 }}
-        >
-          {pending ? t("profileForm.save.pending") : t("profileForm.save.idle")}
-        </Button>
-      </form>
 
       <form action={signOut}>
         <Button
