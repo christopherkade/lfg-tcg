@@ -3,6 +3,7 @@ import { Box } from "@mui/material";
 import type { createClient } from "@/lib/supabase/server";
 import { OwnPodPanel } from "@/components/OwnPodPanel";
 import { MatchFeed } from "@/components/MatchFeed";
+import { PlatformActivityTicker } from "@/components/PlatformActivityTicker";
 import { PodsTabTransition } from "@/components/PodsTabTransition";
 import { fetchActivePodsData, getInitialFilters } from "@/lib/pods/matchFeed";
 import { fetchOwnPodData, POD_RELATIONS_SELECT } from "@/lib/pods/ownPod";
@@ -49,6 +50,7 @@ export function PodsView({
 
   return (
     <PodsTabTransition slideIn={highlightOwn}>
+      <PlatformActivityTicker />
       <Box
         sx={{ bgcolor: "background.default" }}
         className="flex flex-1 flex-col items-center gap-8 px-6 py-10"

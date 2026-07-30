@@ -16,10 +16,10 @@ import { createClient } from "@/lib/supabase/client";
 import { usePodRealtime } from "@/components/PodRealtimeProvider";
 import { requestJoin, leavePod } from "@/app/actions/joins";
 import { PodDetailDialog } from "@/components/PodDetailDialog";
-import { PlatformActivityTicker } from "@/components/PlatformActivityTicker";
 import { CITY_MAP } from "@/constants/citiesConfig";
 import { formatPodWhen } from "@/lib/date";
 import { useTranslation } from "@/lib/i18n/LocaleContext";
+import { useUserProfilePanel } from "@/lib/UserProfilePanelContext";
 import type { TranslationKey } from "@/lib/i18n";
 import { consumePrefetchedActivePods, fetchActivePodsData } from "@/lib/pods/matchFeed";
 import { POD_RELATIONS_SELECT } from "@/lib/pods/ownPod";
@@ -53,6 +53,7 @@ export function MatchFeedList({
 }: MatchFeedListProps) {
   const { t, locale } = useTranslation();
   const { subscribePods, subscribePodJoins } = usePodRealtime();
+  const { openUserProfile } = useUserProfilePanel();
   const router = useRouter();
   const theme = useTheme();
   const isDark = theme.palette.mode === "dark";
@@ -205,6 +206,13 @@ export function MatchFeedList({
     };
   }, [subscribePods, subscribePodJoins]);
 
+  // Each card has its own onClick opening PodDetailDialog — stopPropagation
+  // keeps clicking a name from also doing that.
+  function handleViewProfile(event: React.MouseEvent, username: string) {
+    event.stopPropagation();
+    openUserProfile(username);
+  }
+
   async function handleRequestJoin(podId: string) {
     setPendingPodId(podId);
     setError(null);
@@ -254,9 +262,6 @@ export function MatchFeedList({
           <Typography sx={{ fontSize: "0.75rem", color: "text.secondary" }}>
             {t("matchFeed.empty.subtitle")}
           </Typography>
-          <div className="mt-2">
-            <PlatformActivityTicker />
-          </div>
         </div>
       ) : (
         <AnimatePresence mode="popLayout">
@@ -289,18 +294,27 @@ export function MatchFeedList({
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <Avatar
-                      src={pod.profiles.avatar_url ?? undefined}
-                      sx={{ width: 24, height: 24, fontSize: "0.75rem" }}
+                    <button
+                      type="button"
+                      onClick={(event) => handleViewProfile(event, pod.profiles.username)}
+                      aria-label={t("userProfilePanel.viewProfile", {
+                        username: pod.profiles.username,
+                      })}
+                      className="group flex items-center gap-2"
                     >
-                      {pod.profiles.username[0]?.toUpperCase()}
-                    </Avatar>
-                    <span
-                      className="font-medium"
-                      style={{ color: theme.palette.text.primary }}
-                    >
-                      {pod.profiles.username}
-                    </span>
+                      <Avatar
+                        src={pod.profiles.avatar_url ?? undefined}
+                        sx={{ width: 24, height: 24, fontSize: "0.75rem" }}
+                      >
+                        {pod.profiles.username[0]?.toUpperCase()}
+                      </Avatar>
+                      <span
+                        className="font-medium group-hover:underline group-focus-visible:underline"
+                        style={{ color: theme.palette.text.primary }}
+                      >
+                        {pod.profiles.username}
+                      </span>
+                    </button>
                     {isJoined && (
                       <span className="rounded-full bg-green-500/10 px-2 py-0.5 text-[10px] font-semibold tracking-wide text-green-400">
                         {t("matchFeed.joined")}
@@ -366,7 +380,16 @@ export function MatchFeedList({
                         className="flex items-center justify-between text-xs"
                         style={{ color: theme.palette.text.secondary }}
                       >
-                        <div className="flex items-center gap-1.5">
+                        <button
+                          type="button"
+                          onClick={(event) =>
+                            handleViewProfile(event, join.profiles.username)
+                          }
+                          aria-label={t("userProfilePanel.viewProfile", {
+                            username: join.profiles.username,
+                          })}
+                          className="group flex items-center gap-1.5"
+                        >
                           <Avatar
                             src={join.profiles.avatar_url ?? undefined}
                             sx={{
@@ -377,8 +400,10 @@ export function MatchFeedList({
                           >
                             {join.profiles.username[0]?.toUpperCase()}
                           </Avatar>
-                          <span>{join.profiles.username}</span>
-                        </div>
+                          <span className="group-hover:underline group-focus-visible:underline">
+                            {join.profiles.username}
+                          </span>
+                        </button>
                         <span>{join.profiles.discord_handle}</span>
                       </div>
                     ))}

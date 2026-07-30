@@ -4,6 +4,7 @@ import { MatchedPodWatcher } from "@/components/MatchedPodWatcher";
 import { PodRealtimeProvider } from "@/components/PodRealtimeProvider";
 import { NotificationCenterProvider } from "@/components/NotificationCenterProvider";
 import { ProfileLockProvider } from "@/lib/ProfileLockContext";
+import { UserProfilePanelProvider } from "@/lib/UserProfilePanelContext";
 import { getTrustedUserId, getProfile } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
 
@@ -31,11 +32,13 @@ export default async function AppLayout({
     <PodRealtimeProvider>
       <NotificationCenterProvider currentUserId={userId}>
         <ProfileLockProvider usernameMissing={!profile}>
-          <div className="flex flex-1 flex-col">
-            <TabBar />
-            <div className="flex flex-1 flex-col pb-16 sm:pb-0">{children}</div>
-            <MatchedPodWatcher currentUserId={userId} />
-          </div>
+          <UserProfilePanelProvider>
+            <div className="flex flex-1 flex-col">
+              <TabBar />
+              <div className="flex flex-1 flex-col pb-16 sm:pb-0">{children}</div>
+              <MatchedPodWatcher currentUserId={userId} />
+            </div>
+          </UserProfilePanelProvider>
         </ProfileLockProvider>
       </NotificationCenterProvider>
     </PodRealtimeProvider>

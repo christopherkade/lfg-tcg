@@ -1,8 +1,9 @@
 "use client";
 
-import { useActionState, useState, useTransition } from "react";
-import { LogOut, Trash2 } from "lucide-react";
-import { Alert, Button } from "@mui/material";
+import { startTransition, useActionState, useState, useTransition } from "react";
+import { Check, LogOut, Trash2 } from "lucide-react";
+import { Alert, Box, Button, CircularProgress } from "@mui/material";
+import { useTheme } from "@mui/material/styles";
 import {
   updateCity,
   signOut,
@@ -22,12 +23,42 @@ const initialState: ProfileFormState = {};
 
 export function ProfileForm({ initialProfile }: ProfileFormProps) {
   const { t } = useTranslation();
-  const [state, formAction, pending] = useActionState(
+  const theme = useTheme();
+  const [state, dispatchCityUpdate, pending] = useActionState(
     updateCity,
     initialState,
   );
   const [city, setCity] = useState<string | null>(initialProfile?.city ?? null);
-  const cityMissingInitially = !initialProfile?.city;
+  const [savedCity, setSavedCity] = useState<string | null>(
+    initialProfile?.city ?? null,
+  );
+  const [submittedCity, setSubmittedCity] = useState(city);
+
+  // Same "did the action state object change" derived-state idiom as
+  // `ProfileHeader`'s `prevActionState` — useActionState hands back a new
+  // object on every resolved dispatch, so this only fires after a real
+  // save, never on mount. Records which city a resolved, error-free save
+  // actually corresponds to (not necessarily the *current* selection, if
+  // the user picked something else while the previous save was in flight).
+  const [prevState, setPrevState] = useState(state);
+  if (state !== prevState) {
+    setPrevState(state);
+    if (!state.error) {
+      setSavedCity(submittedCity);
+    }
+  }
+
+  function handleCityChange(next: string | null) {
+    setCity(next);
+    setSubmittedCity(next);
+    const formData = new FormData();
+    formData.set("city", next ?? "");
+    startTransition(() => {
+      dispatchCityUpdate(formData);
+    });
+  }
+
+  const showSavedCheck = !pending && !state.error && savedCity === city;
 
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
@@ -46,25 +77,36 @@ export function ProfileForm({ initialProfile }: ProfileFormProps) {
   return (
     <div className="flex w-full max-w-md flex-col gap-8">
       {initialProfile ? (
-        <form action={formAction} className="flex flex-col gap-6">
-          {cityMissingInitially && (
+        <div className="flex flex-col gap-6">
+          {!city && (
             <Alert severity="info">{t("profilePage.cityMissingInfo")}</Alert>
           )}
-          <input type="hidden" name="city" value={city ?? ""} />
-          <CitySelector value={city} onChange={setCity} />
+          <Box className="flex items-start gap-2">
+            <Box className="flex-1">
+              <CitySelector value={city} onChange={handleCityChange} />
+            </Box>
+            <Box
+              sx={{ height: 40 }}
+              className="flex shrink-0 items-center justify-center"
+            >
+              {pending && (
+                <CircularProgress
+                  size={18}
+                  aria-label={t("profileForm.city.saving")}
+                />
+              )}
+              {showSavedCheck && (
+                <Check
+                  className="h-5 w-5"
+                  aria-label={t("profileForm.city.saved")}
+                  style={{ color: theme.palette.success.main }}
+                />
+              )}
+            </Box>
+          </Box>
 
           {state?.error && <Alert severity="error">{state.error}</Alert>}
-
-          <Button
-            type="submit"
-            disabled={pending}
-            variant="contained"
-            fullWidth
-            sx={{ py: 1.5 }}
-          >
-            {pending ? t("profileForm.save.pending") : t("profileForm.save.idle")}
-          </Button>
-        </form>
+        </div>
       ) : (
         <Alert severity="info">{t("profilePage.usernameRequiredInfo")}</Alert>
       )}

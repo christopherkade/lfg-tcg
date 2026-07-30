@@ -2,7 +2,7 @@
 
 import { useEffect, useState, type ComponentType } from "react";
 import { animate, motion, useReducedMotion } from "framer-motion";
-import { Crown, Gamepad2, Globe, LineChart, MapPin } from "lucide-react";
+import { Gamepad2, Globe, LineChart, MapPin, Users } from "lucide-react";
 import { Box, Typography } from "@mui/material";
 import { useTranslation } from "@/lib/i18n/LocaleContext";
 
@@ -68,14 +68,14 @@ function StatCard({ icon: Icon, label, value }: StatCardProps) {
 
 interface ProfileStatsProps {
   gamesPlayedCount: number;
-  podsHosted: number;
+  peopleMet: number;
   irlCount: number;
   onlineCount: number;
 }
 
 export function ProfileStats({
   gamesPlayedCount,
-  podsHosted,
+  peopleMet,
   irlCount,
   onlineCount,
 }: ProfileStatsProps) {
@@ -83,7 +83,7 @@ export function ProfileStats({
   const prefersReducedMotion = useReducedMotion();
 
   const displayedGamesPlayed = useCountUp(gamesPlayedCount, prefersReducedMotion);
-  const displayedPodsHosted = useCountUp(podsHosted, prefersReducedMotion);
+  const displayedPeopleMet = useCountUp(peopleMet, prefersReducedMotion);
   const displayedIrlCount = useCountUp(irlCount, prefersReducedMotion);
   const displayedOnlineCount = useCountUp(onlineCount, prefersReducedMotion);
 
@@ -113,9 +113,9 @@ export function ProfileStats({
           value={displayedGamesPlayed}
         />
         <StatCard
-          icon={Crown}
-          label={t("profileStats.podsHosted")}
-          value={displayedPodsHosted}
+          icon={Users}
+          label={t("profileStats.peopleMet")}
+          value={displayedPeopleMet}
         />
         <StatCard
           icon={MapPin}

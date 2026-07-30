@@ -11,6 +11,7 @@ import { useTranslation } from "@/lib/i18n/LocaleContext";
 import type { TranslationKey } from "@/lib/i18n";
 import { deletePodHistoryEntry } from "@/app/actions/history";
 import { PodHistoryDetailDialog } from "@/components/PodHistoryDetailDialog";
+import { useUserProfilePanel } from "@/lib/UserProfilePanelContext";
 import type { PodHistoryEntryWithHost } from "@/components/HistoryList";
 
 export interface HistoryEntriesListHandle {
@@ -36,6 +37,7 @@ export function HistoryEntriesList({
   entriesPromise,
 }: HistoryEntriesListProps) {
   const { t, locale } = useTranslation();
+  const { openUserProfile } = useUserProfilePanel();
   const initialEntries = use(entriesPromise);
   const initialGamesPlayedCount = use(gamesPlayedCountPromise);
   const [entries, setEntries] = useState(initialEntries);
@@ -49,6 +51,13 @@ export function HistoryEntriesList({
     setEntries((current) => current.filter((entry) => entry.id !== entryId));
     deletePodHistoryEntry(entryId);
   };
+
+  // Each card has its own onClick opening PodHistoryDetailDialog —
+  // stopPropagation keeps clicking a name from also doing that.
+  function handleViewProfile(event: React.MouseEvent, username: string) {
+    event.stopPropagation();
+    openUserProfile(username);
+  }
 
   // Mirrors MatchFeedList's own client-side refetch pattern — this list's
   // state was seeded once from the server promises above and never
@@ -169,42 +178,84 @@ export function HistoryEntriesList({
                   {t("historyPage.members")}
                 </Typography>
                 <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={(event) => handleViewProfile(event, entry.host.username)}
+                    aria-label={t("userProfilePanel.viewProfile", {
+                      username: entry.host.username,
+                    })}
+                    className="group flex items-center gap-2"
+                  >
                     <Avatar
                       src={entry.host.avatar_url ?? undefined}
                       sx={{ width: 24, height: 24, fontSize: "0.75rem" }}
                     >
                       {entry.host.username[0]?.toUpperCase()}
                     </Avatar>
-                    <Typography sx={{ fontSize: "0.875rem", color: "text.primary" }}>
+                    <Typography
+                      component="span"
+                      className="group-hover:underline group-focus-visible:underline"
+                      sx={{ fontSize: "0.875rem", color: "text.primary" }}
+                    >
                       {entry.host.username}
                     </Typography>
-                    <Typography sx={{ fontSize: "0.75rem", color: "text.secondary" }}>
+                    <Typography component="span" sx={{ fontSize: "0.75rem", color: "text.secondary" }}>
                       ({t("historyPage.host")})
                     </Typography>
-                  </div>
+                  </button>
                   <Typography sx={{ fontSize: "0.75rem", color: "text.secondary" }}>
                     {entry.host.discord_handle}
                   </Typography>
                 </div>
-                {entry.members.map((member) => (
-                  <div key={member.id} className="flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-2">
-                      <Avatar
-                        src={member.avatar_url ?? undefined}
-                        sx={{ width: 24, height: 24, fontSize: "0.75rem" }}
-                      >
-                        {member.username[0]?.toUpperCase()}
-                      </Avatar>
-                      <Typography sx={{ fontSize: "0.875rem", color: "text.primary" }}>
-                        {member.username}
+                {entry.members.map((member) => {
+                  // A deleted account's snapshot here has discord_handle: ""
+                  // (supabase/sql/account_deletion.sql's anonymization) — a
+                  // live profile's handle can never be empty, so this is a
+                  // reliable "no profile to view" signal.
+                  const isLive = Boolean(member.discord_handle);
+                  const avatar = (
+                    <Avatar
+                      src={member.avatar_url ?? undefined}
+                      sx={{ width: 24, height: 24, fontSize: "0.75rem" }}
+                    >
+                      {member.username[0]?.toUpperCase()}
+                    </Avatar>
+                  );
+
+                  return (
+                    <div key={member.id} className="flex items-center justify-between gap-2">
+                      {isLive ? (
+                        <button
+                          type="button"
+                          onClick={(event) => handleViewProfile(event, member.username)}
+                          aria-label={t("userProfilePanel.viewProfile", {
+                            username: member.username,
+                          })}
+                          className="group flex items-center gap-2"
+                        >
+                          {avatar}
+                          <Typography
+                            component="span"
+                            className="group-hover:underline group-focus-visible:underline"
+                            sx={{ fontSize: "0.875rem", color: "text.primary" }}
+                          >
+                            {member.username}
+                          </Typography>
+                        </button>
+                      ) : (
+                        <div className="flex items-center gap-2">
+                          {avatar}
+                          <Typography component="span" sx={{ fontSize: "0.875rem", color: "text.primary" }}>
+                            {member.username}
+                          </Typography>
+                        </div>
+                      )}
+                      <Typography sx={{ fontSize: "0.75rem", color: "text.secondary" }}>
+                        {member.discord_handle}
                       </Typography>
                     </div>
-                    <Typography sx={{ fontSize: "0.75rem", color: "text.secondary" }}>
-                      {member.discord_handle}
-                    </Typography>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </Box>
           );

@@ -84,8 +84,9 @@
   "matchFeed.empty.subtitle": "Try broadening your filters, or check back in a bit.",
   "platformActivity.activeNow": "{count} active now",
   "platformActivity.matchedToday": "{count} matched today",
-  "platformActivity.eventCreated": "New {game} {format} pod started {duration}",
-  "platformActivity.eventMatched": "A {game} {format} group matched {duration}",
+  "platformActivity.eventCreated": "{format} pod started {duration}",
+  "platformActivity.eventMatched": "{format} group matched {duration}",
+  "platformActivity.dismissAria": "Dismiss activity banner",
 
   "matchFeed.joined": "JOINED",
   "matchFeed.bracket": "Bracket {brackets}",
@@ -214,8 +215,8 @@
   "login.continueWithDiscord": "Continue with Discord",
 
   "profileForm.username": "Username",
-  "profileForm.save.idle": "Save Profile",
-  "profileForm.save.pending": "Saving...",
+  "profileForm.city.saving": "Saving...",
+  "profileForm.city.saved": "Saved",
   "profileForm.signOut": "Sign Out",
 
   "profilePage.usernameRequiredInfo": "Pick a username to start using PodFinder.",
@@ -227,10 +228,13 @@
 
   "profileStats.sectionLabel": "Stats",
   "profileStats.gamesPlayed": "Games Played",
-  "profileStats.podsHosted": "Pods Hosted",
+  "profileStats.peopleMet": "People Met",
   "profileStats.irlGames": "IRL Games",
   "profileStats.onlineGames": "Online Games",
   "profileStats.trendsComingSoon": "Trends and match history graphs are coming soon",
+
+  "userProfilePanel.close": "Close profile",
+  "userProfilePanel.viewProfile": "View {username}'s profile",
 
   "citySelector.label": "City",
   "citySelector.helperText": "Used to only show you in-person pods near you. Online pods always show regardless of city.",
