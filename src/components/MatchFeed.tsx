@@ -83,6 +83,7 @@ export function MatchFeed({
             profile={profile}
             currentUserId={currentUserId}
             filters={filters}
+            onChangeFilters={setFilters}
             initialPodsPromise={initialPodsPromise}
             initialSharedPodPromise={initialSharedPodPromise}
           />

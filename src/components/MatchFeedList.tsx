@@ -35,6 +35,7 @@ interface MatchFeedListProps {
   profile: Profile;
   currentUserId: string;
   filters: PodFiltersValue;
+  onChangeFilters: (value: PodFiltersValue) => void;
   initialPodsPromise: Promise<PodWithRelations[]>;
   initialSharedPodPromise: Promise<{ data: PodWithRelations | null; error: unknown } | null>;
 }
@@ -48,6 +49,7 @@ export function MatchFeedList({
   profile,
   currentUserId,
   filters,
+  onChangeFilters,
   initialPodsPromise,
   initialSharedPodPromise,
 }: MatchFeedListProps) {
@@ -250,18 +252,46 @@ export function MatchFeedList({
             className="h-8 w-8"
             style={{ color: theme.palette.text.secondary }}
           />
-          <Typography
-            sx={{
-              fontSize: "0.875rem",
-              fontWeight: 500,
-              color: "text.primary",
-            }}
-          >
-            {t("matchFeed.empty.title")}
-          </Typography>
-          <Typography sx={{ fontSize: "0.75rem", color: "text.secondary" }}>
-            {t("matchFeed.empty.subtitle")}
-          </Typography>
+          {filters.matchType === "IRL" && profile.city && CITY_MAP[profile.city] ? (
+            <>
+              <Typography
+                sx={{
+                  fontSize: "0.875rem",
+                  fontWeight: 500,
+                  color: "text.primary",
+                }}
+              >
+                {t("matchFeed.empty.noCityPods.title", {
+                  city: CITY_MAP[profile.city].label,
+                })}
+              </Typography>
+              <Typography sx={{ fontSize: "0.75rem", color: "text.secondary" }}>
+                {t("matchFeed.empty.noCityPods.subtitle")}
+              </Typography>
+              <button
+                type="button"
+                onClick={() => onChangeFilters({ ...filters, matchType: "ALL" })}
+                className="mt-1 rounded-lg border border-blue-500/40 bg-blue-500/10 px-3 py-1.5 text-xs font-semibold text-blue-400 transition-colors hover:border-blue-500/60 hover:bg-blue-500/20"
+              >
+                {t("matchFeed.empty.broadenCta")}
+              </button>
+            </>
+          ) : (
+            <>
+              <Typography
+                sx={{
+                  fontSize: "0.875rem",
+                  fontWeight: 500,
+                  color: "text.primary",
+                }}
+              >
+                {t("matchFeed.empty.title")}
+              </Typography>
+              <Typography sx={{ fontSize: "0.75rem", color: "text.secondary" }}>
+                {t("matchFeed.empty.subtitle")}
+              </Typography>
+            </>
+          )}
         </div>
       ) : (
         <AnimatePresence mode="popLayout">
