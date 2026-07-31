@@ -16,6 +16,7 @@ import { createClient } from "@/lib/supabase/client";
 import { usePodRealtime } from "@/components/PodRealtimeProvider";
 import { requestJoin, leavePod } from "@/app/actions/joins";
 import { PodDetailDialog } from "@/components/PodDetailDialog";
+import { ReservedSlotAvatar } from "@/components/ReservedSlotAvatar";
 import { CITY_MAP } from "@/constants/citiesConfig";
 import { formatPodWhen } from "@/lib/date";
 import { useTranslation } from "@/lib/i18n/LocaleContext";
@@ -356,7 +357,7 @@ export function MatchFeedList({
                     style={{ color: theme.palette.text.secondary }}
                   >
                     {t("myPodPanel.playersCount", {
-                      count: acceptedMembers.length + 1,
+                      count: acceptedMembers.length + 1 + pod.reserved_slots,
                       max: pod.max_players,
                     })}
                   </span>
@@ -397,13 +398,25 @@ export function MatchFeedList({
                   <span>{formatPodWhen(pod, locale, t)}</span>
                 </div>
 
-                {acceptedMembers.length > 0 && (
+                {(acceptedMembers.length > 0 || pod.reserved_slots > 0) && (
                   <div
                     className="flex flex-col gap-1 pt-2"
                     style={{
                       borderTop: `1px solid ${theme.palette.divider}`,
                     }}
                   >
+                    {Array.from({ length: pod.reserved_slots }).map(
+                      (_, index) => (
+                        <div
+                          key={`reserved-${index}`}
+                          className="flex items-center gap-1.5 text-xs"
+                          style={{ color: theme.palette.text.secondary }}
+                        >
+                          <ReservedSlotAvatar size={18} />
+                          <span>{t("podDetailDialog.reservedSlotLabel")}</span>
+                        </div>
+                      ),
+                    )}
                     {acceptedMembers.map((join) => (
                       <div
                         key={join.id}

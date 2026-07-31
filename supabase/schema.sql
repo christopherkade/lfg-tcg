@@ -8,7 +8,7 @@
 -- user data you want to keep.
 --
 -- This is the baseline schema only — every post-baseline addition (rate
--- limit columns, matched_at/matched_notified_at, pod_history, the newer
+-- limit columns, matched_at/matched_notified_at, reserved_slots, pod_history, the newer
 -- notify_pending_joiners_on_pod_update/notify_pod_destroyed triggers, the
 -- scale_indexes.sql indexes) has its own tracked, additive script under
 -- supabase/sql/*.sql and is layered on top of this one, not folded in here.

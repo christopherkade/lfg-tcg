@@ -17,6 +17,7 @@ function baseOnlineInput(
     scheduledDate: "",
     scheduledTime: "",
     maxPlayers: 4,
+    reservedSlots: 0,
     notes: "",
     ...overrides,
   };
@@ -130,6 +131,25 @@ describe("validateStartSearchInput", () => {
     );
     expect(tooFew).toEqual({ error: "Players needed must be between 2 and 6." });
     expect(tooMany).toEqual({ error: "Players needed must be between 2 and 6." });
+  });
+
+  it("rejects reservedSlots that leave no open slot to search for", () => {
+    const negative = validateStartSearchInput(
+      baseOnlineInput({ maxPlayers: 4, reservedSlots: -1 }),
+      "en",
+      null,
+    );
+    const tooMany = validateStartSearchInput(
+      baseOnlineInput({ maxPlayers: 4, reservedSlots: 3 }),
+      "en",
+      null,
+    );
+    expect(negative).toEqual({
+      error: "Already-filled seats must leave at least one open slot to search for.",
+    });
+    expect(tooMany).toEqual({
+      error: "Already-filled seats must leave at least one open slot to search for.",
+    });
   });
 
   it("rejects notes over 300 trimmed characters", () => {
