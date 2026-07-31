@@ -1,8 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
-import { motion, useReducedMotion } from "framer-motion";
+import {
+  motion,
+  useAnimate,
+  useReducedMotion,
+  type AnimationPlaybackControls,
+} from "framer-motion";
 import { Box, Button, Link, Typography } from "@mui/material";
 import { createClient } from "@/lib/supabase/client";
 import { LocaleSwitcher } from "@/components/LocaleSwitcher";
@@ -44,25 +49,38 @@ function CardColumn({
   // height — the standard seamless-marquee trick, so the loop point is
   // invisible regardless of how many cards the list holds.
   const cards = [...CARD_SHOWCASE[game], ...CARD_SHOWCASE[game]];
+  const [scope, animate] = useAnimate();
+  const controlsRef = useRef<AnimationPlaybackControls | null>(null);
+
+  useEffect(() => {
+    if (!scope.current) return;
+
+    if (!shouldAnimate) {
+      controlsRef.current?.stop();
+      animate(scope.current, { y: "0%" }, { duration: 0 });
+      return;
+    }
+
+    controlsRef.current = animate(
+      scope.current,
+      { y: direction === "down" ? ["-50%", "0%"] : ["0%", "-50%"] },
+      { duration, repeat: Infinity, ease: "linear" },
+    );
+    return () => controlsRef.current?.stop();
+  }, [shouldAnimate, direction, duration, animate, scope]);
 
   return (
     <div
       data-card-column
       className="relative h-full min-h-0 flex-1 overflow-hidden"
+      // Imperative playback controls (rather than toggling the `animate`
+      // target) so hovering freezes the column exactly where it is and
+      // hovering out resumes from there — switching targets instead would
+      // tween back to a fixed value and look like a jump/snap.
+      onMouseEnter={() => controlsRef.current?.pause()}
+      onMouseLeave={() => controlsRef.current?.play()}
     >
-      <motion.div
-        className="flex flex-col gap-3"
-        animate={
-          shouldAnimate
-            ? { y: direction === "down" ? ["-50%", "0%"] : ["0%", "-50%"] }
-            : { y: "0%" }
-        }
-        transition={
-          shouldAnimate
-            ? { duration, repeat: Infinity, ease: "linear" }
-            : { duration: 0 }
-        }
-      >
+      <div ref={scope} className="flex flex-col gap-3">
         {cards.map((card, index) => (
           <div
             key={`${card.src}-${index}`}
@@ -77,7 +95,7 @@ function CardColumn({
             />
           </div>
         ))}
-      </motion.div>
+      </div>
     </div>
   );
 }
