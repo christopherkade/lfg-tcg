@@ -304,9 +304,9 @@
   "errors.rateLimitedJoinRequest": "Vous envoyez des demandes trop rapidement. Merci de patienter un instant avant de réessayer.",
   "errors.deleteAccountFailed": "Impossible de supprimer votre compte : {reason}",
 
-  "legal.termsLink": "Conditions d'utilisation",
+  "legal.termsLink": "CGU",
   "legal.privacyLink": "Politique de confidentialité",
-  "terms.title": "Conditions d'utilisation",
+  "terms.title": "Conditions générales d'utilisation",
   "privacy.title": "Politique de confidentialité",
 
   "profileForm.deleteAccount": "Supprimer le compte",
