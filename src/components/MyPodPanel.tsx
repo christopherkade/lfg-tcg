@@ -2,7 +2,15 @@
 
 import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { Check, ChevronDown, Copy, Pencil, Share2, UserX, X } from "lucide-react";
+import {
+  Check,
+  ChevronDown,
+  Copy,
+  Pencil,
+  Share2,
+  UserX,
+  X,
+} from "lucide-react";
 import { Alert, Avatar, Box, Button, useTheme } from "@mui/material";
 import { removeMember, respondToJoin } from "@/app/actions/joins";
 import { cancelPod, extendPodSearch, markPodMatched } from "@/app/actions/pods";
@@ -11,6 +19,7 @@ import { ConfirmMarkMatchedDialog } from "@/components/ConfirmMarkMatchedDialog"
 import { ConfirmRemoveMemberDialog } from "@/components/ConfirmRemoveMemberDialog";
 import { LfgDialog } from "@/components/LfgDialog";
 import { NoUsersFoundDialog } from "@/components/NoUsersFoundDialog";
+import { ReservedSlotAvatar } from "@/components/ReservedSlotAvatar";
 import { GAMES_CONFIG } from "@/constants/gamesConfig";
 import { formatPodWhen } from "@/lib/date";
 import { useTranslation } from "@/lib/i18n/LocaleContext";
@@ -25,7 +34,11 @@ interface MyPodPanelProps {
   highlight?: boolean;
 }
 
-export function MyPodPanel({ pod, onChanged, highlight = false }: MyPodPanelProps) {
+export function MyPodPanel({
+  pod,
+  onChanged,
+  highlight = false,
+}: MyPodPanelProps) {
   const { t, locale } = useTranslation();
   const theme = useTheme();
   const { openUserProfile } = useUserProfilePanel();
@@ -53,7 +66,8 @@ export function MyPodPanel({ pod, onChanged, highlight = false }: MyPodPanelProp
   const acceptedMembers = pod.pod_joins.filter(
     (join) => join.status === "ACCEPTED",
   );
-  const isFull = acceptedMembers.length + 1 >= pod.max_players;
+  const isFull =
+    acceptedMembers.length + 1 + pod.reserved_slots >= pod.max_players;
   // The Match Feed hides any pod once expires_at lapses, so a pod that
   // never drew a single join request by then is already invisible to
   // every other searcher — surface that instead of leaving the host
@@ -197,21 +211,31 @@ export function MyPodPanel({ pod, onChanged, highlight = false }: MyPodPanelProp
         className="flex items-center justify-between gap-3 text-left"
       >
         <div className="flex items-center gap-2">
-          <h2 className="text-lg font-semibold" style={{ color: theme.palette.text.primary }}>
+          <h2
+            className="text-lg font-semibold"
+            style={{ color: theme.palette.text.primary }}
+          >
             {t("myPodPanel.title")}
           </h2>
           {pendingRequests.length > 0 && (
             <span className="rounded-full bg-indigo-500/10 px-2 py-0.5 text-xs font-medium text-indigo-300">
               {pendingRequests.length === 1
-                ? t("myPodPanel.joinRequestCount", { count: pendingRequests.length })
-                : t("myPodPanel.joinRequestCountPlural", { count: pendingRequests.length })}
+                ? t("myPodPanel.joinRequestCount", {
+                    count: pendingRequests.length,
+                  })
+                : t("myPodPanel.joinRequestCountPlural", {
+                    count: pendingRequests.length,
+                  })}
             </span>
           )}
         </div>
         <div className="flex items-center gap-3">
-          <span className="text-sm" style={{ color: theme.palette.text.secondary }}>
+          <span
+            className="text-sm"
+            style={{ color: theme.palette.text.secondary }}
+          >
             {t("myPodPanel.playersCount", {
-              count: acceptedMembers.length + 1,
+              count: acceptedMembers.length + 1 + pod.reserved_slots,
               max: pod.max_players,
             })}
           </span>
@@ -226,7 +250,10 @@ export function MyPodPanel({ pod, onChanged, highlight = false }: MyPodPanelProp
 
       {pendingRequests.length > 0 ? (
         <div className="flex flex-col gap-2">
-          <span className="text-sm font-medium" style={{ color: theme.palette.text.secondary }}>
+          <span
+            className="text-sm font-medium"
+            style={{ color: theme.palette.text.secondary }}
+          >
             {t("myPodPanel.joinRequests")}
           </span>
           {pendingRequests.map((join) => (
@@ -256,7 +283,10 @@ export function MyPodPanel({ pod, onChanged, highlight = false }: MyPodPanelProp
                   >
                     {join.profiles.username}
                   </span>
-                  <span className="text-xs" style={{ color: theme.palette.text.secondary }}>
+                  <span
+                    className="text-xs"
+                    style={{ color: theme.palette.text.secondary }}
+                  >
                     {join.profiles.discord_handle}
                   </span>
                 </div>
@@ -275,10 +305,16 @@ export function MyPodPanel({ pod, onChanged, highlight = false }: MyPodPanelProp
                     px: 1.5,
                     "&:hover": { bgcolor: "rgba(16, 185, 129, 0.2)" },
                     "&.Mui-disabled": { color: "#34d399", opacity: 0.4 },
-                    "& .MuiButton-startIcon": { mr: { xs: 0, sm: 1 }, ml: { xs: 0, sm: -0.5 } },
+                    "& .MuiButton-startIcon": {
+                      mr: { xs: 0, sm: 1 },
+                      ml: { xs: 0, sm: -0.5 },
+                    },
                   }}
                 >
-                  <Box component="span" sx={{ display: { xs: "none", sm: "inline" } }}>
+                  <Box
+                    component="span"
+                    sx={{ display: { xs: "none", sm: "inline" } }}
+                  >
                     {t("myPodPanel.accept")}
                   </Box>
                 </Button>
@@ -295,10 +331,16 @@ export function MyPodPanel({ pod, onChanged, highlight = false }: MyPodPanelProp
                     px: 1.5,
                     "&:hover": { bgcolor: "rgba(239, 68, 68, 0.2)" },
                     "&.Mui-disabled": { color: "#f87171", opacity: 0.4 },
-                    "& .MuiButton-startIcon": { mr: { xs: 0, sm: 1 }, ml: { xs: 0, sm: -0.5 } },
+                    "& .MuiButton-startIcon": {
+                      mr: { xs: 0, sm: 1 },
+                      ml: { xs: 0, sm: -0.5 },
+                    },
                   }}
                 >
-                  <Box component="span" sx={{ display: { xs: "none", sm: "inline" } }}>
+                  <Box
+                    component="span"
+                    sx={{ display: { xs: "none", sm: "inline" } }}
+                  >
                     {t("myPodPanel.reject")}
                   </Box>
                 </Button>
@@ -325,269 +367,340 @@ export function MyPodPanel({ pod, onChanged, highlight = false }: MyPodPanelProp
             style={{ overflow: "hidden" }}
             className="flex flex-col gap-4"
           >
-          <div className="flex flex-col gap-2 text-sm" style={{ color: theme.palette.text.primary }}>
-            <div className="flex justify-between">
-              <span style={{ color: theme.palette.text.secondary }}>{t("myPodPanel.game")}</span>
-              <span>{game?.name ?? pod.game_key}</span>
-            </div>
-            <div className="flex justify-between">
-              <span style={{ color: theme.palette.text.secondary }}>{t("myPodPanel.format")}</span>
-              <span>{t(`format.${pod.format_key}` as TranslationKey)}</span>
-            </div>
-            <div className="flex justify-between">
-              <span style={{ color: theme.palette.text.secondary }}>{t("myPodPanel.playstyle")}</span>
-              <span className="capitalize">
-                {t(`playstyle.${pod.playstyle_key}` as TranslationKey)}
-              </span>
-            </div>
-            <div className="flex justify-between">
-              <span style={{ color: theme.palette.text.secondary }}>{t("myPodPanel.matchType")}</span>
-              <span>
-                {pod.type === "IRL"
-                  ? t("podFilters.matchTypeIrl")
-                  : t("podFilters.matchTypeOnline")}
-              </span>
-            </div>
-            <div className="flex justify-between">
-              <span style={{ color: theme.palette.text.secondary }}>{t("myPodPanel.when")}</span>
-              <span>{scheduledLabel}</span>
-            </div>
-            {pod.location_name && (
+            <div
+              className="flex flex-col gap-2 text-sm"
+              style={{ color: theme.palette.text.primary }}
+            >
               <div className="flex justify-between">
-                <span style={{ color: theme.palette.text.secondary }}>{t("myPodPanel.location")}</span>
-                <span>{pod.location_name}</span>
+                <span style={{ color: theme.palette.text.secondary }}>
+                  {t("myPodPanel.game")}
+                </span>
+                <span>{game?.name ?? pod.game_key}</span>
               </div>
-            )}
-            {pod.power_tiers && pod.power_tiers.length > 0 && (
               <div className="flex justify-between">
-                <span style={{ color: theme.palette.text.secondary }}>{t("myPodPanel.powerBracket")}</span>
-                <span>{pod.power_tiers.join(", ")}</span>
+                <span style={{ color: theme.palette.text.secondary }}>
+                  {t("myPodPanel.format")}
+                </span>
+                <span>{t(`format.${pod.format_key}` as TranslationKey)}</span>
               </div>
-            )}
-          </div>
+              <div className="flex justify-between">
+                <span style={{ color: theme.palette.text.secondary }}>
+                  {t("myPodPanel.playstyle")}
+                </span>
+                <span className="capitalize">
+                  {t(`playstyle.${pod.playstyle_key}` as TranslationKey)}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span style={{ color: theme.palette.text.secondary }}>
+                  {t("myPodPanel.matchType")}
+                </span>
+                <span>
+                  {pod.type === "IRL"
+                    ? t("podFilters.matchTypeIrl")
+                    : t("podFilters.matchTypeOnline")}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span style={{ color: theme.palette.text.secondary }}>
+                  {t("myPodPanel.when")}
+                </span>
+                <span>{scheduledLabel}</span>
+              </div>
+              {pod.location_name && (
+                <div className="flex justify-between">
+                  <span style={{ color: theme.palette.text.secondary }}>
+                    {t("myPodPanel.location")}
+                  </span>
+                  <span>{pod.location_name}</span>
+                </div>
+              )}
+              {pod.power_tiers && pod.power_tiers.length > 0 && (
+                <div className="flex justify-between">
+                  <span style={{ color: theme.palette.text.secondary }}>
+                    {t("myPodPanel.powerBracket")}
+                  </span>
+                  <span>{pod.power_tiers.join(", ")}</span>
+                </div>
+              )}
+            </div>
 
-          {acceptedMembers.length > 0 && (
-            <div className="flex flex-col gap-2">
-              <span className="text-sm font-medium" style={{ color: theme.palette.text.secondary }}>
-                {t("myPodPanel.groupMembers")}
-              </span>
-              <AnimatePresence initial={false}>
-                {acceptedMembers.map((join) => (
-                  <motion.div
-                    key={join.id}
-                    layout
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: "auto" }}
-                    exit={{ opacity: 0, height: 0 }}
-                    transition={{ duration: 0.2, ease: "easeInOut" }}
-                    style={{ overflow: "hidden", border: `1px solid ${theme.palette.divider}` }}
-                    className="flex items-center justify-between gap-2 rounded-lg px-3 py-2"
+            {(acceptedMembers.length > 0 || pod.reserved_slots > 0) && (
+              <div className="flex flex-col gap-2">
+                <span
+                  className="text-sm font-medium"
+                  style={{ color: theme.palette.text.secondary }}
+                >
+                  {t("myPodPanel.groupMembers")}
+                </span>
+                {Array.from({ length: pod.reserved_slots }).map((_, index) => (
+                  <div
+                    key={`reserved-${index}`}
+                    style={{ border: `1px solid ${theme.palette.divider}` }}
+                    className="flex items-center gap-2 rounded-lg px-3 py-2"
                   >
-                  <button
-                    type="button"
-                    onClick={() => openUserProfile(join.profiles.username)}
-                    aria-label={t("userProfilePanel.viewProfile", {
-                      username: join.profiles.username,
-                    })}
-                    className="group flex items-center gap-2 text-left"
-                  >
-                    <Avatar
-                      src={join.profiles.avatar_url ?? undefined}
-                      sx={{ width: 32, height: 32 }}
+                    <ReservedSlotAvatar />
+                    <span
+                      className="text-sm"
+                      style={{ color: theme.palette.text.secondary }}
                     >
-                      {join.profiles.username[0]?.toUpperCase()}
-                    </Avatar>
-                    <div className="flex flex-col">
-                      <span
-                        className="group-hover:underline group-focus-visible:underline"
-                        style={{ color: theme.palette.text.primary }}
-                      >
-                        {join.profiles.username}
-                      </span>
-                      <span className="text-sm" style={{ color: theme.palette.text.secondary }}>
-                        {join.profiles.discord_handle}
-                      </span>
-                    </div>
-                  </button>
-                  <div className="flex shrink-0 gap-2">
-                    <Button
-                      type="button"
-                      onClick={() =>
-                        addOnDiscord(join.id, join.profiles.discord_handle)
-                      }
-                      size="small"
-                      startIcon={
-                        <AnimatePresence mode="wait" initial={false}>
-                          <motion.span
-                            key={copied === join.id ? "check" : "copy"}
-                            initial={{ scale: 0.5, opacity: 0 }}
-                            animate={{ scale: 1, opacity: 1 }}
-                            exit={{ scale: 0.5, opacity: 0 }}
-                            transition={{ duration: 0.15, ease: "easeOut" }}
-                            className="inline-flex"
-                          >
-                            {copied === join.id ? (
-                              <Check className="h-3.5 w-3.5" />
-                            ) : (
-                              <Copy className="h-3.5 w-3.5" />
-                            )}
-                          </motion.span>
-                        </AnimatePresence>
-                      }
-                      sx={{
-                        flexShrink: 0,
-                        minWidth: 0,
-                        px: 1.5,
-                        py: 0.75,
-                        fontSize: "0.75rem",
-                        bgcolor: "rgba(99, 102, 241, 0.1)",
-                        color: "text.primary",
-                        "&:hover": { bgcolor: "rgba(99, 102, 241, 0.2)" },
-                        "& .MuiButton-startIcon": { mr: { xs: 0, sm: 1 } },
-                      }}
-                    >
-                      <Box component="span" sx={{ display: { xs: "none", sm: "inline" } }}>
-                        {copied === join.id ? t("myPodPanel.copied") : t("myPodPanel.addOnDiscord")}
-                      </Box>
-                    </Button>
-                    <Button
-                      type="button"
-                      onClick={() => {
-                        setRemoveError(null);
-                        setRemoveTarget(join);
-                      }}
-                      size="small"
-                      startIcon={<UserX className="h-3.5 w-3.5" />}
-                      sx={{
-                        flexShrink: 0,
-                        minWidth: 0,
-                        px: 1.5,
-                        py: 0.75,
-                        fontSize: "0.75rem",
-                        bgcolor: "rgba(239, 68, 68, 0.1)",
-                        color: "#f87171",
-                        "&:hover": { bgcolor: "rgba(239, 68, 68, 0.2)" },
-                        "& .MuiButton-startIcon": { mr: { xs: 0, sm: 1 }, ml: { xs: 0, sm: -0.5 } },
-                      }}
-                    >
-                      <Box component="span" sx={{ display: { xs: "none", sm: "inline" } }}>
-                        {t("myPodPanel.remove")}
-                      </Box>
-                    </Button>
+                      {t("podDetailDialog.reservedSlotLabel")}
+                    </span>
                   </div>
-                  </motion.div>
                 ))}
-              </AnimatePresence>
-            </div>
-          )}
+                <AnimatePresence initial={false}>
+                  {acceptedMembers.map((join) => (
+                    <motion.div
+                      key={join.id}
+                      layout
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      exit={{ opacity: 0, height: 0 }}
+                      transition={{ duration: 0.2, ease: "easeInOut" }}
+                      style={{
+                        overflow: "hidden",
+                        border: `1px solid ${theme.palette.divider}`,
+                      }}
+                      className="flex items-center justify-between gap-2 rounded-lg px-3 py-2"
+                    >
+                      <button
+                        type="button"
+                        onClick={() => openUserProfile(join.profiles.username)}
+                        aria-label={t("userProfilePanel.viewProfile", {
+                          username: join.profiles.username,
+                        })}
+                        className="group flex items-center gap-2 text-left"
+                      >
+                        <Avatar
+                          src={join.profiles.avatar_url ?? undefined}
+                          sx={{ width: 32, height: 32 }}
+                        >
+                          {join.profiles.username[0]?.toUpperCase()}
+                        </Avatar>
+                        <div className="flex flex-col">
+                          <span
+                            className="group-hover:underline group-focus-visible:underline"
+                            style={{ color: theme.palette.text.primary }}
+                          >
+                            {join.profiles.username}
+                          </span>
+                          <span
+                            className="text-sm"
+                            style={{ color: theme.palette.text.secondary }}
+                          >
+                            {join.profiles.discord_handle}
+                          </span>
+                        </div>
+                      </button>
+                      <div className="flex shrink-0 gap-2">
+                        <Button
+                          type="button"
+                          onClick={() =>
+                            addOnDiscord(join.id, join.profiles.discord_handle)
+                          }
+                          size="small"
+                          startIcon={
+                            <AnimatePresence mode="wait" initial={false}>
+                              <motion.span
+                                key={copied === join.id ? "check" : "copy"}
+                                initial={{ scale: 0.5, opacity: 0 }}
+                                animate={{ scale: 1, opacity: 1 }}
+                                exit={{ scale: 0.5, opacity: 0 }}
+                                transition={{ duration: 0.15, ease: "easeOut" }}
+                                className="inline-flex"
+                              >
+                                {copied === join.id ? (
+                                  <Check className="h-3.5 w-3.5" />
+                                ) : (
+                                  <Copy className="h-3.5 w-3.5" />
+                                )}
+                              </motion.span>
+                            </AnimatePresence>
+                          }
+                          sx={{
+                            flexShrink: 0,
+                            minWidth: 0,
+                            px: 1.5,
+                            py: 0.75,
+                            fontSize: "0.75rem",
+                            bgcolor: "rgba(99, 102, 241, 0.1)",
+                            color: "text.primary",
+                            "&:hover": { bgcolor: "rgba(99, 102, 241, 0.2)" },
+                            "& .MuiButton-startIcon": { mr: { xs: 0, sm: 1 } },
+                          }}
+                        >
+                          <Box
+                            component="span"
+                            sx={{ display: { xs: "none", sm: "inline" } }}
+                          >
+                            {copied === join.id
+                              ? t("myPodPanel.copied")
+                              : t("myPodPanel.addOnDiscord")}
+                          </Box>
+                        </Button>
+                        <Button
+                          type="button"
+                          onClick={() => {
+                            setRemoveError(null);
+                            setRemoveTarget(join);
+                          }}
+                          size="small"
+                          startIcon={<UserX className="h-3.5 w-3.5" />}
+                          sx={{
+                            flexShrink: 0,
+                            minWidth: 0,
+                            px: 1.5,
+                            py: 0.75,
+                            fontSize: "0.75rem",
+                            bgcolor: "rgba(239, 68, 68, 0.1)",
+                            color: "#f87171",
+                            "&:hover": { bgcolor: "rgba(239, 68, 68, 0.2)" },
+                            "& .MuiButton-startIcon": {
+                              mr: { xs: 0, sm: 1 },
+                              ml: { xs: 0, sm: -0.5 },
+                            },
+                          }}
+                        >
+                          <Box
+                            component="span"
+                            sx={{ display: { xs: "none", sm: "inline" } }}
+                          >
+                            {t("myPodPanel.remove")}
+                          </Box>
+                        </Button>
+                      </div>
+                    </motion.div>
+                  ))}
+                </AnimatePresence>
+              </div>
+            )}
 
-          {pod.notes && (
-            <div className="flex flex-col gap-1">
-              <span className="text-sm font-medium" style={{ color: theme.palette.text.secondary }}>
-                {t("myPodPanel.yourNotes")}
-              </span>
-              <p className="whitespace-pre-wrap text-sm" style={{ color: theme.palette.text.primary }}>
-                {pod.notes}
-              </p>
-            </div>
-          )}
+            {pod.notes && (
+              <div className="flex flex-col gap-1">
+                <span
+                  className="text-sm font-medium"
+                  style={{ color: theme.palette.text.secondary }}
+                >
+                  {t("myPodPanel.yourNotes")}
+                </span>
+                <p
+                  className="whitespace-pre-wrap text-sm"
+                  style={{ color: theme.palette.text.primary }}
+                >
+                  {pod.notes}
+                </p>
+              </div>
+            )}
 
-          <div className="flex justify-end gap-2">
-            <div className="relative flex">
-              <AnimatePresence>
-                {copied === "__link__" && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 4 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: 4 }}
-                    transition={{ duration: 0.15, ease: "easeOut" }}
-                    className="absolute right-0 z-10 whitespace-nowrap rounded px-2 py-1 text-xs"
-                    style={{
-                      bottom: "calc(100% + 6px)",
-                      pointerEvents: "none",
-                      backgroundColor: theme.palette.background.paper,
-                      color: theme.palette.text.primary,
-                      border: `1px solid ${theme.palette.divider}`,
-                    }}
-                  >
-                    {t("myPodPanel.podUrlCopied")}
-                  </motion.div>
-                )}
-              </AnimatePresence>
+            <div className="flex justify-end gap-2">
+              <div className="relative flex">
+                <AnimatePresence>
+                  {copied === "__link__" && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 4 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: 4 }}
+                      transition={{ duration: 0.15, ease: "easeOut" }}
+                      className="absolute right-0 z-10 whitespace-nowrap rounded px-2 py-1 text-xs"
+                      style={{
+                        bottom: "calc(100% + 6px)",
+                        pointerEvents: "none",
+                        backgroundColor: theme.palette.background.paper,
+                        color: theme.palette.text.primary,
+                        border: `1px solid ${theme.palette.divider}`,
+                      }}
+                    >
+                      {t("myPodPanel.podUrlCopied")}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+                <Button
+                  type="button"
+                  onClick={() =>
+                    copyText(
+                      "__link__",
+                      `${window.location.origin}/pods/${pod.id}`,
+                    )
+                  }
+                  size="small"
+                  aria-label={
+                    copied === "__link__"
+                      ? t("myPodPanel.podUrlCopied")
+                      : t("myPodPanel.copyLink")
+                  }
+                  sx={{
+                    flexShrink: 0,
+                    minWidth: 0,
+                    px: 1.25,
+                    py: 0.75,
+                    bgcolor: "rgba(99, 102, 241, 0.1)",
+                    color: "text.primary",
+                    "&:hover": { bgcolor: "rgba(99, 102, 241, 0.2)" },
+                  }}
+                >
+                  <AnimatePresence mode="wait" initial={false}>
+                    <motion.span
+                      key={copied === "__link__" ? "check" : "share"}
+                      initial={{ scale: 0.5, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      exit={{ scale: 0.5, opacity: 0 }}
+                      transition={{ duration: 0.15, ease: "easeOut" }}
+                      className="inline-flex"
+                    >
+                      {copied === "__link__" ? (
+                        <Check className="h-4 w-4" />
+                      ) : (
+                        <Share2 className="h-4 w-4" />
+                      )}
+                    </motion.span>
+                  </AnimatePresence>
+                </Button>
+              </div>
               <Button
                 type="button"
-                onClick={() =>
-                  copyText("__link__", `${window.location.origin}/pods/${pod.id}`)
-                }
+                onClick={() => setEditOpen(true)}
                 size="small"
-                aria-label={copied === "__link__" ? t("myPodPanel.podUrlCopied") : t("myPodPanel.copyLink")}
+                aria-label={t("myPodPanel.editPod")}
                 sx={{
                   flexShrink: 0,
                   minWidth: 0,
                   px: 1.25,
                   py: 0.75,
-                  bgcolor: "rgba(99, 102, 241, 0.1)",
+                  bgcolor: "rgba(148, 163, 184, 0.12)",
                   color: "text.primary",
-                  "&:hover": { bgcolor: "rgba(99, 102, 241, 0.2)" },
+                  "&:hover": { bgcolor: "rgba(148, 163, 184, 0.22)" },
                 }}
               >
-                <AnimatePresence mode="wait" initial={false}>
-                  <motion.span
-                    key={copied === "__link__" ? "check" : "share"}
-                    initial={{ scale: 0.5, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    exit={{ scale: 0.5, opacity: 0 }}
-                    transition={{ duration: 0.15, ease: "easeOut" }}
-                    className="inline-flex"
-                  >
-                    {copied === "__link__" ? (
-                      <Check className="h-4 w-4" />
-                    ) : (
-                      <Share2 className="h-4 w-4" />
-                    )}
-                  </motion.span>
-                </AnimatePresence>
+                <Pencil className="h-4 w-4" />
+              </Button>
+              <Button
+                type="button"
+                onClick={() => setConfirmMatchedOpen(true)}
+                disabled={pendingId === pod.id || acceptedMembers.length === 0}
+                variant="contained"
+                size="small"
+                aria-label={t("myPodPanel.markAsMatched")}
+                startIcon={<Check className="h-4 w-4" />}
+                sx={{
+                  flexShrink: 0,
+                  minWidth: 0,
+                  px: 1.5,
+                  py: 0.75,
+                  fontSize: "0.75rem",
+                  "& .MuiButton-startIcon": {
+                    mr: { xs: 0, sm: 1 },
+                    ml: { xs: 0, sm: -0.5 },
+                  },
+                }}
+              >
+                <Box
+                  component="span"
+                  sx={{ display: { xs: "none", sm: "inline" } }}
+                >
+                  {t("myPodPanel.markAsMatched")}
+                </Box>
               </Button>
             </div>
-            <Button
-              type="button"
-              onClick={() => setEditOpen(true)}
-              size="small"
-              aria-label={t("myPodPanel.editPod")}
-              sx={{
-                flexShrink: 0,
-                minWidth: 0,
-                px: 1.25,
-                py: 0.75,
-                bgcolor: "rgba(148, 163, 184, 0.12)",
-                color: "text.primary",
-                "&:hover": { bgcolor: "rgba(148, 163, 184, 0.22)" },
-              }}
-            >
-              <Pencil className="h-4 w-4" />
-            </Button>
-            <Button
-              type="button"
-              onClick={() => setConfirmMatchedOpen(true)}
-              disabled={pendingId === pod.id || acceptedMembers.length === 0}
-              variant="contained"
-              size="small"
-              aria-label={t("myPodPanel.markAsMatched")}
-              startIcon={<Check className="h-4 w-4" />}
-              sx={{
-                flexShrink: 0,
-                minWidth: 0,
-                px: 1.5,
-                py: 0.75,
-                fontSize: "0.75rem",
-                "& .MuiButton-startIcon": { mr: { xs: 0, sm: 1 }, ml: { xs: 0, sm: -0.5 } },
-              }}
-            >
-              <Box component="span" sx={{ display: { xs: "none", sm: "inline" } }}>
-                {t("myPodPanel.markAsMatched")}
-              </Box>
-            </Button>
-          </div>
           </motion.div>
         )}
       </AnimatePresence>

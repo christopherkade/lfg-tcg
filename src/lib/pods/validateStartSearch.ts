@@ -12,6 +12,7 @@ export interface StartSearchInput {
   scheduledDate: string;
   scheduledTime: string;
   maxPlayers: number;
+  reservedSlots: number;
   notes: string;
 }
 
@@ -68,6 +69,12 @@ export function validateStartSearchInput(
   }
   if (input.maxPlayers < 2 || input.maxPlayers > 6) {
     return { error: translate(locale, "errors.maxPlayersRange") };
+  }
+  if (
+    input.reservedSlots < 0 ||
+    input.reservedSlots > input.maxPlayers - 2
+  ) {
+    return { error: translate(locale, "errors.reservedSlotsRange") };
   }
   if (input.notes.trim().length > 300) {
     return { error: translate(locale, "errors.notesTooLong") };

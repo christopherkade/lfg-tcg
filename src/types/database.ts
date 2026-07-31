@@ -42,6 +42,7 @@ export interface Pod {
   city: string | null; // snapshot of the host's profiles.city at creation/edit time
   scheduled_at: string | null;
   max_players: number;
+  reserved_slots: number; // seats already filled by people outside the app (not real pod_joins rows)
   notes: string | null;
   status: PodStatus;
   created_at: string;
