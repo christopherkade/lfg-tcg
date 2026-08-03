@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Users, Zap, History, UserCircle, type LucideIcon } from "lucide-react";
+import { Users, Zap, History, UserCircle, Store, type LucideIcon } from "lucide-react";
 import { Box, Button, Typography, useTheme } from "@mui/material";
 import { NotificationBell } from "@/components/NotificationBell";
 import { SettingsDialog } from "@/components/SettingsDialog";
@@ -17,14 +17,26 @@ interface Tab {
   href: string;
   labelKey: TranslationKey;
   icon: LucideIcon;
+  // Marks a tab as organiser-only content (currently just "/organizer").
+  // Rendered with an amber accent instead of the default active color so
+  // it reads as distinctly "professional" even sitting in the same bar as
+  // player tabs.
+  accent?: "amber";
 }
 
-const TABS: Tab[] = [
+const BASE_TABS: Tab[] = [
   { href: "/pods", labelKey: "tabBar.pods", icon: Users },
   { href: "/", labelKey: "tabBar.lfg", icon: Zap },
   { href: "/history", labelKey: "tabBar.history", icon: History },
   { href: "/profile", labelKey: "tabBar.profile", icon: UserCircle },
 ];
+
+const ORGANIZER_TAB: Tab = {
+  href: "/organizer",
+  labelKey: "tabBar.organizer",
+  icon: Store,
+  accent: "amber",
+};
 
 // A direct/shared /profile/<username> visit (SharedProfilePanel, rendered
 // over PodsView by that route) is anchored to the Active Pods tab — closing
@@ -36,7 +48,7 @@ function effectiveActiveHref(pathname: string): string {
   return /^\/profile\/[^/]+$/.test(pathname) ? "/pods" : pathname;
 }
 
-export function TabBar() {
+export function TabBar({ isOrganizer }: { isOrganizer: boolean }) {
   const pathname = usePathname();
   const { t } = useTranslation();
   const theme = useTheme();
@@ -51,6 +63,7 @@ export function TabBar() {
     setPendingHref(null);
   }, [pathname]);
   const activeHref = pendingHref ?? effectiveActiveHref(pathname);
+  const tabs = isOrganizer ? [...BASE_TABS, ORGANIZER_TAB] : BASE_TABS;
 
   return (
     <>
@@ -95,9 +108,10 @@ export function TabBar() {
           </Box>
           <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
             <Box sx={{ display: "flex", gap: 1 }}>
-              {TABS.map((tab) => {
+              {tabs.map((tab) => {
                 const isActive = activeHref === tab.href;
                 const isLocked = usernameMissing && tab.href !== "/profile";
+                const isAmber = tab.accent === "amber";
                 const Icon = tab.icon;
                 return (
                   <Button
@@ -117,11 +131,23 @@ export function TabBar() {
                     sx={{
                       px: 2,
                       py: 1,
-                      bgcolor: isActive ? "primary.main" : "transparent",
-                      color: isActive ? "primary.contrastText" : "text.primary",
+                      bgcolor: isActive ? (isAmber ? "#F59E0B" : "primary.main") : "transparent",
+                      color: isActive
+                        ? "primary.contrastText"
+                        : isAmber
+                          ? "#F59E0B"
+                          : "text.primary",
                       "&:hover": {
-                        bgcolor: isActive ? "primary.light" : "action.hover",
-                        color: isActive ? "primary.contrastText" : "text.primary",
+                        bgcolor: isActive
+                          ? isAmber
+                            ? "#FBBF24"
+                            : "primary.light"
+                          : "action.hover",
+                        color: isActive
+                          ? "primary.contrastText"
+                          : isAmber
+                            ? "#F59E0B"
+                            : "text.primary",
                       },
                     }}
                   >
@@ -145,9 +171,10 @@ export function TabBar() {
         sx={{ borderTop: 1, borderColor: "divider", bgcolor: "background.default" }}
         className="fixed inset-x-0 bottom-0 z-10 flex sm:hidden"
       >
-        {TABS.map((tab) => {
+        {tabs.map((tab) => {
           const isActive = activeHref === tab.href;
           const isLocked = usernameMissing && tab.href !== "/profile";
+          const isAmber = tab.accent === "amber";
           const Icon = tab.icon;
           return (
             <Link
@@ -163,9 +190,15 @@ export function TabBar() {
                 if (!isLocked) setPendingHref(tab.href);
               }}
               className={`flex flex-1 flex-col items-center gap-1 py-3 text-xs font-medium transition-colors ${
-                isActive ? "text-ember" : ""
+                isActive && !isAmber ? "text-ember" : ""
               }`}
-              style={isActive ? undefined : { color: theme.palette.text.primary }}
+              style={
+                isAmber
+                  ? { color: "#F59E0B" }
+                  : isActive
+                    ? undefined
+                    : { color: theme.palette.text.primary }
+              }
             >
               <Icon className="h-5 w-5" />
               {t(tab.labelKey)}

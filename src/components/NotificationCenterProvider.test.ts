@@ -16,7 +16,13 @@ function baseNotification(
     read_at: null,
     created_at: "2026-07-29T12:00:00.000Z",
     actor: { id: "actor-1", username: "Alice", avatar_url: null },
-    pod: { id: "pod-1", game_key: "MTG", format_key: "COMMANDER" },
+    pod: {
+      id: "pod-1",
+      game_key: "MTG",
+      format_key: "COMMANDER",
+      store_name: null,
+      recurring_table_id: null,
+    },
     ...overrides,
   };
 }
@@ -53,5 +59,29 @@ describe("describeNotification", () => {
       t,
     );
     expect(result).toBe("Someone wants to join your pod");
+  });
+
+  const organizerPod = {
+    id: "pod-1",
+    game_key: "MTG" as const,
+    format_key: "COMMANDER",
+    store_name: "Card Kingdom",
+    recurring_table_id: "table-1",
+  };
+
+  it("uses the store name (not the host's username) for host-actor notifications on organizer-hosted pods", () => {
+    const result = describeNotification(
+      baseNotification("JOIN_ACCEPTED", { pod: organizerPod }),
+      t,
+    );
+    expect(result).toBe("You've been accepted into Card Kingdom's pod!");
+  });
+
+  it("still uses the player's username for player-actor notifications on organizer-hosted pods", () => {
+    const result = describeNotification(
+      baseNotification("JOIN_REQUEST", { pod: organizerPod }),
+      t,
+    );
+    expect(result).toBe("Alice wants to join your pod");
   });
 });

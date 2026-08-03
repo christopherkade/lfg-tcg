@@ -69,11 +69,19 @@ export async function createPod(
 
   // Expire any existing active pod for this user before starting a new search
   // (a single new insert would otherwise violate pods_one_active_per_user).
+  // Scoped to store_name IS NULL: an organiser's recurring-table pods are a
+  // separate concept managed via /organizer, never touched by their own
+  // personal LFG search. store_name (not recurring_table_id) is the stable
+  // signal — recurring_table_id is ON DELETE SET NULL, so a pod whose
+  // recurring table was later deleted would otherwise get silently swept up
+  // by this "expire my other pods" step despite still being a real,
+  // possibly-joined store event.
   const { error: expireError } = await supabase
     .from("pods")
     .update({ status: "EXPIRED" })
     .eq("user_id", user.id)
-    .eq("status", "ACTIVE");
+    .eq("status", "ACTIVE")
+    .is("store_name", null);
 
   if (expireError) {
     console.error(

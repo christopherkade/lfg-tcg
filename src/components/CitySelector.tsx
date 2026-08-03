@@ -12,6 +12,8 @@ import { useTranslation } from "@/lib/i18n/LocaleContext";
 interface CitySelectorProps {
   value: string | null;
   onChange: (cityKey: string | null) => void;
+  /** Overrides the default player-facing helper text (e.g. for the Organiser apply/settings forms, where "near you" copy doesn't apply). */
+  helperText?: string;
 }
 
 // CITIES_CONFIG covers ~2,300 French communes (see SPECS.md Section 4), so
@@ -84,7 +86,7 @@ const VirtualizedListbox = forwardRef(function VirtualizedListbox(
  * `key` slug, not the free-text `label`, so IRL Match Feed filtering
  * (Section 6) can rely on exact equality instead of fuzzy text matching.
  */
-export function CitySelector({ value, onChange }: CitySelectorProps) {
+export function CitySelector({ value, onChange, helperText }: CitySelectorProps) {
   const { t } = useTranslation();
   return (
     <Autocomplete
@@ -99,7 +101,7 @@ export function CitySelector({ value, onChange }: CitySelectorProps) {
           {...params}
           label={t("citySelector.label")}
           size="small"
-          helperText={t("citySelector.helperText")}
+          helperText={helperText ?? t("citySelector.helperText")}
         />
       )}
     />

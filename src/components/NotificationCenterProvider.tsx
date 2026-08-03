@@ -30,38 +30,66 @@ import type {
 // `profiles` (recipient_id, actor_id) — without it, PostgREST can't tell
 // which one to embed as `actor`.
 const NOTIFICATION_SELECT =
-  "*, actor:profiles!notifications_actor_id_fkey(id, username, avatar_url), pod:pods(id, game_key, format_key)";
+  "*, actor:profiles!notifications_actor_id_fkey(id, username, avatar_url), pod:pods(id, game_key, format_key, store_name, recurring_table_id)";
 
 const RECENT_LIMIT = 20;
 
 interface Toast {
   id: string;
   message: string;
+  href: string;
+}
+
+/**
+ * Organiser-hosted pods are managed exclusively via /organizer, never
+ * surfaced on the ad hoc "my pod" screens under /pods (see
+ * fetchOwnPodData/LfgButton, which explicitly exclude organiser pods) — so
+ * a notification about one has nothing to act on if it routes to /pods.
+ * Keyed on `pod.store_name` (already embedded by NOTIFICATION_SELECT), not
+ * `pod.recurring_table_id` — the latter is ON DELETE SET NULL, so it isn't
+ * a stable "this is an organiser pod" signal (see ownPod.ts's
+ * fetchOwnPodData for the full rationale); store_name is set once at spawn
+ * time and never changes.
+ */
+export function getNotificationHref(
+  notification: NotificationWithRelations,
+): string {
+  return notification.pod?.store_name ? "/organizer" : "/pods";
 }
 
 export function describeNotification(
   notification: NotificationWithRelations,
   t: (key: TranslationKey, vars?: Record<string, string | number>) => string,
 ): string {
-  const actorName = notification.actor?.username ?? t("notification.someone");
+  // For notification types where the actor is a joining player (JOIN_REQUEST,
+  // MEMBER_LEFT), always show their personal username. For types where the
+  // actor is the pod host (JOIN_ACCEPTED, JOIN_REJECTED, REMOVED_FROM_POD,
+  // POD_UPDATED*, POD_DESTROYED), prefer the organizer's store name over
+  // their username when the pod is organizer-hosted — mirrors the
+  // `pod.store_name ? pod.store_name : pod.profiles.username` convention
+  // used in MatchFeedList/PodDetailDialog.
+  const playerActorName =
+    notification.actor?.username ?? t("notification.someone");
+  const hostActorName =
+    notification.pod?.store_name ?? playerActorName;
 
   switch (notification.type as NotificationType) {
     case "JOIN_REQUEST":
-      return t("notification.joinRequest", { actor: actorName });
+      return t("notification.joinRequest", { actor: playerActorName });
     case "JOIN_ACCEPTED":
-      return t("notification.joinAccepted", { actor: actorName });
+      return t("notification.joinAccepted", { actor: hostActorName });
     case "JOIN_REJECTED":
-      return t("notification.joinRejected", { actor: actorName });
+      return t("notification.joinRejected", { actor: hostActorName });
     case "MEMBER_LEFT":
-      return t("notification.memberLeft", { actor: actorName });
+      return t("notification.memberLeft", { actor: playerActorName });
     case "REMOVED_FROM_POD":
-      return t("notification.removedFromPod", { actor: actorName });
+      return t("notification.removedFromPod", { actor: hostActorName });
     case "POD_UPDATED":
-      return t("notification.podUpdated", { actor: actorName });
+      return t("notification.podUpdated", { actor: hostActorName });
     case "POD_UPDATED_PENDING":
-      return t("notification.podUpdatedPending", { actor: actorName });
+      return t("notification.podUpdatedPending", { actor: hostActorName });
     case "POD_DESTROYED":
-      return t("notification.podDestroyed", { actor: actorName });
+      return t("notification.podDestroyed", { actor: hostActorName });
     case "POD_EXPIRED_INACTIVITY":
       return t("notification.podExpiredInactivity");
   }
@@ -130,7 +158,8 @@ export function NotificationCenterProvider({
       playChime();
 
       const message = describeNotification(notification, t);
-      setToast({ id: notification.id, message });
+      const href = getNotificationHref(notification);
+      setToast({ id: notification.id, message, href });
 
       if (
         typeof window !== "undefined" &&
@@ -142,7 +171,7 @@ export function NotificationCenterProvider({
         });
         osNotification.onclick = () => {
           window.focus();
-          router.push("/pods");
+          router.push(href);
           osNotification.close();
         };
       }
@@ -328,7 +357,7 @@ export function NotificationCenterProvider({
           <ButtonBase
             onClick={() => {
               setToast(null);
-              router.push("/pods");
+              router.push(toast.href);
             }}
             sx={(theme) => ({
               display: "flex",

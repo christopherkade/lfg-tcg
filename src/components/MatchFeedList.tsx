@@ -10,7 +10,7 @@ import {
 } from "react";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
-import { SearchX } from "lucide-react";
+import { SearchX, Store } from "lucide-react";
 import { Alert, Avatar, Typography, useTheme } from "@mui/material";
 import { createClient } from "@/lib/supabase/client";
 import { usePodRealtime } from "@/components/PodRealtimeProvider";
@@ -325,27 +325,40 @@ export function MatchFeedList({
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={(event) => handleViewProfile(event, pod.profiles.username)}
-                      aria-label={t("userProfilePanel.viewProfile", {
-                        username: pod.profiles.username,
-                      })}
-                      className="group flex items-center gap-2"
-                    >
-                      <Avatar
-                        src={pod.profiles.avatar_url ?? undefined}
-                        sx={{ width: 24, height: 24, fontSize: "0.75rem" }}
-                      >
-                        {pod.profiles.username[0]?.toUpperCase()}
-                      </Avatar>
+                    {/* store_name, not recurring_table_id — see ownPod.ts's
+                        fetchOwnPodData for why recurring_table_id alone
+                        isn't a stable "organiser pod" signal. */}
+                    {pod.store_name ? (
                       <span
-                        className="font-medium group-hover:underline group-focus-visible:underline"
-                        style={{ color: theme.palette.text.primary }}
+                        title={t("matchFeed.storeEvent")}
+                        className="flex items-center gap-1.5 rounded-full bg-amber-500/10 px-2.5 py-1 text-xs font-semibold text-amber-500"
                       >
-                        {pod.profiles.username}
+                        <Store className="h-3.5 w-3.5" />
+                        {pod.store_name}
                       </span>
-                    </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={(event) => handleViewProfile(event, pod.profiles.username)}
+                        aria-label={t("userProfilePanel.viewProfile", {
+                          username: pod.profiles.username,
+                        })}
+                        className="group flex items-center gap-2"
+                      >
+                        <Avatar
+                          src={pod.profiles.avatar_url ?? undefined}
+                          sx={{ width: 24, height: 24, fontSize: "0.75rem" }}
+                        >
+                          {pod.profiles.username[0]?.toUpperCase()}
+                        </Avatar>
+                        <span
+                          className="font-medium group-hover:underline group-focus-visible:underline"
+                          style={{ color: theme.palette.text.primary }}
+                        >
+                          {pod.profiles.username}
+                        </span>
+                      </button>
+                    )}
                     {isJoined && (
                       <span className="rounded-full bg-green-500/10 px-2 py-0.5 text-[10px] font-semibold tracking-wide text-green-400">
                         {t("matchFeed.joined")}
@@ -453,34 +466,23 @@ export function MatchFeedList({
                   </div>
                 )}
 
-                {ownJoin &&
-                  (ownJoin.status === "REJECTED" ? (
-                    <span
-                      className="self-start rounded-full px-3 py-1 text-xs font-medium"
-                      style={{
-                        backgroundColor: theme.palette.divider,
-                        color: theme.palette.text.primary,
-                      }}
-                    >
-                      {t("matchFeed.requestRejected")}
-                    </span>
-                  ) : (
-                    <button
-                      type="button"
-                      disabled={pendingPodId === pod.id}
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        handleLeave(pod.id);
-                      }}
-                      className="self-start rounded-lg border border-red-500/40 bg-red-500/10 px-3 py-1.5 text-xs font-semibold text-red-400 transition-colors hover:border-red-500/60 hover:bg-red-500/20 disabled:opacity-50"
-                    >
-                      {pendingPodId === pod.id
-                        ? t("matchFeed.leaving")
-                        : ownJoin.status === "PENDING"
-                          ? t("matchFeed.cancelRequest")
-                          : t("matchFeed.leave")}
-                    </button>
-                  ))}
+                {ownJoin && (
+                  <button
+                    type="button"
+                    disabled={pendingPodId === pod.id}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      handleLeave(pod.id);
+                    }}
+                    className="self-start rounded-lg border border-red-500/40 bg-red-500/10 px-3 py-1.5 text-xs font-semibold text-red-400 transition-colors hover:border-red-500/60 hover:bg-red-500/20 disabled:opacity-50"
+                  >
+                    {pendingPodId === pod.id
+                      ? t("matchFeed.leaving")
+                      : ownJoin.status === "PENDING"
+                        ? t("matchFeed.cancelRequest")
+                        : t("matchFeed.leave")}
+                  </button>
+                )}
               </motion.div>
             );
           })}

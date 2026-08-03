@@ -5,7 +5,7 @@ import { PodRealtimeProvider } from "@/components/PodRealtimeProvider";
 import { NotificationCenterProvider } from "@/components/NotificationCenterProvider";
 import { ProfileLockProvider } from "@/lib/ProfileLockContext";
 import { UserProfilePanelProvider } from "@/lib/UserProfilePanelContext";
-import { getTrustedUserId, getProfile } from "@/lib/session";
+import { getTrustedUserId, getProfile, getOrganizer } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function AppLayout({
@@ -26,7 +26,10 @@ export default async function AppLayout({
   // Needed here (not just per-page) so the tab bar knows to lock navigation
   // for brand-new accounts — see ProfileLockContext.
   const supabase = await createClient();
-  const profile = await getProfile(supabase, userId);
+  const [profile, organizer] = await Promise.all([
+    getProfile(supabase, userId),
+    getOrganizer(supabase, userId),
+  ]);
 
   return (
     <PodRealtimeProvider>
@@ -34,7 +37,7 @@ export default async function AppLayout({
         <ProfileLockProvider usernameMissing={!profile}>
           <UserProfilePanelProvider>
             <div className="flex flex-1 flex-col">
-              <TabBar />
+              <TabBar isOrganizer={organizer != null} />
               <div className="flex flex-1 flex-col pb-16 sm:pb-0">{children}</div>
               <MatchedPodWatcher currentUserId={userId} />
             </div>

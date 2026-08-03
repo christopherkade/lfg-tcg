@@ -1,6 +1,11 @@
-import { format, formatDistanceToNowStrict, isToday } from "date-fns";
+import { addDays, format, formatDistanceToNowStrict, isToday } from "date-fns";
 import { fr } from "date-fns/locale";
 import type { Locale, TranslationKey } from "@/lib/i18n";
+
+// An arbitrary Sunday (UTC, to avoid local-timezone drift shifting which
+// weekday it lands on) used purely as a formatting anchor — see
+// dayOfWeekLabel below.
+const REFERENCE_SUNDAY = new Date(Date.UTC(2023, 0, 1));
 
 const RELATIVE_WINDOW_MS = 60 * 60 * 1000; // 1 hour
 
@@ -46,4 +51,21 @@ export function formatPodWhen(
   return isToday(date)
     ? t("date.today", { time: format(date, "p", { locale: dateFnsLocale }) })
     : format(date, "MMM d, p", { locale: dateFnsLocale });
+}
+
+/** Localized weekday name for a RecurringTable.day_of_week (0=Sunday..6=Saturday, matches JS Date#getDay()). */
+export function dayOfWeekLabel(dayOfWeek: number, locale: Locale): string {
+  const dateFnsLocale = locale === "fr" ? fr : undefined;
+  return format(addDays(REFERENCE_SUNDAY, dayOfWeek), "EEEE", {
+    locale: dateFnsLocale,
+  });
+}
+
+/** Localized time-of-day label for a RecurringTable.start_time ("HH:MM:SS" or "HH:MM"). */
+export function startTimeLabel(startTime: string, locale: Locale): string {
+  const dateFnsLocale = locale === "fr" ? fr : undefined;
+  const [hours, minutes] = startTime.split(":").map(Number);
+  const date = new Date();
+  date.setHours(hours, minutes, 0, 0);
+  return format(date, "p", { locale: dateFnsLocale });
 }

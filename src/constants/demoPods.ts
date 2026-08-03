@@ -26,6 +26,9 @@ export const DEMO_PODS: PodWithRelations[] = [
     created_at: "2026-07-26T14:00:00.000Z",
     expires_at: "2026-07-26T20:00:00.000Z",
     matched_at: null,
+    recurring_table_id: null,
+    auto_accept: false,
+    store_name: null,
     profiles: {
       id: "demo-user-1",
       updated_at: "2026-07-26T14:00:00.000Z",
@@ -85,6 +88,9 @@ export const DEMO_PODS: PodWithRelations[] = [
     created_at: "2026-07-26T12:00:00.000Z",
     expires_at: "2026-07-27T00:00:00.000Z",
     matched_at: null,
+    recurring_table_id: null,
+    auto_accept: false,
+    store_name: null,
     profiles: {
       id: "demo-user-3",
       updated_at: "2026-07-26T12:00:00.000Z",

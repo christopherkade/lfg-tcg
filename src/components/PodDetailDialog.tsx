@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { Alert, Avatar, Button, Chip, useTheme } from "@mui/material";
+import { Alert, Avatar, Button, useTheme } from "@mui/material";
+import { Store } from "lucide-react";
 import { GAMES_CONFIG } from "@/constants/gamesConfig";
 import { CITY_MAP } from "@/constants/citiesConfig";
 import { ReservedSlotAvatar } from "@/components/ReservedSlotAvatar";
@@ -87,32 +88,56 @@ export function PodDetailDialog({
             }}
           >
             <div className="flex items-start justify-between gap-4">
-              <button
-                type="button"
-                onClick={() => handleViewProfile(pod.profiles.username)}
-                aria-label={t("userProfilePanel.viewProfile", {
-                  username: pod.profiles.username,
-                })}
-                className="group flex items-center gap-3 text-left"
-              >
-                <Avatar
-                  src={pod.profiles.avatar_url ?? undefined}
-                  sx={{ width: 40, height: 40 }}
-                >
-                  {pod.profiles.username[0]?.toUpperCase()}
-                </Avatar>
-                <div className="flex flex-col">
-                  <h2
-                    className="text-lg font-semibold group-hover:underline group-focus-visible:underline"
-                    style={{ color: theme.palette.text.primary }}
+              {/* store_name, not recurring_table_id — see ownPod.ts's
+                  fetchOwnPodData for why recurring_table_id alone isn't a
+                  stable "organiser pod" signal. */}
+              {pod.store_name ? (
+                <div className="flex items-center gap-3">
+                  <div
+                    className="flex h-10 w-10 items-center justify-center rounded-full bg-amber-500/10 text-amber-500"
                   >
-                    {pod.profiles.username}
-                  </h2>
-                  <span className="text-sm" style={{ color: theme.palette.text.secondary }}>
-                    {pod.profiles.discord_handle}
-                  </span>
+                    <Store className="h-5 w-5" />
+                  </div>
+                  <div className="flex flex-col">
+                    <h2
+                      className="text-lg font-semibold"
+                      style={{ color: theme.palette.text.primary }}
+                    >
+                      {pod.store_name}
+                    </h2>
+                    <span className="text-sm font-medium text-amber-500">
+                      {t("matchFeed.storeEvent")}
+                    </span>
+                  </div>
                 </div>
-              </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => handleViewProfile(pod.profiles.username)}
+                  aria-label={t("userProfilePanel.viewProfile", {
+                    username: pod.profiles.username,
+                  })}
+                  className="group flex items-center gap-3 text-left"
+                >
+                  <Avatar
+                    src={pod.profiles.avatar_url ?? undefined}
+                    sx={{ width: 40, height: 40 }}
+                  >
+                    {pod.profiles.username[0]?.toUpperCase()}
+                  </Avatar>
+                  <div className="flex flex-col">
+                    <h2
+                      className="text-lg font-semibold group-hover:underline group-focus-visible:underline"
+                      style={{ color: theme.palette.text.primary }}
+                    >
+                      {pod.profiles.username}
+                    </h2>
+                    <span className="text-sm" style={{ color: theme.palette.text.secondary }}>
+                      {pod.profiles.discord_handle}
+                    </span>
+                  </div>
+                </button>
+              )}
               <span
                 className="rounded-full px-3 py-1 text-xs font-medium"
                 style={{
@@ -249,44 +274,28 @@ export function PodDetailDialog({
                 {t("podDetailDialog.close")}
               </Button>
               {ownJoin ? (
-                ownJoin.status === "REJECTED" ? (
-                  <Chip
-                    label={t("podDetailDialog.requestRejected")}
-                    sx={{
-                      flex: 1,
-                      height: "auto",
-                      py: 1.5,
-                      borderRadius: 9999,
-                      bgcolor: "divider",
-                      color: "text.secondary",
-                      fontSize: "0.875rem",
-                      fontWeight: 500,
-                    }}
-                  />
-                ) : (
-                  <Button
-                    type="button"
-                    disabled={pending}
-                    onClick={() => onLeave(pod.id)}
-                    variant="outlined"
-                    fullWidth
-                    sx={{
-                      py: 1.5,
-                      borderColor: "rgba(239, 68, 68, 0.4)",
-                      color: "#f87171",
-                      "&:hover": {
-                        borderColor: "#ef4444",
-                        bgcolor: "rgba(239, 68, 68, 0.1)",
-                      },
-                    }}
-                  >
-                    {pending
-                      ? t("podDetailDialog.leaving")
-                      : ownJoin.status === "PENDING"
-                        ? t("podDetailDialog.cancelRequest")
-                        : t("podDetailDialog.leave")}
-                  </Button>
-                )
+                <Button
+                  type="button"
+                  disabled={pending}
+                  onClick={() => onLeave(pod.id)}
+                  variant="outlined"
+                  fullWidth
+                  sx={{
+                    py: 1.5,
+                    borderColor: "rgba(239, 68, 68, 0.4)",
+                    color: "#f87171",
+                    "&:hover": {
+                      borderColor: "#ef4444",
+                      bgcolor: "rgba(239, 68, 68, 0.1)",
+                    },
+                  }}
+                >
+                  {pending
+                    ? t("podDetailDialog.leaving")
+                    : ownJoin.status === "PENDING"
+                      ? t("podDetailDialog.cancelRequest")
+                      : t("podDetailDialog.leave")}
+                </Button>
               ) : (
                 <Button
                   type="button"
@@ -300,7 +309,9 @@ export function PodDetailDialog({
                     ? t("podDetailDialog.full")
                     : pending
                       ? t("podDetailDialog.requesting")
-                      : t("podDetailDialog.requestToJoin")}
+                      : pod.auto_accept
+                        ? t("podDetailDialog.instantJoin")
+                        : t("podDetailDialog.requestToJoin")}
                 </Button>
               )}
             </div>

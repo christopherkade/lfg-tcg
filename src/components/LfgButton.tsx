@@ -75,6 +75,10 @@ export function LfgButton({
       .select("*")
       .eq("user_id", profile.id)
       .eq("status", "ACTIVE")
+      // store_name, not recurring_table_id — see ownPod.ts's fetchOwnPodData
+      // for why (recurring_table_id is ON DELETE SET NULL and so isn't a
+      // stable "is this an organiser pod" signal).
+      .is("store_name", null)
       .maybeSingle();
     setOwnPod((data as Pod) ?? null);
   }, [profile.id]);
