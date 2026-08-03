@@ -67,6 +67,7 @@ interface StoredSearchInput {
   scheduledDate: string | null;
   scheduledTime: string | null;
   maxPlayers: number;
+  reservedSlots: number;
   notes: string;
 }
 
@@ -165,6 +166,7 @@ export function LfgDialog({
   const [scheduledDate, setScheduledDate] = useState<Date | null>(null);
   const [scheduledTime, setScheduledTime] = useState<Date | null>(null);
   const [maxPlayers, setMaxPlayers] = useState(0);
+  const [reservedSlots, setReservedSlots] = useState(0);
   const [notes, setNotes] = useState("");
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -235,6 +237,7 @@ export function LfgDialog({
         setScheduledDate(scheduled);
         setScheduledTime(scheduled);
         setMaxPlayers(editPod.max_players);
+        setReservedSlots(editPod.reserved_slots);
         setNotes(editPod.notes ?? "");
         // Editing an existing pod means every field already has a value
         // worth reviewing, so show all three sections right away.
@@ -256,6 +259,7 @@ export function LfgDialog({
           stored?.scheduledTime ? new Date(stored.scheduledTime) : null,
         );
         setMaxPlayers(stored?.maxPlayers ?? 0);
+        setReservedSlots(stored?.reservedSlots ?? 0);
         setNotes(stored?.notes ?? "");
         // A brand new search starts with only "Game" expanded; the other
         // two only auto-open once restored (dev-only) values fill them in.
@@ -306,6 +310,13 @@ export function LfgDialog({
     }
   }
 
+  const maxReservedSlots = Math.max(0, maxPlayers - 2);
+
+  function handleMaxPlayersChange(next: number) {
+    setMaxPlayers(next);
+    setReservedSlots((current) => Math.min(current, Math.max(0, next - 2)));
+  }
+
   const missingCity = selectedMatchType === "IRL" && !profile.city;
 
   const canSubmit =
@@ -339,6 +350,7 @@ export function LfgDialog({
       scheduledDate: scheduledDate ? format(scheduledDate, "yyyy-MM-dd") : "",
       scheduledTime: scheduledTime ? format(scheduledTime, "HH:mm") : "",
       maxPlayers,
+      reservedSlots,
       notes,
     };
 
@@ -363,6 +375,7 @@ export function LfgDialog({
         scheduledDate: scheduledDate ? scheduledDate.toISOString() : null,
         scheduledTime: scheduledTime ? scheduledTime.toISOString() : null,
         maxPlayers: input.maxPlayers,
+        reservedSlots: input.reservedSlots,
         notes: input.notes,
       });
     }
@@ -627,7 +640,7 @@ export function LfgDialog({
                     size="small"
                     onChange={(_event, next: number | null) => {
                       if (next !== null) {
-                        setMaxPlayers(next);
+                        handleMaxPlayersChange(next);
                       }
                     }}
                     sx={{ bgcolor: "transparent", border: 0, p: 0, gap: 1 }}
@@ -650,6 +663,59 @@ export function LfgDialog({
                     ))}
                   </ToggleButtonGroup>
                 </div>
+
+                {maxReservedSlots > 0 && (
+                  <div className="flex flex-col gap-1.5">
+                    <Typography
+                      component="span"
+                      sx={{
+                        fontSize: "0.75rem",
+                        fontWeight: 500,
+                        color: "text.secondary",
+                      }}
+                    >
+                      {t("lfgDialog.reservedSlotsLabel")}
+                    </Typography>
+                    <ToggleButtonGroup
+                      value={reservedSlots}
+                      exclusive
+                      fullWidth
+                      size="small"
+                      onChange={(_event, next: number | null) => {
+                        if (next !== null) {
+                          setReservedSlots(next);
+                        }
+                      }}
+                      sx={{ bgcolor: "transparent", border: 0, p: 0, gap: 1 }}
+                    >
+                      {Array.from(
+                        { length: maxReservedSlots + 1 },
+                        (_, count) => count,
+                      ).map((count) => (
+                        <ToggleButton
+                          key={count}
+                          value={count}
+                          sx={(theme) => ({
+                            fontSize: "0.75rem",
+                            px: 0,
+                            borderRadius: "8px !important",
+                            border: `1px solid ${theme.palette.divider} !important`,
+                            marginLeft: "0px !important",
+                            bgcolor: theme.palette.background.paper,
+                          })}
+                        >
+                          {count}
+                        </ToggleButton>
+                      ))}
+                    </ToggleButtonGroup>
+                    <Typography
+                      component="span"
+                      sx={{ fontSize: "0.7rem", color: "text.secondary" }}
+                    >
+                      {t("lfgDialog.reservedSlotsHelper")}
+                    </Typography>
+                  </div>
+                )}
 
                 <PowerBracketPicker
                   visible={hasPowerTiers}

@@ -111,6 +111,7 @@ export async function createPod(
       city: profile.city,
       scheduled_at: scheduledAt,
       max_players: input.maxPlayers,
+      reserved_slots: input.reservedSlots,
       notes,
     })
     .select("id")
@@ -155,10 +156,10 @@ export async function updatePod(
   }
   const { brackets, locationName, scheduledAt, notes } = validated.data;
 
-  // Guard against shrinking max_players below the group's current accepted
-  // size — without this, a host could edit an already-filling pod down
-  // to fewer slots than it already has accepted members, silently pushing
-  // it over its own cap.
+  // Guard against shrinking max_players (or raising reserved_slots) below
+  // the group's current accepted size — without this, a host could edit an
+  // already-filling pod down to fewer slots than it already has accepted
+  // members plus reserved ones, silently pushing it over its own cap.
   const { count: acceptedCount, error: countError } = await supabase
     .from("pod_joins")
     .select("id", { count: "exact", head: true })
@@ -175,7 +176,7 @@ export async function updatePod(
     };
   }
 
-  const currentGroupSize = (acceptedCount ?? 0) + 1; // + host
+  const currentGroupSize = (acceptedCount ?? 0) + 1 + input.reservedSlots; // + host + reserved
   if (input.maxPlayers < currentGroupSize) {
     return {
       error: translate(locale, "errors.maxPlayersBelowGroupSize", {
@@ -198,6 +199,7 @@ export async function updatePod(
       city: profile.city,
       scheduled_at: scheduledAt,
       max_players: input.maxPlayers,
+      reserved_slots: input.reservedSlots,
       notes,
     })
     .eq("id", podId)

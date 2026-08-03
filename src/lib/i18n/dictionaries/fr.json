@@ -69,6 +69,8 @@
   "lfgDialog.timeIncomplete": "Saisissez une heure complète pour continuer",
   "lfgDialog.playstyleLabel": "Style de jeu",
   "lfgDialog.playersLabel": "Joueurs",
+  "lfgDialog.reservedSlotsLabel": "Déjà complétées",
+  "lfgDialog.reservedSlotsHelper": "Vous avez déjà des joueurs prévus ? Indiquez leurs places comme déjà prises pour ne recevoir des demandes que pour les places restantes.",
   "lfgDialog.notesLabel": "Notes (facultatif)",
   "lfgDialog.notesPlaceholder": "Thème de deck, règles maison, tout ce que les joueurs devraient savoir...",
   "lfgDialog.cancel": "Annuler",
@@ -114,6 +116,8 @@
 
   "podDetailDialog.close": "Fermer",
   "podDetailDialog.playersCountTotal": "{count} joueurs",
+  "podDetailDialog.reservedSlotTooltip": "Déjà pris — pas sur LFG-TCG",
+  "podDetailDialog.reservedSlotLabel": "Place déjà prise",
   "podDetailDialog.game": "Jeu",
   "podDetailDialog.format": "Format",
   "podDetailDialog.playstyle": "Style de jeu",
@@ -269,6 +273,7 @@
   "errors.dateTimeRequired": "Veuillez indiquer une date et une heure pour les parties en personne.",
   "errors.dateTimeInvalid": "Veuillez fournir une date et une heure valides.",
   "errors.maxPlayersRange": "Le nombre de joueurs recherchés doit être compris entre 2 et 6.",
+  "errors.reservedSlotsRange": "Les places déjà prises doivent laisser au moins une place libre à rechercher.",
   "errors.notesTooLong": "Les notes doivent contenir 300 caractères ou moins.",
   "errors.alreadyInGroup": "Vous ne pouvez pas démarrer une nouvelle recherche tant que vous avez une demande en attente (ou avez rejoint) une autre table. Quittez-la d'abord.",
   "errors.startSearchFailed": "Une erreur est survenue lors du démarrage de votre recherche : {reason}",
@@ -324,7 +329,7 @@
 
   "legal.termsLink": "CGU",
   "legal.privacyLink": "Politique de confidentialité",
-  "terms.title": "Conditions d'utilisation",
+  "terms.title": "Conditions générales d'utilisation",
   "privacy.title": "Politique de confidentialité",
 
   "profileForm.deleteAccount": "Supprimer le compte",

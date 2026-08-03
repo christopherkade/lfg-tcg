@@ -111,10 +111,19 @@ export function LfgButton({
   // LfgButtonProps doc comment above) — fetch on mount instead, same as
   // MatchFeed does when it isn't handed `initialPods`. Skipped whenever a
   // caller *does* pass an initial value, so this stays inert if that ever
-  // changes.
+  // changes. `initializedRef` flips once this resolves, so the chime effect
+  // below can tell "revealed pre-existing state" apart from a real change.
+  const initializedRef = useRef(false);
   useEffect(() => {
-    if (initialOwnPod === undefined) fetchOwnPodRef.current();
-    if (initialHasActiveJoin === undefined) fetchHasActiveJoinRef.current();
+    async function init() {
+      const tasks: Promise<unknown>[] = [];
+      if (initialOwnPod === undefined) tasks.push(fetchOwnPodRef.current());
+      if (initialHasActiveJoin === undefined)
+        tasks.push(fetchHasActiveJoinRef.current());
+      await Promise.all(tasks);
+      initializedRef.current = true;
+    }
+    init();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -243,14 +252,19 @@ export function LfgButton({
   // Fires the activate/power-down cue on the isSearching transition itself
   // (not from handleClick) so it plays correctly even when the state flips
   // via the LfgDialog success flow or a realtime sync, not just a direct
-  // cancel click. Ref-tracked previous value skips the sound on mount.
+  // cancel click. Gated on `initializedRef` (not just the ref-tracked
+  // previous value) so the initial mount fetch discovering an
+  // already-active pod — created earlier, not "just now" — stays silent;
+  // every transition after that still plays normally.
   const prevIsSearchingRef = useRef(isSearching);
   useEffect(() => {
     if (prevIsSearchingRef.current !== isSearching) {
-      if (isSearching) {
-        playChimeSound(1.15);
-      } else {
-        playClickSound(0.8);
+      if (initializedRef.current) {
+        if (isSearching) {
+          playChimeSound(1.15);
+        } else {
+          playClickSound(0.8);
+        }
       }
       prevIsSearchingRef.current = isSearching;
     }

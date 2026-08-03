@@ -6,6 +6,7 @@ import { Alert, Avatar, Button, useTheme } from "@mui/material";
 import { Store } from "lucide-react";
 import { GAMES_CONFIG } from "@/constants/gamesConfig";
 import { CITY_MAP } from "@/constants/citiesConfig";
+import { ReservedSlotAvatar } from "@/components/ReservedSlotAvatar";
 import { formatPodWhen } from "@/lib/date";
 import { useTranslation } from "@/lib/i18n/LocaleContext";
 import { useUserProfilePanel } from "@/lib/UserProfilePanelContext";
@@ -52,7 +53,8 @@ export function PodDetailDialog({
   );
   const ownJoin = pod?.pod_joins.find((join) => join.user_id === currentUserId);
   const isFull =
-    pod != null && (acceptedMembers?.length ?? 0) + 1 >= pod.max_players;
+    pod != null &&
+    (acceptedMembers?.length ?? 0) + 1 + pod.reserved_slots >= pod.max_players;
   const game = pod ? GAMES_CONFIG[pod.game_key] : undefined;
   const scheduledLabel = pod ? formatPodWhen(pod, locale, t) : null;
 
@@ -144,7 +146,9 @@ export function PodDetailDialog({
                 }}
               >
                 {t("myPodPanel.playersCount", {
-                  count: acceptedMembers ? acceptedMembers.length + 1 : 1,
+                  count:
+                    (acceptedMembers ? acceptedMembers.length + 1 : 1) +
+                    pod.reserved_slots,
                   max: pod.max_players,
                 })}
               </span>
@@ -209,12 +213,23 @@ export function PodDetailDialog({
               </div>
             )}
 
-            {acceptedMembers && acceptedMembers.length > 0 && (
+            {((acceptedMembers && acceptedMembers.length > 0) ||
+              pod.reserved_slots > 0) && (
               <div className="flex flex-col gap-2 pt-3" style={{ borderTop: `1px solid ${theme.palette.divider}` }}>
                 <span className="text-sm font-medium" style={{ color: theme.palette.text.secondary }}>
                   {t("podDetailDialog.groupMembers")}
                 </span>
-                {acceptedMembers.map((join) => (
+                {Array.from({ length: pod.reserved_slots }).map((_, index) => (
+                  <div
+                    key={`reserved-${index}`}
+                    className="flex items-center gap-2 text-sm"
+                    style={{ color: theme.palette.text.secondary }}
+                  >
+                    <ReservedSlotAvatar size={24} />
+                    <span>{t("podDetailDialog.reservedSlotLabel")}</span>
+                  </div>
+                ))}
+                {acceptedMembers?.map((join) => (
                   <div
                     key={join.id}
                     className="flex items-center justify-between text-sm"
