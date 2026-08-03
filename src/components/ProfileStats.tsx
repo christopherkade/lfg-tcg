@@ -2,7 +2,7 @@
 
 import { useEffect, useState, type ComponentType } from "react";
 import { animate, motion, useReducedMotion } from "framer-motion";
-import { Gamepad2, Globe, LineChart, MapPin, Users } from "lucide-react";
+import { Gamepad2, Globe, MapPin, Users } from "lucide-react";
 import { Box, Typography } from "@mui/material";
 import { useTranslation } from "@/lib/i18n/LocaleContext";
 
@@ -127,26 +127,6 @@ export function ProfileStats({
           label={t("profileStats.onlineGames")}
           value={displayedOnlineCount}
         />
-        <MotionBox
-          variants={cardVariants}
-          sx={{
-            border: 1,
-            borderStyle: "dashed",
-            borderColor: "divider",
-            borderRadius: 2,
-            bgcolor: "background.paper",
-            opacity: 0.7,
-            minHeight: 140,
-          }}
-          className="col-span-2 flex flex-col items-center justify-center gap-2 p-4 text-center"
-        >
-          <Box sx={{ color: "text.secondary" }} className="inline-flex">
-            <LineChart className="h-8 w-8" />
-          </Box>
-          <Typography sx={{ fontSize: "0.8125rem", color: "text.secondary" }}>
-            {t("profileStats.trendsComingSoon")}
-          </Typography>
-        </MotionBox>
       </motion.div>
     </div>
   );

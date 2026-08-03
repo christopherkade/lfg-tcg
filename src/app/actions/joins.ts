@@ -20,7 +20,7 @@ export async function requestJoin(
 
   const { data: pod } = await supabase
     .from("pods")
-    .select("id, user_id, status, max_players, pod_joins(status)")
+    .select("id, user_id, status, max_players, auto_accept, pod_joins(status)")
     .eq("id", podId)
     .maybeSingle();
 
@@ -32,11 +32,15 @@ export async function requestJoin(
     return { error: translate(locale, joinableError) };
   }
 
+  // store_name, not recurring_table_id — see ownPod.ts's fetchOwnPodData for
+  // why (recurring_table_id is ON DELETE SET NULL and so isn't a stable
+  // "is this an organiser pod" signal).
   const { data: ownActivePod } = await supabase
     .from("pods")
     .select("id")
     .eq("user_id", user.id)
     .eq("status", "ACTIVE")
+    .is("store_name", null)
     .maybeSingle();
 
   if (ownActivePod) {
@@ -50,10 +54,16 @@ export async function requestJoin(
     return { error: translate(locale, "errors.groupFull") };
   }
 
+  // Organiser-hosted recurring-table pods can opt into auto-accept
+  // (RecurringTable.auto_accept, denormalized onto pods.auto_accept at
+  // spawn time) — join requests to those pods skip the PENDING step and
+  // land ACCEPTED immediately. notify_on_pod_join_insert (see
+  // recurring_tables.sql) handles firing JOIN_ACCEPTED for this case since
+  // the usual PENDING->ACCEPTED update notification never runs.
   const { error } = await supabase.from("pod_joins").insert({
     pod_id: podId,
     user_id: user.id,
-    status: "PENDING",
+    status: pod.auto_accept ? "ACCEPTED" : "PENDING",
   });
 
   if (error) {

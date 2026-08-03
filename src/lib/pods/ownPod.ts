@@ -32,6 +32,12 @@ export function fetchOwnPodData(
       .select(`*, ${POD_RELATIONS_SELECT}`)
       .eq("user_id", userId)
       .eq("status", "ACTIVE")
+      // store_name (not recurring_table_id) is the stable signal for "not
+      // an organiser pod" — recurring_table_id is ON DELETE SET NULL, so a
+      // pod whose recurring table was later deleted would otherwise slip
+      // back into "my personal pod" here despite still being a 20-player
+      // store event (store_name/max_players are untouched by that cascade).
+      .is("store_name", null)
       .maybeSingle(),
   );
 }

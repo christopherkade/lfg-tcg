@@ -27,6 +27,7 @@ import {
 } from "lucide-react";
 import {
   describeNotification,
+  getNotificationHref,
   useNotificationCenter,
 } from "@/components/NotificationCenterProvider";
 import { useTranslation } from "@/lib/i18n/LocaleContext";
@@ -68,9 +69,9 @@ export function NotificationBell() {
 
   const handleClose = () => setAnchorEl(null);
 
-  const handleItemClick = () => {
+  const handleItemClick = (notification: NotificationWithRelations) => {
     handleClose();
-    router.push("/pods");
+    router.push(getNotificationHref(notification));
   };
 
   const handleDelete = (
@@ -208,7 +209,7 @@ export function NotificationBell() {
             return (
               <MenuItem
                 key={notification.id}
-                onClick={handleItemClick}
+                onClick={() => handleItemClick(notification)}
                 sx={{
                   alignItems: "flex-start",
                   gap: 1.5,

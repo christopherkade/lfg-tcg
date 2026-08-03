@@ -3,7 +3,7 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { TRUSTED_USER_ID_HEADER } from "@/proxy";
-import type { Profile } from "@/types/database";
+import type { OrganizerProfile, Profile } from "@/types/database";
 
 // `auth.getUser()` round-trips to the Supabase Auth server. The layout and
 // every page/action beneath it call requireUser()/requireProfile() within
@@ -114,4 +114,48 @@ export async function requireTrustedProfile(path?: string) {
   }
 
   return { supabase, userId, profile };
+}
+
+/**
+ * Fetches the organizers row for a given user id, or null if they aren't
+ * an organiser (or their organiser record has been deactivated). Wrapped
+ * in cache() for the same per-request dedupe reason as getProfile above —
+ * the layout and every /organizer page independently need this.
+ */
+export const getOrganizer = cache(
+  async (
+    supabase: Awaited<ReturnType<typeof createClient>>,
+    userId: string,
+  ): Promise<OrganizerProfile | null> => {
+    const { data } = await supabase
+      .from("organizers")
+      .select(
+        "id, store_name, city, description, verification_url, is_active, created_at, updated_at",
+      )
+      .eq("id", userId)
+      .eq("is_active", true)
+      .maybeSingle();
+
+    return data;
+  },
+);
+
+/**
+ * Requires a session, a completed profile, AND an active organiser record,
+ * redirecting non-organisers to /pods. Every organiser-only page/action
+ * calls this — never requireProfile() — as its first line: grep for
+ * `requireOrganizerProfile` to find the entire organiser-only surface,
+ * exactly the way `requireProfile()` marks the player-facing surface
+ * today. The one deliberate exception is /organizer/apply, which onboards
+ * someone who isn't an organiser yet and so uses requireProfile() instead.
+ */
+export async function requireOrganizerProfile(path?: string) {
+  const { supabase, user, profile } = await requireProfile(path);
+  const organizer = await getOrganizer(supabase, user.id);
+
+  if (!organizer) {
+    redirect("/pods");
+  }
+
+  return { supabase, user, profile, organizer };
 }

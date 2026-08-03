@@ -9,6 +9,7 @@ import {
   type AnimationPlaybackControls,
 } from "framer-motion";
 import { Box, Button, Link, Typography } from "@mui/material";
+import { alpha } from "@mui/material/styles";
 import { createClient } from "@/lib/supabase/client";
 import { LocaleSwitcher } from "@/components/LocaleSwitcher";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -140,24 +141,30 @@ const illustrationVariants = {
 // matters most on phone-class hardware and the motion adds the least there.
 const MOBILE_MEDIA_QUERY = "(max-width: 639px)";
 
+// Tailwind's `lg` breakpoint — below it the card showcase renders as a
+// full-width background layer behind the login card instead of the desktop
+// side panel. Only one of the two should ever be animating at once.
+const DESKTOP_SHOWCASE_MEDIA_QUERY = "(min-width: 1024px)";
+
 // Reactive (unlike a one-time check) because phones commonly rotate
-// mid-session and the animations should pause/resume with it.
-function useIsMobileViewport() {
-  const [isMobile, setIsMobile] = useState(
-    () =>
-      typeof window !== "undefined" &&
-      window.matchMedia(MOBILE_MEDIA_QUERY).matches,
-  );
+// mid-session and the animations should pause/resume with it. Always starts
+// `false` (rather than reading `matchMedia` synchronously) so the client's
+// first render matches the server-rendered markup exactly — some consumers
+// feed this into MUI `sx` values, whose generated class name would otherwise
+// mismatch during hydration. The real value lands a tick later via effect.
+function useMediaQuery(query: string) {
+  const [matches, setMatches] = useState(false);
 
   useEffect(() => {
-    const mediaQueryList = window.matchMedia(MOBILE_MEDIA_QUERY);
+    const mediaQueryList = window.matchMedia(query);
+    setMatches(mediaQueryList.matches);
     const handleChange = (event: MediaQueryListEvent) =>
-      setIsMobile(event.matches);
+      setMatches(event.matches);
     mediaQueryList.addEventListener("change", handleChange);
     return () => mediaQueryList.removeEventListener("change", handleChange);
-  }, []);
+  }, [query]);
 
-  return isMobile;
+  return matches;
 }
 
 interface LoginViewProps {
@@ -170,8 +177,14 @@ export function LoginView({ next }: LoginViewProps) {
   const { mode } = useThemeMode();
   const isDark = mode === "dark";
   const prefersReducedMotion = useReducedMotion();
-  const isMobileViewport = useIsMobileViewport();
+  const isMobileViewport = useMediaQuery(MOBILE_MEDIA_QUERY);
+  const isDesktopShowcase = useMediaQuery(DESKTOP_SHOWCASE_MEDIA_QUERY);
   const shouldAnimate = !prefersReducedMotion && !isMobileViewport;
+  // Unlike `shouldAnimate` (which pauses ambient/floating animations on
+  // phones for perf), the card showcase scroll now runs on every viewport —
+  // it's shown either as the desktop side panel or the mobile background
+  // layer below, so only reduced-motion should stop it.
+  const shouldAnimateCards = !prefersReducedMotion;
 
   async function handleDiscordLogin() {
     const supabase = createClient();
@@ -190,8 +203,33 @@ export function LoginView({ next }: LoginViewProps) {
   return (
     <Box
       sx={{ bgcolor: "background.default" }}
-      className="relative flex flex-1 items-stretch justify-center overflow-hidden p-3 sm:p-6 lg:h-dvh lg:flex-none"
+      className="relative flex flex-1 items-stretch justify-center overflow-hidden p-8 sm:p-10 lg:h-dvh lg:flex-none lg:p-6"
     >
+      {/* Mobile/tablet background showcase — the desktop side panel below
+          takes over at `lg`, so this is the `lg:hidden` counterpart. Sits
+          behind the login card purely by DOM order (neither this nor the
+          card `Box` sets an explicit z-index). */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 z-0 flex gap-3 overflow-hidden px-3 lg:hidden"
+        style={{
+          maskImage:
+            "linear-gradient(to bottom, transparent, black 12%, black 88%, transparent)",
+          WebkitMaskImage:
+            "linear-gradient(to bottom, transparent, black 12%, black 88%, transparent)",
+        }}
+      >
+        {SHOWCASE_COLUMNS.map((column) => (
+          <CardColumn
+            key={column.game}
+            game={column.game}
+            direction={column.direction}
+            duration={column.duration}
+            shouldAnimate={shouldAnimateCards && !isDesktopShowcase}
+          />
+        ))}
+      </div>
+
       <div className="fixed right-6 top-6 z-30 hidden flex-col items-end gap-4 lg:flex">
         <div className="w-28">
           <LocaleSwitcher />
@@ -200,7 +238,15 @@ export function LoginView({ next }: LoginViewProps) {
       </div>
 
       <Box
-        sx={{ bgcolor: "background.paper", borderColor: "divider" }}
+        sx={{
+          bgcolor: (theme) =>
+            isDesktopShowcase
+              ? theme.palette.background.paper
+              : alpha(theme.palette.background.paper, 0.82),
+          backdropFilter: isDesktopShowcase ? "none" : "blur(16px)",
+          WebkitBackdropFilter: isDesktopShowcase ? "none" : "blur(16px)",
+          borderColor: "divider",
+        }}
         className="relative flex w-full max-w-6xl min-h-0 overflow-hidden rounded-3xl border shadow-xl"
       >
         <div className="absolute right-4 top-4 z-10 flex items-center gap-2 lg:hidden">
@@ -248,7 +294,7 @@ export function LoginView({ next }: LoginViewProps) {
               <Typography
                 component="h1"
                 sx={{
-                  fontSize: { xs: "2.25rem", sm: "2.75rem" },
+                  fontSize: { xs: "1.5rem", sm: "2.75rem" },
                   fontWeight: 800,
                   lineHeight: 1.1,
                   color: "text.primary",
@@ -383,7 +429,7 @@ export function LoginView({ next }: LoginViewProps) {
                 game={column.game}
                 direction={column.direction}
                 duration={column.duration}
-                shouldAnimate={shouldAnimate}
+                shouldAnimate={shouldAnimateCards && isDesktopShowcase}
               />
             ))}
           </motion.div>
