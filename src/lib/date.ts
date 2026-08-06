@@ -53,6 +53,21 @@ export function formatPodWhen(
     : format(date, "MMM d, p", { locale: dateFnsLocale });
 }
 
+/**
+ * Localized end-time label for an organiser (recurring-table) pod's
+ * expires_at — the occurrence's real, organiser-chosen end time. Ad hoc
+ * pods' expires_at is an unrelated flat "+4h" search-window cleanup guess
+ * (see restartPod, src/app/actions/pods.ts), not a real end time, so
+ * callers must gate this to pod.store_name != null pods only.
+ */
+export function formatPodEndTime(
+  pod: { expires_at: string },
+  locale: Locale,
+): string {
+  const dateFnsLocale = locale === "fr" ? fr : undefined;
+  return format(new Date(pod.expires_at), "p", { locale: dateFnsLocale });
+}
+
 /** Localized weekday name for a RecurringTable.day_of_week (0=Sunday..6=Saturday, matches JS Date#getDay()). */
 export function dayOfWeekLabel(dayOfWeek: number, locale: Locale): string {
   const dateFnsLocale = locale === "fr" ? fr : undefined;

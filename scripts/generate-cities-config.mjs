@@ -1,7 +1,7 @@
 // One-off data-generation script (not a runtime dependency): regenerates
 // `src/constants/citiesConfig.ts` from INSEE's official commune dataset via
 // the French government's open geo API. Re-run manually if the population
-// threshold or dataset needs to change — see SPECS.md Section 4.
+// threshold or dataset needs to change — see docs/specs/04-games-config.md.
 //
 // Usage: node scripts/generate-cities-config.mjs
 
@@ -79,7 +79,7 @@ async function main() {
 
 /**
  * Core extensibility list for IRL city scoping — mirrors \`GAMES_CONFIG\`
- * (see SPECS.md Section 4): supporting a new city only requires appending
+ * (see docs/specs/04-games-config.md): supporting a new city only requires appending
  * an entry here, no schema or component changes needed. \`key\` is a
  * stable, filter-safe slug persisted on \`profiles.city\` / \`pods.city\`
  * (never rendered directly); \`label\` is the display name shown in the UI.

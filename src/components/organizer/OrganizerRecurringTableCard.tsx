@@ -10,7 +10,16 @@ import {
   Typography,
   useTheme,
 } from "@mui/material";
-import { Check, Edit2, Pause, Play, Trash2, UserX, X } from "lucide-react";
+import {
+  Check,
+  Edit2,
+  Lock,
+  Share2,
+  Trash2,
+  Unlock,
+  UserX,
+  X,
+} from "lucide-react";
 import { GAMES_CONFIG } from "@/constants/gamesConfig";
 import { CITY_MAP } from "@/constants/citiesConfig";
 import { createClient } from "@/lib/supabase/client";
@@ -19,11 +28,10 @@ import { usePodRealtime } from "@/components/PodRealtimeProvider";
 import { ConfirmRemoveMemberDialog } from "@/components/ConfirmRemoveMemberDialog";
 import {
   deleteRecurringTable,
-  setRecurringTableActive,
   setRecurringTableAutoAccept,
 } from "@/app/actions/organizer";
 import { respondToJoin, removeMember } from "@/app/actions/joins";
-import { cancelPod } from "@/app/actions/pods";
+import { cancelPod, toggleLockPod } from "@/app/actions/pods";
 import { OrganizerRecurringTableFormDialog } from "@/components/organizer/OrganizerRecurringTableFormDialog";
 import { dayOfWeekLabel, startTimeLabel } from "@/lib/date";
 import { useTranslation } from "@/lib/i18n/LocaleContext";
@@ -57,6 +65,8 @@ export function OrganizerRecurringTableCard({
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pod, setPod] = useState<PodWithRelations | null>(null);
+  const [justCancelled, setJustCancelled] = useState(false);
+  const [linkCopied, setLinkCopied] = useState(false);
   const [removeTarget, setRemoveTarget] = useState<PodJoinWithProfile | null>(
     null,
   );
@@ -71,7 +81,9 @@ export function OrganizerRecurringTableCard({
       .eq("recurring_table_id", table.id)
       .eq("status", "ACTIVE")
       .maybeSingle();
-    setPod((data as PodWithRelations) ?? null);
+    const nextPod = (data as PodWithRelations) ?? null;
+    setPod(nextPod);
+    if (nextPod) setJustCancelled(false);
   }, [table.id]);
 
   const fetchUpcomingPodRef = useRef(fetchUpcomingPod);
@@ -122,15 +134,6 @@ export function OrganizerRecurringTableCard({
   }, [subscribePods, subscribePodJoins]);
 
   const game = GAMES_CONFIG[table.game_key];
-
-  async function handleToggleActive() {
-    setPending(true);
-    setError(null);
-    const result = await setRecurringTableActive(table.id, !table.is_active);
-    if (result.error) setError(result.error);
-    else onChanged();
-    setPending(false);
-  }
 
   async function handleToggleAutoAccept() {
     setPending(true);
@@ -185,6 +188,32 @@ export function OrganizerRecurringTableCard({
     setError(null);
     const result = await cancelPod(pod.id);
     if (result.error) setError(result.error);
+    else {
+      setJustCancelled(true);
+      await fetchUpcomingPod();
+    }
+    setPending(false);
+  }
+
+  async function handleCopyLink() {
+    if (!pod) return;
+    try {
+      await navigator.clipboard.writeText(
+        `${window.location.origin}/pods/${pod.id}`,
+      );
+      setLinkCopied(true);
+      setTimeout(() => setLinkCopied(false), 2000);
+    } catch {
+      // Clipboard API unavailable/denied
+    }
+  }
+
+  async function handleToggleLock() {
+    if (!pod) return;
+    setPending(true);
+    setError(null);
+    const result = await toggleLockPod(pod.id, !pod.locked_at);
+    if (result.error) setError(result.error);
     else await fetchUpcomingPod();
     setPending(false);
   }
@@ -198,7 +227,6 @@ export function OrganizerRecurringTableCard({
       style={{
         borderColor: theme.palette.divider,
         backgroundColor: theme.palette.background.paper,
-        opacity: table.is_active ? 1 : 0.6,
       }}
     >
       <div className="flex items-start justify-between gap-2">
@@ -227,22 +255,6 @@ export function OrganizerRecurringTableCard({
           </IconButton>
           <IconButton
             size="small"
-            onClick={handleToggleActive}
-            disabled={pending}
-            aria-label={
-              table.is_active
-                ? t("organizer.table.pause")
-                : t("organizer.table.resume")
-            }
-          >
-            {table.is_active ? (
-              <Pause className="h-4 w-4" />
-            ) : (
-              <Play className="h-4 w-4" />
-            )}
-          </IconButton>
-          <IconButton
-            size="small"
             onClick={() => setConfirmingDelete(true)}
             disabled={pending}
             aria-label={t("organizer.table.delete")}
@@ -252,237 +264,289 @@ export function OrganizerRecurringTableCard({
         </div>
       </div>
 
-      <div
-        className="flex items-center justify-between gap-2 rounded-lg px-3 py-2"
-        style={{ backgroundColor: theme.palette.action.hover }}
-      >
-        <div className="flex flex-col">
-          <Typography
-            sx={{ fontSize: "0.8125rem", fontWeight: 600, color: "text.primary" }}
-          >
-            {t("organizer.table.autoAccept")}
-          </Typography>
-          <Typography sx={{ fontSize: "0.6875rem", color: "text.secondary" }}>
-            {t("organizer.table.autoAcceptHint")}
-          </Typography>
-        </div>
-        <Switch
-          checked={table.auto_accept}
-          onChange={handleToggleAutoAccept}
-          disabled={pending}
-        />
-      </div>
-
-      {confirmingDelete && (
-        <div className="flex flex-col gap-2 rounded-lg border border-red-500/40 bg-red-500/10 p-3">
-          <Typography sx={{ fontSize: "0.8125rem", color: "text.primary" }}>
-            {t("organizer.table.deleteConfirm")}
-          </Typography>
-          <div className="flex gap-2">
-            <Button
-              size="small"
-              variant="outlined"
-              onClick={() => setConfirmingDelete(false)}
-              disabled={pending}
-            >
-              {t("organizer.table.cancel")}
-            </Button>
-            <Button
-              size="small"
-              variant="contained"
-              color="error"
-              onClick={handleDelete}
-              disabled={pending}
-            >
-              {t("organizer.table.confirmDelete")}
-            </Button>
-          </div>
-        </div>
-      )}
-
-      {error && <Alert severity="error">{error}</Alert>}
-
-      {pod && (
+      <div className="flex flex-col gap-3">
         <div
-          className="flex flex-col gap-2 pt-2"
-          style={{ borderTop: `1px solid ${theme.palette.divider}` }}
+          className="flex items-center justify-between gap-2 rounded-lg px-3 py-2"
+          style={{ backgroundColor: theme.palette.action.hover }}
         >
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Typography
-                sx={{ fontSize: "0.75rem", fontWeight: 600, color: "text.secondary" }}
-              >
-                {t("organizer.table.upcomingSession", {
-                  count: acceptedJoins.length + 1,
-                  max: pod.max_players,
-                })}
-              </Typography>
-              {pendingJoins.length > 0 && (
-                <span className="rounded-full bg-indigo-500/10 px-2 py-0.5 text-xs font-medium text-indigo-300">
-                  {pendingJoins.length === 1
-                    ? t("myPodPanel.joinRequestCount", { count: pendingJoins.length })
-                    : t("myPodPanel.joinRequestCountPlural", { count: pendingJoins.length })}
-                </span>
-              )}
-            </div>
-            <Button
-              size="small"
-              color="error"
-              onClick={handleCancelSession}
-              disabled={pending}
+          <div className="flex flex-col">
+            <Typography
+              sx={{ fontSize: "0.8125rem", fontWeight: 600, color: "text.primary" }}
             >
-              {t("organizer.table.cancelSession")}
-            </Button>
+              {t("organizer.table.autoAccept")}
+            </Typography>
+            <Typography sx={{ fontSize: "0.6875rem", color: "text.secondary" }}>
+              {t("organizer.table.autoAcceptHint")}
+            </Typography>
           </div>
+          <Switch
+            checked={table.auto_accept}
+            onChange={handleToggleAutoAccept}
+            disabled={pending}
+          />
+        </div>
 
-          {pendingJoins.length > 0 && (
-            <div className="flex flex-col gap-2">
-              <span
-                className="text-sm font-medium"
-                style={{ color: theme.palette.text.secondary }}
+        {confirmingDelete && (
+          <div className="flex flex-col gap-2 rounded-lg border border-red-500/40 bg-red-500/10 p-3">
+            <Typography sx={{ fontSize: "0.8125rem", color: "text.primary" }}>
+              {t("organizer.table.deleteConfirm")}
+            </Typography>
+            <div className="flex gap-2">
+              <Button
+                size="small"
+                variant="outlined"
+                onClick={() => setConfirmingDelete(false)}
+                disabled={pending}
               >
-                {t("myPodPanel.joinRequests")}
-              </span>
-              {pendingJoins.map((join) => (
-                <div
-                  key={join.id}
-                  className="flex items-center justify-between rounded-lg px-3 py-2"
-                  style={{ border: `1px solid ${theme.palette.divider}` }}
+                {t("organizer.table.cancel")}
+              </Button>
+              <Button
+                size="small"
+                variant="contained"
+                color="error"
+                onClick={handleDelete}
+                disabled={pending}
+              >
+                {t("organizer.table.confirmDelete")}
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {error && <Alert severity="error">{error}</Alert>}
+
+        {!pod && justCancelled && (
+          <Alert severity="info">
+            {t("organizer.table.cancelledInfo", {
+              day: dayOfWeekLabel(table.day_of_week, locale),
+              time: startTimeLabel(table.start_time, locale),
+            })}
+          </Alert>
+        )}
+
+        {pod && (
+          <div
+            className="flex flex-col gap-2 pt-2"
+            style={{ borderTop: `1px solid ${theme.palette.divider}` }}
+          >
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <Typography
+                  sx={{ fontSize: "0.75rem", fontWeight: 600, color: "text.secondary" }}
                 >
-                  <button
-                    type="button"
-                    onClick={() => openUserProfile(join.profiles.username)}
-                    aria-label={t("userProfilePanel.viewProfile", {
-                      username: join.profiles.username,
-                    })}
-                    className="group flex items-center gap-2 text-left"
+                  {t("organizer.table.upcomingSession", {
+                    // Every pod shown here is organiser-hosted, so the host
+                    // is never counted toward capacity.
+                    count: acceptedJoins.length,
+                    max: pod.max_players,
+                  })}
+                </Typography>
+                {pendingJoins.length > 0 && (
+                  <span className="rounded-full bg-indigo-500/10 px-2 py-0.5 text-xs font-medium text-indigo-300">
+                    {pendingJoins.length === 1
+                      ? t("myPodPanel.joinRequestCount", { count: pendingJoins.length })
+                      : t("myPodPanel.joinRequestCountPlural", { count: pendingJoins.length })}
+                  </span>
+                )}
+                {pod.locked_at && (
+                  <span className="rounded-full bg-slate-500/10 px-2 py-0.5 text-xs font-medium text-slate-400">
+                    {t("organizer.table.locked")}
+                  </span>
+                )}
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  size="small"
+                  onClick={handleCopyLink}
+                  startIcon={
+                    linkCopied ? (
+                      <Check className="h-3.5 w-3.5" />
+                    ) : (
+                      <Share2 className="h-3.5 w-3.5" />
+                    )
+                  }
+                >
+                  {linkCopied
+                    ? t("organizer.table.linkCopied")
+                    : t("organizer.table.copyLink")}
+                </Button>
+                <Button
+                  size="small"
+                  color={pod.locked_at ? "info" : "inherit"}
+                  onClick={handleToggleLock}
+                  disabled={pending}
+                  startIcon={
+                    pod.locked_at ? (
+                      <Unlock className="h-3.5 w-3.5" />
+                    ) : (
+                      <Lock className="h-3.5 w-3.5" />
+                    )
+                  }
+                >
+                  {pod.locked_at
+                    ? t("organizer.table.unlockSession")
+                    : t("organizer.table.lockSession")}
+                </Button>
+                <Button
+                  size="small"
+                  color="error"
+                  onClick={handleCancelSession}
+                  disabled={pending}
+                >
+                  {t("organizer.table.cancelSession")}
+                </Button>
+              </div>
+            </div>
+
+            {pendingJoins.length > 0 && (
+              <div className="flex flex-col gap-2">
+                <span
+                  className="text-sm font-medium"
+                  style={{ color: theme.palette.text.secondary }}
+                >
+                  {t("myPodPanel.joinRequests")}
+                </span>
+                {pendingJoins.map((join) => (
+                  <div
+                    key={join.id}
+                    className="flex items-center justify-between rounded-lg px-3 py-2"
+                    style={{ border: `1px solid ${theme.palette.divider}` }}
                   >
-                    <Avatar
-                      src={join.profiles.avatar_url ?? undefined}
-                      sx={{ width: 32, height: 32 }}
+                    <button
+                      type="button"
+                      onClick={() => openUserProfile(join.profiles.username)}
+                      aria-label={t("userProfilePanel.viewProfile", {
+                        username: join.profiles.username,
+                      })}
+                      className="group flex items-center gap-2 text-left"
                     >
-                      {join.profiles.username[0]?.toUpperCase()}
-                    </Avatar>
-                    <div className="flex flex-col">
-                      <span
-                        className="group-hover:underline group-focus-visible:underline"
-                        style={{ color: theme.palette.text.primary }}
+                      <Avatar
+                        src={join.profiles.avatar_url ?? undefined}
+                        sx={{ width: 32, height: 32 }}
                       >
-                        {join.profiles.username}
-                      </span>
-                      <span className="text-xs" style={{ color: theme.palette.text.secondary }}>
-                        {join.profiles.discord_handle}
-                      </span>
+                        {join.profiles.username[0]?.toUpperCase()}
+                      </Avatar>
+                      <div className="flex flex-col">
+                        <span
+                          className="group-hover:underline group-focus-visible:underline"
+                          style={{ color: theme.palette.text.primary }}
+                        >
+                          {join.profiles.username}
+                        </span>
+                        <span className="text-xs" style={{ color: theme.palette.text.secondary }}>
+                          {join.profiles.discord_handle}
+                        </span>
+                      </div>
+                    </button>
+                    <div className="flex gap-2">
+                      <Button
+                        type="button"
+                        disabled={pending}
+                        onClick={() => handleRespond(join.id, "ACCEPTED")}
+                        size="small"
+                        startIcon={<Check className="h-4 w-4" />}
+                        sx={{
+                          bgcolor: "rgba(16, 185, 129, 0.1)",
+                          color: "#34d399",
+                          minWidth: "auto",
+                          px: 1.5,
+                          "&:hover": { bgcolor: "rgba(16, 185, 129, 0.2)" },
+                          "&.Mui-disabled": { color: "#34d399", opacity: 0.4 },
+                        }}
+                      >
+                        {t("myPodPanel.accept")}
+                      </Button>
+                      <Button
+                        type="button"
+                        disabled={pending}
+                        onClick={() => handleRespond(join.id, "REJECTED")}
+                        size="small"
+                        startIcon={<X className="h-4 w-4" />}
+                        sx={{
+                          bgcolor: "rgba(239, 68, 68, 0.1)",
+                          color: "#f87171",
+                          minWidth: "auto",
+                          px: 1.5,
+                          "&:hover": { bgcolor: "rgba(239, 68, 68, 0.2)" },
+                          "&.Mui-disabled": { color: "#f87171", opacity: 0.4 },
+                        }}
+                      >
+                        {t("myPodPanel.reject")}
+                      </Button>
                     </div>
-                  </button>
-                  <div className="flex gap-2">
-                    <Button
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {acceptedJoins.length > 0 && (
+              <div className="flex flex-col gap-2">
+                <span
+                  className="text-sm font-medium"
+                  style={{ color: theme.palette.text.secondary }}
+                >
+                  {t("myPodPanel.groupMembers")}
+                </span>
+                {acceptedJoins.map((join) => (
+                  <div
+                    key={join.id}
+                    className="flex items-center justify-between gap-2 rounded-lg px-3 py-2"
+                    style={{ border: `1px solid ${theme.palette.divider}` }}
+                  >
+                    <button
                       type="button"
-                      disabled={pending}
-                      onClick={() => handleRespond(join.id, "ACCEPTED")}
-                      size="small"
-                      startIcon={<Check className="h-4 w-4" />}
-                      sx={{
-                        bgcolor: "rgba(16, 185, 129, 0.1)",
-                        color: "#34d399",
-                        minWidth: "auto",
-                        px: 1.5,
-                        "&:hover": { bgcolor: "rgba(16, 185, 129, 0.2)" },
-                        "&.Mui-disabled": { color: "#34d399", opacity: 0.4 },
-                      }}
+                      onClick={() => openUserProfile(join.profiles.username)}
+                      aria-label={t("userProfilePanel.viewProfile", {
+                        username: join.profiles.username,
+                      })}
+                      className="group flex items-center gap-2 text-left"
                     >
-                      {t("myPodPanel.accept")}
-                    </Button>
+                      <Avatar
+                        src={join.profiles.avatar_url ?? undefined}
+                        sx={{ width: 32, height: 32 }}
+                      >
+                        {join.profiles.username[0]?.toUpperCase()}
+                      </Avatar>
+                      <div className="flex flex-col">
+                        <span
+                          className="group-hover:underline group-focus-visible:underline"
+                          style={{ color: theme.palette.text.primary }}
+                        >
+                          {join.profiles.username}
+                        </span>
+                        <span className="text-sm" style={{ color: theme.palette.text.secondary }}>
+                          {join.profiles.discord_handle}
+                        </span>
+                      </div>
+                    </button>
                     <Button
                       type="button"
-                      disabled={pending}
-                      onClick={() => handleRespond(join.id, "REJECTED")}
+                      onClick={() => {
+                        setRemoveError(null);
+                        setRemoveTarget(join);
+                      }}
                       size="small"
-                      startIcon={<X className="h-4 w-4" />}
+                      startIcon={<UserX className="h-3.5 w-3.5" />}
                       sx={{
+                        flexShrink: 0,
+                        minWidth: 0,
+                        px: 1.5,
+                        py: 0.75,
+                        fontSize: "0.75rem",
                         bgcolor: "rgba(239, 68, 68, 0.1)",
                         color: "#f87171",
-                        minWidth: "auto",
-                        px: 1.5,
                         "&:hover": { bgcolor: "rgba(239, 68, 68, 0.2)" },
-                        "&.Mui-disabled": { color: "#f87171", opacity: 0.4 },
                       }}
                     >
-                      {t("myPodPanel.reject")}
+                      {t("myPodPanel.remove")}
                     </Button>
                   </div>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {acceptedJoins.length > 0 && (
-            <div className="flex flex-col gap-2">
-              <span
-                className="text-sm font-medium"
-                style={{ color: theme.palette.text.secondary }}
-              >
-                {t("myPodPanel.groupMembers")}
-              </span>
-              {acceptedJoins.map((join) => (
-                <div
-                  key={join.id}
-                  className="flex items-center justify-between gap-2 rounded-lg px-3 py-2"
-                  style={{ border: `1px solid ${theme.palette.divider}` }}
-                >
-                  <button
-                    type="button"
-                    onClick={() => openUserProfile(join.profiles.username)}
-                    aria-label={t("userProfilePanel.viewProfile", {
-                      username: join.profiles.username,
-                    })}
-                    className="group flex items-center gap-2 text-left"
-                  >
-                    <Avatar
-                      src={join.profiles.avatar_url ?? undefined}
-                      sx={{ width: 32, height: 32 }}
-                    >
-                      {join.profiles.username[0]?.toUpperCase()}
-                    </Avatar>
-                    <div className="flex flex-col">
-                      <span
-                        className="group-hover:underline group-focus-visible:underline"
-                        style={{ color: theme.palette.text.primary }}
-                      >
-                        {join.profiles.username}
-                      </span>
-                      <span className="text-sm" style={{ color: theme.palette.text.secondary }}>
-                        {join.profiles.discord_handle}
-                      </span>
-                    </div>
-                  </button>
-                  <Button
-                    type="button"
-                    onClick={() => {
-                      setRemoveError(null);
-                      setRemoveTarget(join);
-                    }}
-                    size="small"
-                    startIcon={<UserX className="h-3.5 w-3.5" />}
-                    sx={{
-                      flexShrink: 0,
-                      minWidth: 0,
-                      px: 1.5,
-                      py: 0.75,
-                      fontSize: "0.75rem",
-                      bgcolor: "rgba(239, 68, 68, 0.1)",
-                      color: "#f87171",
-                      "&:hover": { bgcolor: "rgba(239, 68, 68, 0.2)" },
-                    }}
-                  >
-                    {t("myPodPanel.remove")}
-                  </Button>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
 
       <OrganizerRecurringTableFormDialog
         open={editOpen}

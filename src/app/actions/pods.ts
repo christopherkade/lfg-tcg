@@ -248,6 +248,40 @@ export async function cancelPod(
 }
 
 /**
+ * Toggles a still-ACTIVE pod's join-request gate on/off. Locking stops new
+ * requestJoin calls (see isPodJoinable, src/lib/pods/joinRules.ts) without
+ * touching status, existing pod_joins rows, or the expiry/history pipeline
+ * — unlike cancelPod, this is meant to be reversible.
+ */
+export async function toggleLockPod(
+  podId: string,
+  locked: boolean,
+): Promise<PodActionResult> {
+  const { supabase, user } = await requireProfile();
+  const locale = await getServerLocale();
+
+  const { error } = await supabase
+    .from("pods")
+    .update({ locked_at: locked ? new Date().toISOString() : null })
+    .eq("id", podId)
+    .eq("user_id", user.id)
+    .eq("status", "ACTIVE");
+
+  if (error) {
+    console.error("toggleLockPod failed:", error);
+    return {
+      error: translate(locale, "errors.podLockToggleFailed", {
+        reason: error.message,
+      }),
+    };
+  }
+
+  revalidatePath("/");
+  revalidatePath("/organizer");
+  return {};
+}
+
+/**
  * Restarts a stale pod's search window (bumps `expires_at` forward by
  * another 4h, matching createPod's own default) — the "Keep Searching"
  * choice on NoUsersFoundDialog, shown once a pod's original window lapses

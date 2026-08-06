@@ -1,5 +1,6 @@
 import { GAMES_CONFIG } from "@/constants/gamesConfig";
 import { translate, type Locale } from "@/lib/i18n";
+import { zonedTimeToUtc } from "@/lib/timezone";
 import type { MatchType, PlaystyleKey } from "@/types/database";
 
 export interface StartSearchInput {
@@ -11,6 +12,9 @@ export interface StartSearchInput {
   locationName: string;
   scheduledDate: string;
   scheduledTime: string;
+  // IANA identifier (e.g. "Europe/Paris"), captured silently from the
+  // submitter's browser — see zonedTimeToUtc.
+  timezone: string;
   maxPlayers: number;
   reservedSlots: number;
   notes: string;
@@ -61,7 +65,11 @@ export function validateStartSearchInput(
     if (!input.scheduledDate || !input.scheduledTime) {
       return { error: translate(locale, "errors.dateTimeRequired") };
     }
-    const parsed = new Date(`${input.scheduledDate}T${input.scheduledTime}`);
+    const parsed = zonedTimeToUtc(
+      input.scheduledDate,
+      input.scheduledTime,
+      input.timezone,
+    );
     if (Number.isNaN(parsed.getTime())) {
       return { error: translate(locale, "errors.dateTimeInvalid") };
     }

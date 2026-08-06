@@ -16,6 +16,7 @@ function baseOnlineInput(
     locationName: "",
     scheduledDate: "",
     scheduledTime: "",
+    timezone: "UTC",
     maxPlayers: 4,
     reservedSlots: 0,
     notes: "",
@@ -193,7 +194,23 @@ describe("validateStartSearchInput", () => {
       data: {
         brackets: [2, 3],
         locationName: "Local Game Store",
-        scheduledAt: new Date("2026-08-01T18:00").toISOString(),
+        scheduledAt: "2026-08-01T18:00:00.000Z",
+        notes: null,
+      },
+    });
+  });
+
+  it("converts the scheduled date/time from a non-UTC timezone to the correct UTC instant", () => {
+    const result = validateStartSearchInput(
+      baseIrlInput({ timezone: "Europe/Paris" }), // UTC+2 (CEST) in August
+      "en",
+      "paris",
+    );
+    expect(result).toEqual({
+      data: {
+        brackets: null,
+        locationName: "Local Game Store",
+        scheduledAt: "2026-08-01T16:00:00.000Z",
         notes: null,
       },
     });

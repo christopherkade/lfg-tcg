@@ -10,7 +10,7 @@
 --     MatchedDialog to every accepted member before the row (and its
 --     pod_joins, via ON DELETE CASCADE) disappears.
 --   - EXPIRED pods: kept 24h past expires_at, closing the "no automated
---     expiry sweep" gap noted in SPECS.md Section 8.
+--     expiry sweep" gap noted in docs/specs/08-scope-exclusions.md.
 --
 -- Deleting a pod cascades (per the schema) to its pod_joins and
 -- notifications rows, so both statuses get the same grace window.

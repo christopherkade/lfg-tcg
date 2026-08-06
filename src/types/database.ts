@@ -47,7 +47,8 @@ export interface Pod {
   status: PodStatus;
   created_at: string;
   expires_at: string;
-  matched_at: string | null; // set when status transitions to MATCHED; drives the retention sweep (SPECS.md Section 3)
+  matched_at: string | null; // set when status transitions to MATCHED; drives the retention sweep (docs/specs/03-schema.md)
+  locked_at: string | null; // set via toggleLockPod to close new join requests without changing status; reversible
   recurring_table_id: string | null; // set on pods spawned by an organiser's RecurringTable; null for ad hoc peer-hosted pods
   auto_accept: boolean; // denormalized from RecurringTable.auto_accept at spawn time; requestJoin checks this directly
   store_name: string | null; // denormalized store name for organiser-hosted pods; null for ad hoc peer-hosted pods
@@ -123,11 +124,11 @@ export interface RecurringTable {
   day_of_week: number; // 0 (Sunday) .. 6 (Saturday) — matches JS Date#getDay()
   start_time: string; // "HH:MM:SS" as returned by Postgres `time`
   end_time: string; // "HH:MM:SS"; <= start_time means the event spans midnight
+  timezone: string; // IANA identifier (e.g. "Europe/Paris") start_time/end_time are wall-clock in
   max_players: number;
   notes: string | null;
   auto_accept: boolean;
   lead_time_hours: number;
-  is_active: boolean;
   created_at: string;
   updated_at: string;
 }

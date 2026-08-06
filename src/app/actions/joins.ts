@@ -20,7 +20,9 @@ export async function requestJoin(
 
   const { data: pod } = await supabase
     .from("pods")
-    .select("id, user_id, status, max_players, auto_accept, pod_joins(status)")
+    .select(
+      "id, user_id, status, locked_at, max_players, auto_accept, store_name, pod_joins(status)",
+    )
     .eq("id", podId)
     .maybeSingle();
 
@@ -50,7 +52,9 @@ export async function requestJoin(
   const acceptedCount = pod.pod_joins.filter(
     (join) => join.status === "ACCEPTED",
   ).length;
-  if (isGroupFull(acceptedCount, pod.max_players)) {
+  // store_name != null => organiser recurring-table pod, where the
+  // organiser is deliberately excluded from capacity (see isGroupFull).
+  if (isGroupFull(acceptedCount, pod.max_players, !pod.store_name)) {
     return { error: translate(locale, "errors.groupFull") };
   }
 
@@ -172,7 +176,7 @@ export async function respondToJoin(
   const { data: join } = await supabase
     .from("pod_joins")
     .select(
-      "id, pod_id, pods(user_id, max_players, pod_joins(status))",
+      "id, pod_id, pods(user_id, max_players, store_name, pod_joins(status))",
     )
     .eq("id", joinId)
     .maybeSingle();
@@ -193,15 +197,22 @@ export async function respondToJoin(
     const acceptedCount = hostPod.pod_joins.filter(
       (j: { status: string }) => j.status === "ACCEPTED",
     ).length;
-    if (isGroupFull(acceptedCount, hostPod.max_players)) {
+    if (isGroupFull(acceptedCount, hostPod.max_players, !hostPod.store_name)) {
       return { error: translate(locale, "errors.groupFull") };
     }
   }
 
-  const { error } = await supabase
+  // .eq("status", "PENDING") makes this a one-shot transition: a second
+  // respondToJoin call on the same row (double click, retried request, a
+  // second tab) matches 0 rows instead of silently overwriting the first
+  // decision — see canRespondToJoin's comment.
+  const { data: updated, error } = await supabase
     .from("pod_joins")
     .update({ status: decision })
-    .eq("id", joinId);
+    .eq("id", joinId)
+    .eq("status", "PENDING")
+    .select("id")
+    .maybeSingle();
 
   if (error) {
     console.error("respondToJoin failed:", error);
@@ -210,6 +221,10 @@ export async function respondToJoin(
         reason: error.message,
       }),
     };
+  }
+
+  if (!updated) {
+    return { error: translate(locale, "errors.joinRequestNotFound") };
   }
 
   revalidatePath("/");

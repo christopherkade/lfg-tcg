@@ -18,7 +18,7 @@ import { requestJoin, leavePod } from "@/app/actions/joins";
 import { PodDetailDialog } from "@/components/PodDetailDialog";
 import { ReservedSlotAvatar } from "@/components/ReservedSlotAvatar";
 import { CITY_MAP } from "@/constants/citiesConfig";
-import { formatPodWhen } from "@/lib/date";
+import { formatPodEndTime, formatPodWhen } from "@/lib/date";
 import { useTranslation } from "@/lib/i18n/LocaleContext";
 import { useUserProfilePanel } from "@/lib/UserProfilePanelContext";
 import type { TranslationKey } from "@/lib/i18n";
@@ -175,7 +175,12 @@ export function MatchFeedList({
   // SUBSCRIBED, but specific events occasionally never arrive — see repo
   // memory). Resync whenever the tab regains focus/visibility so a missed
   // event (e.g. "Request to Join" not flipping to "Pending" live) self-heals
-  // without the user needing to manually reload.
+  // without the user needing to manually reload. Also polls on an interval
+  // (mirroring OwnPodPanel/OrganizerRecurringTableCard) since a pod closing
+  // (status ACTIVE -> EXPIRED) fails the `pods` SELECT RLS check for any
+  // viewer who isn't the host or an accepted member, so Realtime never
+  // delivers that event to them at all — focus/visibility alone isn't
+  // enough for a browsing user who never blurs the tab.
   useEffect(() => {
     function handleFocusOrVisible() {
       if (document.visibilityState === "visible") {
@@ -184,9 +189,15 @@ export function MatchFeedList({
     }
     document.addEventListener("visibilitychange", handleFocusOrVisible);
     window.addEventListener("focus", handleFocusOrVisible);
+    const intervalId = setInterval(() => {
+      if (document.visibilityState === "visible") {
+        fetchActivePodsRef.current(filtersRef.current);
+      }
+    }, 25_000);
     return () => {
       document.removeEventListener("visibilitychange", handleFocusOrVisible);
       window.removeEventListener("focus", handleFocusOrVisible);
+      clearInterval(intervalId);
     };
   }, []);
 
@@ -222,9 +233,12 @@ export function MatchFeedList({
     const result = await requestJoin(podId);
     if (result.error) {
       setError(result.error);
-    } else {
-      await fetchActivePodsRef.current(filtersRef.current);
     }
+    // Refetch even on failure — a rejection like "no longer active" or
+    // "locked" means our local `pods` state is stale, and without this the
+    // same now-defunct card stays clickable and reproduces the identical
+    // error on every retry until some unrelated trigger happens to refresh it.
+    await fetchActivePodsRef.current(filtersRef.current);
     setPendingPodId(null);
   }
 
@@ -234,9 +248,8 @@ export function MatchFeedList({
     const result = await leavePod(podId);
     if (result.error) {
       setError(result.error);
-    } else {
-      await fetchActivePodsRef.current(filtersRef.current);
     }
+    await fetchActivePodsRef.current(filtersRef.current);
     setPendingPodId(null);
   }
 
@@ -364,13 +377,28 @@ export function MatchFeedList({
                         {t("matchFeed.joined")}
                       </span>
                     )}
+                    {ownJoin?.status === "REJECTED" && (
+                      <span className="rounded-full bg-red-500/10 px-2 py-0.5 text-[10px] font-semibold tracking-wide text-red-400">
+                        {t("matchFeed.declined")}
+                      </span>
+                    )}
+                    {!isJoined && pod.locked_at && (
+                      <span className="rounded-full bg-slate-500/10 px-2 py-0.5 text-[10px] font-semibold tracking-wide text-slate-400">
+                        {t("organizer.table.locked")}
+                      </span>
+                    )}
                   </div>
                   <span
                     className="text-xs"
                     style={{ color: theme.palette.text.secondary }}
                   >
                     {t("myPodPanel.playersCount", {
-                      count: acceptedMembers.length + 1 + pod.reserved_slots,
+                      // store_name != null => organiser recurring-table pod,
+                      // where the host is never counted toward capacity.
+                      count:
+                        acceptedMembers.length +
+                        (pod.store_name ? 0 : 1) +
+                        pod.reserved_slots,
                       max: pod.max_players,
                     })}
                   </span>
@@ -408,7 +436,12 @@ export function MatchFeedList({
                     </>
                   )}
                   <span>&middot;</span>
-                  <span>{formatPodWhen(pod, locale, t)}</span>
+                  <span>
+                    {formatPodWhen(pod, locale, t)}
+                    {pod.store_name
+                      ? ` – ${formatPodEndTime(pod, locale)}`
+                      : ""}
+                  </span>
                 </div>
 
                 {(acceptedMembers.length > 0 || pod.reserved_slots > 0) && (
@@ -480,7 +513,9 @@ export function MatchFeedList({
                       ? t("matchFeed.leaving")
                       : ownJoin.status === "PENDING"
                         ? t("matchFeed.cancelRequest")
-                        : t("matchFeed.leave")}
+                        : ownJoin.status === "REJECTED"
+                          ? t("matchFeed.dismiss")
+                          : t("matchFeed.leave")}
                   </button>
                 )}
               </motion.div>

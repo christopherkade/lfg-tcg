@@ -16,7 +16,7 @@ interface CitySelectorProps {
   helperText?: string;
 }
 
-// CITIES_CONFIG covers ~2,300 French communes (see SPECS.md Section 4), so
+// CITIES_CONFIG covers ~2,300 French communes (see docs/specs/04-games-config.md), so
 // the Autocomplete's option list is virtualized to avoid rendering every
 // <li> up front. Swapping out the listbox slot loses MUI's own
 // `.MuiAutocomplete-option` padding/hover/selected styling — that CSS is
@@ -82,7 +82,7 @@ const VirtualizedListbox = forwardRef(function VirtualizedListbox(
 
 /**
  * Config-driven city autocomplete (mirrors GameSelector/GAMES_CONFIG's
- * extensibility pattern — see SPECS.md Section 4). Persists the stable
+ * extensibility pattern — see docs/specs/04-games-config.md). Persists the stable
  * `key` slug, not the free-text `label`, so IRL Match Feed filtering
  * (Section 6) can rely on exact equality instead of fuzzy text matching.
  */
