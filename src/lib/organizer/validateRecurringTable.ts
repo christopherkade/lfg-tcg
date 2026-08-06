@@ -10,6 +10,9 @@ export interface RecurringTableInput {
   dayOfWeek: number; // 0 (Sunday) .. 6 (Saturday), matches JS Date#getDay()
   startTime: string; // "HH:MM"
   endTime: string; // "HH:MM"; <= startTime means the event spans midnight
+  // IANA identifier (e.g. "Europe/Paris"), captured silently from the
+  // organiser's browser — see zonedTimeToUtc.
+  timezone: string;
   maxPlayers: number;
   notes: string;
   autoAccept: boolean;
@@ -19,9 +22,24 @@ export interface RecurringTableInput {
 export interface NormalizedRecurringTableInput {
   brackets: number[] | null;
   notes: string | null;
+  timezone: string;
 }
 
 const TIME_PATTERN = /^([01]\d|2[0-3]):([0-5]\d)$/;
+
+// Practical backfill default: the overwhelming majority of organisers are
+// in metropolitan France (see CITIES_CONFIG). Only used if the browser sent
+// something that isn't a recognized IANA identifier.
+const DEFAULT_TIMEZONE = "Europe/Paris";
+
+function normalizeTimezone(timezone: string): string {
+  try {
+    new Intl.DateTimeFormat("en-US", { timeZone: timezone });
+    return timezone;
+  } catch {
+    return DEFAULT_TIMEZONE;
+  }
+}
 
 /**
  * Validation/normalization for organiser recurring-table create/edit —
@@ -68,6 +86,9 @@ export function validateRecurringTableInput(
   if (input.endTime === input.startTime) {
     return { error: translate(locale, "errors.endTimeEqualsStartTime") };
   }
+  // input.maxPlayers is "players needed" (excludes the organiser, who is
+  // never inserted as a pod_joins row and never counted toward capacity for
+  // recurring-table pods) — stored as-is, no +1 for the host.
   if (input.maxPlayers < 2 || input.maxPlayers > 200) {
     return { error: translate(locale, "errors.maxPlayersRangeHigh") };
   }
@@ -86,6 +107,7 @@ export function validateRecurringTableInput(
     data: {
       brackets: game.hasPowerTiers && input.brackets.length > 0 ? input.brackets : null,
       notes: input.notes.trim() || null,
+      timezone: normalizeTimezone(input.timezone),
     },
   };
 }

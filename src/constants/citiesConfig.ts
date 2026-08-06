@@ -5,7 +5,7 @@ export interface CitySetting {
 
 /**
  * Core extensibility list for IRL city scoping — mirrors `GAMES_CONFIG`
- * (see SPECS.md Section 4): supporting a new city only requires appending
+ * (see docs/specs/04-games-config.md): supporting a new city only requires appending
  * an entry here, no schema or component changes needed. `key` is a
  * stable, filter-safe slug persisted on `profiles.city` / `pods.city`
  * (never rendered directly); `label` is the display name shown in the UI.

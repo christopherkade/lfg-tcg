@@ -10,7 +10,7 @@
 -- entry, populated by a trigger that fires synchronously the moment a pod
 -- transitions ACTIVE -> MATCHED, well before the cleanup sweep can ever
 -- delete the source row. Only MATCHED pods are logged (not cancelled/
--- expired groups) — see SPECS.md's Past Pods section.
+-- expired groups) — see docs/specs/05-ui-ux-flows.md's Past Pods section.
 --
 -- Also adds a per-viewer "delete from my history" affordance (`hidden_by`
 -- + `hide_pod_history_entry`, see below) — since one row is shared by the

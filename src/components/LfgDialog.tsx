@@ -349,6 +349,7 @@ export function LfgDialog({
       locationName,
       scheduledDate: scheduledDate ? format(scheduledDate, "yyyy-MM-dd") : "",
       scheduledTime: scheduledTime ? format(scheduledTime, "HH:mm") : "",
+      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
       maxPlayers,
       reservedSlots,
       notes,

@@ -24,7 +24,7 @@
 -- auth.uid()" branch (schema.sql) — pods' own SELECT policy never queries
 -- back into pod_joins via a plain subquery (its accepted-member check goes
 -- through the SECURITY DEFINER is_accepted_pod_member instead), so this
--- doesn't create the pods<->pod_joins policy cycle documented in SPECS.md.
+-- doesn't create the pods<->pod_joins policy cycle documented in docs/specs/03-schema.md.
 -- Scoped to status = 'ACCEPTED' to match canRemoveMember's own restriction
 -- (a still-PENDING request is rejected via respondToJoin, not removed).
 drop policy if exists "pod_joins_delete_by_host" on pod_joins;

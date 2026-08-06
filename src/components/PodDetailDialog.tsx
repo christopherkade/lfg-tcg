@@ -7,7 +7,7 @@ import { Store } from "lucide-react";
 import { GAMES_CONFIG } from "@/constants/gamesConfig";
 import { CITY_MAP } from "@/constants/citiesConfig";
 import { ReservedSlotAvatar } from "@/components/ReservedSlotAvatar";
-import { formatPodWhen } from "@/lib/date";
+import { formatPodEndTime, formatPodWhen } from "@/lib/date";
 import { useTranslation } from "@/lib/i18n/LocaleContext";
 import { useUserProfilePanel } from "@/lib/UserProfilePanelContext";
 import type { TranslationKey } from "@/lib/i18n";
@@ -52,11 +52,21 @@ export function PodDetailDialog({
     (join) => join.status === "ACCEPTED",
   );
   const ownJoin = pod?.pod_joins.find((join) => join.user_id === currentUserId);
+  // store_name != null => organiser recurring-table pod, where the host is
+  // never counted toward capacity (max_players is "joiners needed").
   const isFull =
     pod != null &&
-    (acceptedMembers?.length ?? 0) + 1 + pod.reserved_slots >= pod.max_players;
+    (acceptedMembers?.length ?? 0) +
+      (pod.store_name ? 0 : 1) +
+      pod.reserved_slots >=
+      pod.max_players;
+  const isLocked = pod != null && pod.locked_at != null;
   const game = pod ? GAMES_CONFIG[pod.game_key] : undefined;
   const scheduledLabel = pod ? formatPodWhen(pod, locale, t) : null;
+  // Only organiser (recurring-table) pods have a real, chosen end time —
+  // ad hoc pods' expires_at is an unrelated "+4h" search-window guess.
+  const endTimeLabel =
+    pod && pod.store_name ? formatPodEndTime(pod, locale) : null;
 
   return (
     <AnimatePresence
@@ -147,7 +157,8 @@ export function PodDetailDialog({
               >
                 {t("myPodPanel.playersCount", {
                   count:
-                    (acceptedMembers ? acceptedMembers.length + 1 : 1) +
+                    (acceptedMembers?.length ?? 0) +
+                    (pod.store_name ? 0 : 1) +
                     pod.reserved_slots,
                   max: pod.max_players,
                 })}
@@ -181,6 +192,12 @@ export function PodDetailDialog({
                 <div className="flex justify-between">
                   <span style={{ color: theme.palette.text.secondary }}>{t("podDetailDialog.when")}</span>
                   <span>{scheduledLabel}</span>
+                </div>
+              )}
+              {endTimeLabel && (
+                <div className="flex justify-between">
+                  <span style={{ color: theme.palette.text.secondary }}>{t("podDetailDialog.endsAt")}</span>
+                  <span>{endTimeLabel}</span>
                 </div>
               )}
               {pod.location_name && (
@@ -263,6 +280,12 @@ export function PodDetailDialog({
 
             {error && <Alert severity="error">{error}</Alert>}
 
+            {ownJoin?.status === "REJECTED" && (
+              <Alert severity="warning">
+                {t("podDetailDialog.requestDeclined")}
+              </Alert>
+            )}
+
             <div className="mt-2 flex gap-3">
               <Button
                 type="button"
@@ -294,24 +317,28 @@ export function PodDetailDialog({
                     ? t("podDetailDialog.leaving")
                     : ownJoin.status === "PENDING"
                       ? t("podDetailDialog.cancelRequest")
-                      : t("podDetailDialog.leave")}
+                      : ownJoin.status === "REJECTED"
+                        ? t("podDetailDialog.dismiss")
+                        : t("podDetailDialog.leave")}
                 </Button>
               ) : (
                 <Button
                   type="button"
-                  disabled={pending || isFull}
+                  disabled={pending || isFull || isLocked}
                   onClick={() => onRequestJoin(pod.id)}
                   variant="contained"
                   fullWidth
                   sx={{ py: 1.5 }}
                 >
-                  {isFull
-                    ? t("podDetailDialog.full")
-                    : pending
-                      ? t("podDetailDialog.requesting")
-                      : pod.auto_accept
-                        ? t("podDetailDialog.instantJoin")
-                        : t("podDetailDialog.requestToJoin")}
+                  {isLocked
+                    ? t("organizer.table.locked")
+                    : isFull
+                      ? t("podDetailDialog.full")
+                      : pending
+                        ? t("podDetailDialog.requesting")
+                        : pod.auto_accept
+                          ? t("podDetailDialog.instantJoin")
+                          : t("podDetailDialog.requestToJoin")}
                 </Button>
               )}
             </div>

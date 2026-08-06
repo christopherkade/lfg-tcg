@@ -10,7 +10,7 @@
 -- it with a new search (createPod's auto-expire-before-insert) — i.e. the
 -- pod goes ACTIVE -> EXPIRED without ever reaching MATCHED. Members with a
 -- still-PENDING request are not notified, matching the existing MEMBER_LEFT
--- convention (SPECS.md Section 3) where an unaccepted request is treated as
+-- convention (docs/specs/03-schema.md) where an unaccepted request is treated as
 -- never having really joined the group.
 --
 -- This is a separate trigger from the existing notify_on_pod_update (which

@@ -5,7 +5,7 @@
 -- references auth.users on delete cascade, and pods/pod_joins/notifications
 -- (as recipient)/pod_history (as host_id) all cascade off profiles(id), so
 -- deleting the auth.users row already tears down almost everything
--- correctly on its own (see SPECS.md Section 3's FK chain). The one thing
+-- correctly on its own (see docs/specs/03-schema.md's FK chain). The one thing
 -- that DOESN'T cascade is pod_history.members — a denormalized jsonb
 -- snapshot of {id, username, discord_handle, avatar_url}, not FK'd to
 -- profiles — so a deleted user's old identity would otherwise linger

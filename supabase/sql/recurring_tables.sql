@@ -10,7 +10,7 @@
 -- enforce_pod_creation_cooldown, schema.sql's notify_on_pod_join_insert,
 -- inactive_pod_cleanup.sql's sweep-inactive-active-pods job) so the new
 -- cron-driven spawn path coexists correctly with existing invariants — see
--- SPECS.md for the full rationale.
+-- docs/specs/03-schema.md for the full rationale.
 
 -- ============================================================
 -- 0. Reset — makes this whole script safe to re-run from scratch.
@@ -268,7 +268,7 @@ begin
       values (
         rt.organizer_id, rt.game_key, rt.format_key, rt.playstyle_key, rt.power_tiers, rt.type,
         rt.location_name, rt.city, v_scheduled_at,
-        v_ends_at, -- the occurrence's real end time, NOT a flat scheduled_at+4h guess (see SPECS.md rationale)
+        v_ends_at, -- the occurrence's real end time, NOT a flat scheduled_at+4h guess (see docs/specs/03-schema.md rationale)
         rt.max_players, rt.notes, rt.id, rt.auto_accept, rt.store_name
       )
       on conflict do nothing; -- backstop; pods_one_active_per_recurring_occurrence is the hard guarantee

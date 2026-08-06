@@ -58,4 +58,4 @@ Plain `yarn dev` keeps using `.env.local` as before. Since prod credentials in `
 
 ## Documentation
 
-See [SPECS.md](./SPECS.md) for the full product and technical specification, including the database schema, RLS policies, and screen-by-screen UX flows.
+See [SPECS.md](./SPECS.md) for an index into the full product and technical specification (split across `docs/specs/`), including the database schema, RLS policies, and screen-by-screen UX flows.

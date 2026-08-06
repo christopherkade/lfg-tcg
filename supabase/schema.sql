@@ -1,6 +1,6 @@
 -- PodFinder LFG PWA — schema, RLS, and realtime setup
 -- Run this entire script in the Supabase SQL Editor (Project > SQL Editor > New query).
--- See SPECS.md Section 3 for rationale.
+-- See docs/specs/03-schema.md for rationale.
 --
 -- WARNING: This script starts with DROP statements so it can be re-run cleanly
 -- during development. Re-running it deletes all existing profiles/pods/joins

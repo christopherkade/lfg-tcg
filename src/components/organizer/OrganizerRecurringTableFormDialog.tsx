@@ -139,6 +139,7 @@ export function OrganizerRecurringTableFormDialog({
       dayOfWeek: dayOfWeek ?? 0,
       startTime: format(startTime as Date, "HH:mm"),
       endTime: format(endTime as Date, "HH:mm"),
+      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
       maxPlayers,
       notes,
       autoAccept,
@@ -291,6 +292,7 @@ export function OrganizerRecurringTableFormDialog({
                 type="number"
                 value={maxPlayers || ""}
                 onChange={(event) => setMaxPlayers(Number(event.target.value))}
+                helperText={t("organizer.form.maxPlayersHint")}
                 slotProps={{ htmlInput: { min: 2, max: 200 } }}
                 fullWidth
                 size="small"

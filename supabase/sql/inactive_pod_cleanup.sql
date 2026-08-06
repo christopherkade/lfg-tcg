@@ -14,7 +14,7 @@
 --
 -- Notifications are inserted with pod_id = NULL rather than the doomed
 -- pod's id — notifications.pod_id is ON DELETE CASCADE (see
--- notify_pod_destroyed.sql / SPECS.md Section 3), so inserting with the
+-- notify_pod_destroyed.sql / docs/specs/03-schema.md), so inserting with the
 -- real pod_id inside the same statement that deletes the pod would have
 -- the DELETE cascade the just-inserted row away again. NotificationBell
 -- doesn't need pod_id anyway — every notification type navigates to

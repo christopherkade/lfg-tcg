@@ -23,7 +23,7 @@ export interface OrganizerActionResult {
  * only — the whole point is granting organiser status to someone who
  * doesn't have it yet. The real authorization boundary for who can reach
  * this action at all is /organizer/apply being an unlisted route (see
- * SPECS.md); there's no invite code or approval step in this MVP.
+ * docs/specs/03-schema.md); there's no invite code or approval step in this MVP.
  */
 export async function applyAsOrganizer(
   input: OrganizerProfileInput,
@@ -138,6 +138,11 @@ export async function createRecurringTable(
       day_of_week: input.dayOfWeek,
       start_time: input.startTime,
       end_time: input.endTime,
+      timezone: validated.data.timezone,
+      // input.maxPlayers is "players needed" — the organiser is never
+      // inserted as a pod_joins row and is never counted toward capacity
+      // for recurring-table pods (see isGroupFull's countsHost param), so
+      // this is stored as-is with no +1 for the host.
       max_players: input.maxPlayers,
       notes: validated.data.notes,
       auto_accept: input.autoAccept,
@@ -186,6 +191,8 @@ export async function updateRecurringTable(
       day_of_week: input.dayOfWeek,
       start_time: input.startTime,
       end_time: input.endTime,
+      timezone: validated.data.timezone,
+      // See createRecurringTable: stored as-is, no +1 for the host.
       max_players: input.maxPlayers,
       notes: validated.data.notes,
       auto_accept: input.autoAccept,
@@ -204,63 +211,39 @@ export async function updateRecurringTable(
     };
   }
 
-  await syncAutoAcceptToActivePod(supabase, id, input.autoAccept);
+  await syncTemplateFieldsToActivePod(supabase, id, {
+    auto_accept: input.autoAccept,
+    max_players: input.maxPlayers,
+  });
 
   revalidatePath("/organizer");
   return {};
 }
 
 /**
- * pods.auto_accept is a denormalized snapshot copied from
- * recurring_tables.auto_accept only at spawn time (spawn_due_recurring_pods()),
- * and a pod is typically spawned well ahead of its event (lead_time_hours).
- * Without this, toggling auto-accept on an already-live table would only
- * affect *future* spawns — the currently visible, joinable pod would keep
- * whatever value it had when it was spawned, so players could still
- * instantly join (or still have to wait) regardless of what the organiser
- * just changed. Best-effort: the template update above already succeeded,
- * so a failure here is logged but not surfaced as the action's own error.
+ * Several pods.* columns (auto_accept, max_players) are denormalized
+ * snapshots copied from recurring_tables only at spawn time
+ * (spawn_due_recurring_pods()), and a pod is typically spawned well ahead
+ * of its event (lead_time_hours). Without this, editing the template would
+ * only affect *future* spawns — the currently visible, joinable pod would
+ * keep whatever values it had when it was spawned. Best-effort: the
+ * template update above already succeeded, so a failure here is logged but
+ * not surfaced as the action's own error.
  */
-async function syncAutoAcceptToActivePod(
+async function syncTemplateFieldsToActivePod(
   supabase: Awaited<ReturnType<typeof requireOrganizerProfile>>["supabase"],
   recurringTableId: string,
-  autoAccept: boolean,
+  fields: { auto_accept?: boolean; max_players?: number },
 ) {
   const { error } = await supabase
     .from("pods")
-    .update({ auto_accept: autoAccept })
+    .update(fields)
     .eq("recurring_table_id", recurringTableId)
     .eq("status", "ACTIVE");
 
   if (error) {
-    console.error("syncAutoAcceptToActivePod failed:", error);
+    console.error("syncTemplateFieldsToActivePod failed:", error);
   }
-}
-
-export async function setRecurringTableActive(
-  id: string,
-  isActive: boolean,
-): Promise<OrganizerActionResult> {
-  const { supabase, organizer } = await requireOrganizerProfile();
-  const locale = await getServerLocale();
-
-  const { error } = await supabase
-    .from("recurring_tables")
-    .update({ is_active: isActive, updated_at: new Date().toISOString() })
-    .eq("id", id)
-    .eq("organizer_id", organizer.id);
-
-  if (error) {
-    console.error("setRecurringTableActive failed:", error);
-    return {
-      error: translate(locale, "errors.recurringTableSaveFailed", {
-        reason: error.message,
-      }),
-    };
-  }
-
-  revalidatePath("/organizer");
-  return {};
 }
 
 export async function setRecurringTableAutoAccept(
@@ -285,7 +268,7 @@ export async function setRecurringTableAutoAccept(
     };
   }
 
-  await syncAutoAcceptToActivePod(supabase, id, autoAccept);
+  await syncTemplateFieldsToActivePod(supabase, id, { auto_accept: autoAccept });
 
   revalidatePath("/organizer");
   return {};
@@ -297,9 +280,31 @@ export async function deleteRecurringTable(
   const { supabase, organizer } = await requireOrganizerProfile();
   const locale = await getServerLocale();
 
+  // Expire any currently-spawned session before deleting the template.
   // ON DELETE SET NULL on pods.recurring_table_id / pod_history.recurring_table_id
   // means an already-spawned, already-joined pod (and any history logged
-  // from it) is safe to leave dangling rather than needing cleanup here.
+  // from it) is safe to leave dangling rather than needing cleanup here —
+  // but a still-ACTIVE pod left dangling stays visible/joinable in the feed
+  // indefinitely (until its own expires_at passes) with no organiser UI
+  // left to cancel it, since OrganizerRecurringTableCard is keyed to the
+  // now-deleted recurring_table_id. Must run before the delete below: once
+  // the template is gone, ON DELETE SET NULL nulls recurring_table_id on
+  // this pod, and it can no longer be targeted by it.
+  const { error: expireError } = await supabase
+    .from("pods")
+    .update({ status: "EXPIRED" })
+    .eq("recurring_table_id", id)
+    .eq("status", "ACTIVE");
+
+  if (expireError) {
+    console.error("deleteRecurringTable: failed to expire active pod:", expireError);
+    return {
+      error: translate(locale, "errors.recurringTableDeleteFailed", {
+        reason: expireError.message,
+      }),
+    };
+  }
+
   const { error } = await supabase
     .from("recurring_tables")
     .delete()

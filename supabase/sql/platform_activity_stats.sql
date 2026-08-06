@@ -4,7 +4,7 @@
 -- on the Match Feed's empty state (PlatformActivityTicker component) — a
 -- lightweight, honest "is this thing alive" indicator sourced entirely from
 -- data the app already collects (pods, pod_history), with no seeded/fake
--- data. See SPECS.md Section 3/5/6.
+-- data. See docs/specs/03-schema.md, 05-ui-ux-flows.md, and 06-match-feed-query.md.
 --
 -- IMPORTANT: unlike every other RPC in this project (get_profile_pod_stats,
 -- get_games_played_count, hide_pod_history_entry — all `authenticated`-only,
