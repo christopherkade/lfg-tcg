@@ -54,6 +54,15 @@ interface Toast {
 export function getNotificationHref(
   notification: NotificationWithRelations,
 ): string {
+  if (notification.type === "ORGANIZER_APPLICATION_APPROVED") {
+    return "/organizer";
+  }
+  if (
+    notification.type === "ORGANIZER_APPLICATION_REJECTED" ||
+    notification.type === "ORGANIZER_APPLICATION_SUBMITTED"
+  ) {
+    return "/organizer/apply";
+  }
   return notification.pod?.store_name ? "/organizer" : "/pods";
 }
 
@@ -92,6 +101,12 @@ export function describeNotification(
       return t("notification.podDestroyed", { actor: hostActorName });
     case "POD_EXPIRED_INACTIVITY":
       return t("notification.podExpiredInactivity");
+    case "ORGANIZER_APPLICATION_APPROVED":
+      return t("notification.organizerApplicationApproved");
+    case "ORGANIZER_APPLICATION_REJECTED":
+      return t("notification.organizerApplicationRejected");
+    case "ORGANIZER_APPLICATION_SUBMITTED":
+      return t("notification.organizerApplicationSubmitted");
   }
 }
 

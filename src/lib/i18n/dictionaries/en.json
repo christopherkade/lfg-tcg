@@ -19,6 +19,7 @@
   "tabBar.history": "History",
   "tabBar.profile": "Profile",
   "tabBar.organizer": "Organizer",
+  "tabBar.admin": "Admin",
 
   "historyPage.title": "Past Pods",
   "historyPage.gamesPlayed": "Games played: {count}",
@@ -182,6 +183,9 @@
   "notification.podUpdatedPending": "{actor} updated the details of a pod you requested to join",
   "notification.podDestroyed": "{actor}'s pod was cancelled before finding a match",
   "notification.podExpiredInactivity": "A pod expired after 12 hours of inactivity and was removed",
+  "notification.organizerApplicationApproved": "Your organiser application was approved! Please reload the page to see the Organizer tab.",
+  "notification.organizerApplicationRejected": "Your organiser application was not approved this time.",
+  "notification.organizerApplicationSubmitted": "Your organiser application has been submitted and is awaiting review.",
   "notification.someone": "Someone",
 
   "lfgButton.searchingFor": "Searching for",
@@ -219,7 +223,7 @@
 
   "login.title": "PodFinder",
   "login.tagline": "Find your next pod.",
-  "login.taglineSubtitle": "Match with nearby players, pick your game, and start coordinating on Discord in seconds.",
+  "login.taglineSubtitle": "Match with nearby TCG players, pick your game, and start coordinating on Discord in seconds.",
   "login.continueWithDiscord": "Continue with Discord",
 
   "profileForm.username": "Username",
@@ -326,7 +330,11 @@
   "errors.storeNameTooLong": "Store name must be 80 characters or fewer.",
   "errors.descriptionTooLong": "Description must be 500 characters or fewer.",
   "errors.alreadyOrganizer": "You're already registered as an organiser.",
-  "errors.applyAsOrganizerFailed": "Something went wrong setting up your organiser account: {reason}",
+  "errors.alreadyApplied": "You already have an application under review.",
+  "errors.applyAsOrganizerFailed": "Something went wrong submitting your application: {reason}",
+  "errors.emailRequired": "Please provide an email address.",
+  "errors.emailInvalid": "Please provide a valid email address.",
+  "errors.applicationReviewFailed": "Something went wrong reviewing this application: {reason}",
   "errors.organizerProfileSaveFailed": "Could not save your store settings: {reason}",
   "errors.recurringTableSaveFailed": "Could not save this table: {reason}",
   "errors.recurringTableDeleteFailed": "Could not delete this table: {reason}",
@@ -359,16 +367,21 @@
   "organizer.subNav.settings": "Store Settings",
 
   "organizer.apply.title": "Set Up Your Store",
-  "organizer.apply.subtitle": "Register as an organiser to create recurring weekly tables for your store and manage the players who sign up.",
+  "organizer.apply.subtitle": "Apply to become an organiser and create recurring weekly tables for your store. An admin will review your application.",
   "organizer.apply.storeName": "Store Name",
   "organizer.apply.cityHelperText": "The city your store is located in.",
+  "organizer.apply.email": "Email",
+  "organizer.apply.emailPlaceholder": "you@yourstore.com",
+  "organizer.apply.emailHint": "Used to let you know once your application has been reviewed.",
   "organizer.apply.verificationUrl": "Verification URL",
   "organizer.apply.verificationUrlPlaceholder": "https://maps.google.com/...",
   "organizer.apply.verificationUrlHint": "A Google Maps link, website, or social page proving your store is real - used to verify your account.",
   "organizer.apply.description": "Description",
   "organizer.apply.descriptionPlaceholder": "Tell players a bit about your store (optional)",
-  "organizer.apply.submit": "Create Organiser Account",
-  "organizer.apply.submitting": "Setting up...",
+  "organizer.apply.submit": "Submit Application",
+  "organizer.apply.submitting": "Submitting...",
+  "organizer.apply.pendingTitle": "Application Under Review",
+  "organizer.apply.pendingSubtitle": "Thanks for applying! An admin is reviewing your application - we'll let you know here once a decision has been made.",
 
   "organizer.settings.title": "Store Settings",
   "organizer.settings.save": "Save Changes",
@@ -414,5 +427,17 @@
   "organizer.history.empty": "No past sessions yet.",
   "organizer.history.attendees": "{count} attendees",
   "organizer.history.noAttendees": "No one signed up for this session.",
-  "organizer.history.delete": "Delete"
+  "organizer.history.delete": "Delete",
+
+  "admin.applications.title": "Organizer Applications",
+  "admin.applications.subtitle": "Review pending applications and accept or refuse them.",
+  "admin.applications.empty": "No pending applications right now.",
+  "admin.applications.applicant": "Applicant: {username} ({handle})",
+  "admin.applications.city": "City",
+  "admin.applications.email": "Email",
+  "admin.applications.submittedAt": "Submitted",
+  "admin.applications.verificationUrl": "Verification",
+  "admin.applications.description": "Description",
+  "admin.applications.accept": "Accept",
+  "admin.applications.refuse": "Refuse"
 }

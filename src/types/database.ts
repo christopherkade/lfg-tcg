@@ -12,7 +12,11 @@ export type NotificationType =
   | "POD_UPDATED"
   | "POD_UPDATED_PENDING"
   | "POD_DESTROYED"
-  | "POD_EXPIRED_INACTIVITY";
+  | "POD_EXPIRED_INACTIVITY"
+  | "ORGANIZER_APPLICATION_APPROVED"
+  | "ORGANIZER_APPLICATION_REJECTED"
+  | "ORGANIZER_APPLICATION_SUBMITTED";
+export type ApplicationStatus = "pending" | "approved" | "rejected";
 
 export interface Profile {
   id: string;
@@ -28,6 +32,7 @@ export interface Profile {
   preferred_match_type: MatchType;
   preferred_location_name: string | null;
   preferred_max_players: number;
+  is_admin: boolean;
 }
 
 export interface Pod {
@@ -108,6 +113,24 @@ export interface OrganizerProfile {
   is_active: boolean;
   created_at: string;
   updated_at: string;
+}
+
+export interface OrganizerApplication {
+  id: string;
+  user_id: string;
+  store_name: string;
+  city: string;
+  description: string | null;
+  verification_url: string;
+  email: string;
+  status: ApplicationStatus;
+  reviewed_by: string | null;
+  reviewed_at: string | null;
+  created_at: string;
+}
+
+export interface OrganizerApplicationWithApplicant extends OrganizerApplication {
+  profiles: Pick<Profile, "id" | "username" | "discord_handle" | "avatar_url">;
 }
 
 export interface RecurringTable {

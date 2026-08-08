@@ -159,3 +159,21 @@ export async function requireOrganizerProfile(path?: string) {
 
   return { supabase, user, profile, organizer };
 }
+
+/**
+ * Requires a session, a completed profile, AND profiles.is_admin, redirecting
+ * non-admins to /pods. Every admin-only page/action calls this — never
+ * requireProfile() — as its first line, the same convention
+ * requireOrganizerProfile() established for the organiser surface. Unlike
+ * getOrganizer, no extra query is needed: is_admin already lives on the
+ * profiles row requireProfile() fetches.
+ */
+export async function requireAdminProfile(path?: string) {
+  const { supabase, user, profile } = await requireProfile(path);
+
+  if (!profile.is_admin) {
+    redirect("/pods");
+  }
+
+  return { supabase, user, profile };
+}

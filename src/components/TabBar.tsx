@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Users, Zap, History, UserCircle, Store, type LucideIcon } from "lucide-react";
+import { Users, Zap, History, UserCircle, Store, ShieldCheck, type LucideIcon } from "lucide-react";
 import { Box, Button, Typography, useTheme } from "@mui/material";
 import { NotificationBell } from "@/components/NotificationBell";
 import { SettingsDialog } from "@/components/SettingsDialog";
@@ -17,11 +17,11 @@ interface Tab {
   href: string;
   labelKey: TranslationKey;
   icon: LucideIcon;
-  // Marks a tab as organiser-only content (currently just "/organizer").
-  // Rendered with an amber accent instead of the default active color so
-  // it reads as distinctly "professional" even sitting in the same bar as
-  // player tabs.
-  accent?: "amber";
+  // Marks a tab as organiser-only ("amber") or admin-only ("violet") content
+  // — rendered with a distinct accent instead of the default active color so
+  // each reads as visually separate from the player tabs sitting in the same
+  // bar.
+  accent?: "amber" | "violet";
 }
 
 const BASE_TABS: Tab[] = [
@@ -38,6 +38,13 @@ const ORGANIZER_TAB: Tab = {
   accent: "amber",
 };
 
+const ADMIN_TAB: Tab = {
+  href: "/admin/applications",
+  labelKey: "tabBar.admin",
+  icon: ShieldCheck,
+  accent: "violet",
+};
+
 // A direct/shared /profile/<username> visit (SharedProfilePanel, rendered
 // over PodsView by that route) is anchored to the Active Pods tab — closing
 // the panel returns there — so this treats that route as if /pods were the
@@ -48,7 +55,18 @@ function effectiveActiveHref(pathname: string): string {
   return /^\/profile\/[^/]+$/.test(pathname) ? "/pods" : pathname;
 }
 
-export function TabBar({ isOrganizer }: { isOrganizer: boolean }) {
+const ACCENT_COLORS: Record<"amber" | "violet", { main: string; hover: string }> = {
+  amber: { main: "#F59E0B", hover: "#FBBF24" },
+  violet: { main: "#8B5CF6", hover: "#A78BFA" },
+};
+
+export function TabBar({
+  isOrganizer,
+  isAdmin,
+}: {
+  isOrganizer: boolean;
+  isAdmin: boolean;
+}) {
   const pathname = usePathname();
   const { t } = useTranslation();
   const theme = useTheme();
@@ -63,7 +81,11 @@ export function TabBar({ isOrganizer }: { isOrganizer: boolean }) {
     setPendingHref(null);
   }, [pathname]);
   const activeHref = pendingHref ?? effectiveActiveHref(pathname);
-  const tabs = isOrganizer ? [...BASE_TABS, ORGANIZER_TAB] : BASE_TABS;
+  const tabs = [
+    ...BASE_TABS,
+    ...(isOrganizer ? [ORGANIZER_TAB] : []),
+    ...(isAdmin ? [ADMIN_TAB] : []),
+  ];
 
   return (
     <>
@@ -111,7 +133,7 @@ export function TabBar({ isOrganizer }: { isOrganizer: boolean }) {
               {tabs.map((tab) => {
                 const isActive = activeHref === tab.href;
                 const isLocked = usernameMissing && tab.href !== "/profile";
-                const isAmber = tab.accent === "amber";
+                const accent = tab.accent ? ACCENT_COLORS[tab.accent] : null;
                 const Icon = tab.icon;
                 return (
                   <Button
@@ -131,22 +153,22 @@ export function TabBar({ isOrganizer }: { isOrganizer: boolean }) {
                     sx={{
                       px: 2,
                       py: 1,
-                      bgcolor: isActive ? (isAmber ? "#F59E0B" : "primary.main") : "transparent",
+                      bgcolor: isActive ? (accent ? accent.main : "primary.main") : "transparent",
                       color: isActive
                         ? "primary.contrastText"
-                        : isAmber
-                          ? "#F59E0B"
+                        : accent
+                          ? accent.main
                           : "text.primary",
                       "&:hover": {
                         bgcolor: isActive
-                          ? isAmber
-                            ? "#FBBF24"
+                          ? accent
+                            ? accent.hover
                             : "primary.light"
                           : "action.hover",
                         color: isActive
                           ? "primary.contrastText"
-                          : isAmber
-                            ? "#F59E0B"
+                          : accent
+                            ? accent.main
                             : "text.primary",
                       },
                     }}
@@ -174,7 +196,7 @@ export function TabBar({ isOrganizer }: { isOrganizer: boolean }) {
         {tabs.map((tab) => {
           const isActive = activeHref === tab.href;
           const isLocked = usernameMissing && tab.href !== "/profile";
-          const isAmber = tab.accent === "amber";
+          const accent = tab.accent ? ACCENT_COLORS[tab.accent] : null;
           const Icon = tab.icon;
           return (
             <Link
@@ -190,11 +212,11 @@ export function TabBar({ isOrganizer }: { isOrganizer: boolean }) {
                 if (!isLocked) setPendingHref(tab.href);
               }}
               className={`flex flex-1 flex-col items-center gap-1 py-3 text-xs font-medium transition-colors ${
-                isActive && !isAmber ? "text-ember" : ""
+                isActive && !accent ? "text-ember" : ""
               }`}
               style={
-                isAmber
-                  ? { color: "#F59E0B" }
+                accent
+                  ? { color: accent.main }
                   : isActive
                     ? undefined
                     : { color: theme.palette.text.primary }

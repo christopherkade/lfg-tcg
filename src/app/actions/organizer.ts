@@ -12,6 +12,10 @@ import {
   validateOrganizerProfileInput,
   type OrganizerProfileInput,
 } from "@/lib/organizer/validateOrganizerProfile";
+import {
+  validateOrganizerApplicationInput,
+  type OrganizerApplicationInput,
+} from "@/lib/organizer/validateOrganizerApplication";
 
 export interface OrganizerActionResult {
   error?: string;
@@ -19,39 +23,53 @@ export interface OrganizerActionResult {
 }
 
 /**
- * Onboards the current user as an organiser. Guarded by requireProfile()
- * only — the whole point is granting organiser status to someone who
- * doesn't have it yet. The real authorization boundary for who can reach
+ * Submits an organiser application for the current user, guarded by
+ * requireProfile() only — the whole point is letting someone who isn't an
+ * organiser yet apply. The real authorization boundary for who can reach
  * this action at all is /organizer/apply being an unlisted route (see
- * docs/specs/03-schema.md); there's no invite code or approval step in this MVP.
+ * docs/specs/03-schema.md); the application itself then sits `pending`
+ * until an admin accepts or refuses it (src/app/actions/admin.ts) — this
+ * action never inserts into `organizers` directly anymore.
  */
 export async function applyAsOrganizer(
-  input: OrganizerProfileInput,
+  input: OrganizerApplicationInput,
 ): Promise<OrganizerActionResult> {
   const { supabase, user } = await requireProfile();
   const locale = await getServerLocale();
 
-  const { data: existing } = await supabase
+  const { data: existingOrganizer } = await supabase
     .from("organizers")
     .select("id")
     .eq("id", user.id)
     .maybeSingle();
 
-  if (existing) {
+  if (existingOrganizer) {
     return { error: translate(locale, "errors.alreadyOrganizer") };
   }
 
-  const validated = validateOrganizerProfileInput(input, locale);
+  const { data: existingApplication } = await supabase
+    .from("organizer_applications")
+    .select("id")
+    .eq("user_id", user.id)
+    .eq("status", "pending")
+    .maybeSingle();
+
+  if (existingApplication) {
+    return { error: translate(locale, "errors.alreadyApplied") };
+  }
+
+  const validated = validateOrganizerApplicationInput(input, locale);
   if ("error" in validated) {
     return { error: validated.error };
   }
 
-  const { error } = await supabase.from("organizers").insert({
-    id: user.id,
+  const { error } = await supabase.from("organizer_applications").insert({
+    user_id: user.id,
     store_name: validated.data.storeName,
     city: validated.data.city,
     description: validated.data.description,
     verification_url: validated.data.verificationUrl,
+    email: validated.data.email,
   });
 
   if (error) {
@@ -63,8 +81,7 @@ export async function applyAsOrganizer(
     };
   }
 
-  revalidatePath("/");
-  revalidatePath("/organizer");
+  revalidatePath("/organizer/apply");
   return {};
 }
 

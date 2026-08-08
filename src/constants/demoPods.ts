@@ -44,6 +44,7 @@ export const DEMO_PODS: PodWithRelations[] = [
       preferred_match_type: "IRL",
       preferred_location_name: "Le Panda Roux",
       preferred_max_players: 4,
+      is_admin: false,
     },
     pod_joins: [
       {
@@ -67,6 +68,7 @@ export const DEMO_PODS: PodWithRelations[] = [
           preferred_match_type: "IRL",
           preferred_location_name: null,
           preferred_max_players: 4,
+          is_admin: false,
         },
       },
     ],
@@ -107,6 +109,7 @@ export const DEMO_PODS: PodWithRelations[] = [
       preferred_match_type: "ONLINE",
       preferred_location_name: null,
       preferred_max_players: 2,
+      is_admin: false,
     },
     pod_joins: [],
   },
