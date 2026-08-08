@@ -37,7 +37,7 @@ export default async function AppLayout({
         <ProfileLockProvider usernameMissing={!profile}>
           <UserProfilePanelProvider>
             <div className="flex flex-1 flex-col">
-              <TabBar isOrganizer={organizer != null} />
+              <TabBar isOrganizer={organizer != null} isAdmin={profile?.is_admin ?? false} />
               <div className="flex flex-1 flex-col pb-16 sm:pb-0">{children}</div>
               <MatchedPodWatcher currentUserId={userId} />
             </div>

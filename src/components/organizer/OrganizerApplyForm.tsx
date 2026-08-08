@@ -14,13 +14,15 @@ export function OrganizerApplyForm() {
   const [city, setCity] = useState<string | null>(null);
   const [description, setDescription] = useState("");
   const [verificationUrl, setVerificationUrl] = useState("");
+  const [email, setEmail] = useState("");
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const canSubmit =
     storeName.trim().length > 0 &&
     city != null &&
-    verificationUrl.trim().length > 0;
+    verificationUrl.trim().length > 0 &&
+    email.trim().length > 0;
 
   async function handleSubmit() {
     if (!canSubmit) return;
@@ -32,6 +34,7 @@ export function OrganizerApplyForm() {
       city: city ?? "",
       description,
       verificationUrl,
+      email,
     });
 
     if (result.error) {
@@ -69,6 +72,17 @@ export function OrganizerApplyForm() {
         value={city}
         onChange={setCity}
         helperText={t("organizer.apply.cityHelperText")}
+      />
+      <TextField
+        label={t("organizer.apply.email")}
+        type="email"
+        value={email}
+        onChange={(event) => setEmail(event.target.value)}
+        placeholder={t("organizer.apply.emailPlaceholder")}
+        helperText={t("organizer.apply.emailHint")}
+        slotProps={{ htmlInput: { maxLength: 320 } }}
+        fullWidth
+        size="small"
       />
       <TextField
         label={t("organizer.apply.verificationUrl")}

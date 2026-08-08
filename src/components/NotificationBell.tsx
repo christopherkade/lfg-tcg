@@ -15,14 +15,17 @@ import {
 } from "@mui/material";
 import {
   Bell,
+  CheckCircle,
   Clock,
   PencilLine,
+  Send,
   Trash2,
   UserCheck,
   UserMinus,
   UserPlus,
   UserX,
   X,
+  XCircle,
   type LucideIcon,
 } from "lucide-react";
 import {
@@ -43,6 +46,9 @@ const TYPE_ICON: Record<NotificationType, LucideIcon> = {
   POD_UPDATED_PENDING: PencilLine,
   POD_DESTROYED: Trash2,
   POD_EXPIRED_INACTIVITY: Clock,
+  ORGANIZER_APPLICATION_APPROVED: CheckCircle,
+  ORGANIZER_APPLICATION_REJECTED: XCircle,
+  ORGANIZER_APPLICATION_SUBMITTED: Send,
 };
 
 /**
